@@ -1,0 +1,137 @@
+[
+  {
+    "id": "fondasi",
+    "label": "1. Fondasi",
+    "color": "#10B981",
+    "files": [
+      "01",
+      "02",
+      "03",
+      "04"
+    ]
+  },
+  {
+    "id": "network",
+    "label": "2. Network Services",
+    "color": "#3B8BD4",
+    "files": [
+      "05",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14a",
+      "14b",
+      "14c",
+      "14d"
+    ]
+  },
+  {
+    "id": "web",
+    "label": "3. Web Exploitation",
+    "color": "#F59E0B",
+    "files": [
+      "15",
+      "16",
+      "17",
+      "17a",
+      "17b",
+      "17c",
+      "17d",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "24",
+      "25",
+      "26",
+      "27",
+      "28",
+      "29",
+      "30",
+      "31",
+      "32",
+      "33",
+      "34"
+    ]
+  },
+  {
+    "id": "ad",
+    "label": "4. Active Directory",
+    "color": "#EF4444",
+    "files": [
+      "35",
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43"
+    ]
+  },
+  {
+    "id": "privesc",
+    "label": "5. Privilege Escalation",
+    "color": "#8B5CF6",
+    "files": [
+      "44",
+      "45",
+      "46",
+      "47"
+    ]
+  },
+  {
+    "id": "binary",
+    "label": "6. Binary & Reversing",
+    "color": "#EC4899",
+    "files": [
+      "48",
+      "49",
+      "50",
+      "51",
+      "52"
+    ]
+  },
+  {
+    "id": "crypto_forensics",
+    "label": "7. Cryptography & Forensics",
+    "color": "#06B6D4",
+    "files": [
+      "53",
+      "54",
+      "55",
+      "56",
+      "57",
+      "58"
+    ]
+  },
+  {
+    "id": "cloud_mobile",
+    "label": "8. Cloud & Mobile",
+    "color": "#6366F1",
+    "files": [
+      "59",
+      "60",
+      "61"
+    ]
+  },
+  {
+    "id": "osint_misc",
+    "label": "9. OSINT & Misc",
+    "color": "#14B8A6",
+    "files": [
+      "62",
+      "63",
+      "64",
+      "65"
+    ]
+  }
+]

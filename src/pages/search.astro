@@ -1,0 +1,245 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import categories from '../data/categories.json';
+import pages from '../data/pages.json';
+---
+
+<BaseLayout 
+  title="Search Full-Text — Cyber Security Wiki"
+  description="Pencarian mendalam di seluruh 73 modul dokumentasi keamanan siber."
+  currentPath="/search"
+>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <!-- Header -->
+    <div class="space-y-2 text-center sm:text-left">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00b4d8]/10 border border-[#00b4d8]/30 text-[#00b4d8] text-xs font-mono">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <span>Full-Text Search Engine</span>
+      </div>
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-[#f0f6fc] font-sans tracking-tight">
+        Pencarian Dokumentasi & Cheat Sheet
+      </h1>
+      <p class="text-sm text-[#8b949e]">
+        Cari di antara 73 modul, sintaks exploit, CVE, port, dan teknik pentesting.
+      </p>
+    </div>
+
+    <!-- Search Input & Filters Box -->
+    <div class="space-y-4 p-5 rounded-2xl bg-[#161b22] border border-[#30363d] shadow-lg">
+      <div class="relative">
+        <svg class="w-5 h-5 text-[#00b4d8] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input 
+          type="text" 
+          id="fulltext-search-input"
+          class="w-full pl-12 pr-12 py-3.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none text-base font-sans transition-colors"
+          placeholder="Ketik kata kunci pencarian (e.g. eternalblue, mimikatz, hydra, privilege escalation, jwt)..."
+          autocomplete="off"
+        />
+        <button 
+          id="clear-search-btn"
+          type="button" 
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-[#8b949e] hover:text-[#f0f6fc] hidden"
+          aria-label="Clear input"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono text-[#8b949e] uppercase">
+          Filter Kategori:
+        </span>
+        <div class="flex flex-wrap gap-1.5" id="search-cat-filters">
+          <button 
+            type="button" 
+            class="cat-btn active px-3 py-1 rounded-lg text-xs font-mono bg-[#e84a5f] text-white border border-[#e84a5f] transition-colors"
+            data-cat="all"
+          >
+            Semua
+          </button>
+          {categories.map(cat => (
+            <button 
+              type="button" 
+              class="cat-btn px-3 py-1 rounded-lg text-xs font-mono bg-[#0d1117] text-[#8b949e] hover:text-[#f0f6fc] border border-[#30363d] hover:border-[#8b949e] transition-colors flex items-center gap-1.5"
+              data-cat={cat.id}
+            >
+              <span class="w-1.5 h-1.5 rounded-full" style={`background-color: ${cat.color};`}></span>
+              <span>{cat.id}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Status Bar -->
+    <div class="flex items-center justify-between text-xs font-mono text-[#8b949e] px-1">
+      <span id="results-count">Menampilkan semua 73 modul</span>
+      <span>Tekan <kbd class="px-1.5 py-0.5 rounded bg-[#161b22] border border-[#30363d] text-[#c9d1d9]">Ctrl K</kbd> untuk modal popup</span>
+    </div>
+
+    <!-- Search Results List -->
+    <div id="results-container" class="space-y-3"></div>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ pagesData: pages }}>
+  import Fuse from 'fuse.js';
+
+  const input = document.getElementById('fulltext-search-input');
+  const clearBtn = document.getElementById('clear-search-btn');
+  const container = document.getElementById('results-container');
+  const countEl = document.getElementById('results-count');
+  const catButtons = document.querySelectorAll('#search-cat-filters .cat-btn');
+
+  let activeCategory = 'all';
+
+  const fuse = new Fuse(pagesData, {
+    keys: [
+      { name: 'title', weight: 0.4 },
+      { name: 'id', weight: 0.2 },
+      { name: 'category', weight: 0.2 },
+      { name: 'content', weight: 0.2 }
+    ],
+    includeMatches: true,
+    threshold: 0.35,
+    minMatchCharLength: 2
+  });
+
+  function getContextSnippet(content, query) {
+    if (!query) return content.substring(0, 220) + '...';
+
+    const clean = content.replace(/\s+/g, ' ');
+    const lower = clean.toLowerCase();
+    const qLower = query.toLowerCase().trim();
+    const idx = lower.indexOf(qLower);
+
+    if (idx === -1) {
+      return clean.substring(0, 220) + '...';
+    }
+
+    const start = Math.max(0, idx - 70);
+    const end = Math.min(clean.length, idx + qLower.length + 120);
+    let snippet = clean.substring(start, end);
+
+    if (start > 0) snippet = '...' + snippet;
+    if (end < clean.length) snippet = snippet + '...';
+
+    // Highlight keyword in snippet
+    const regex = new RegExp(`(${qLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return snippet.replace(regex, '<mark class="bg-[#e84a5f]/30 text-[#f0f6fc] px-1 py-0.2 rounded font-semibold">$1</mark>');
+  }
+
+  function render(items, query = '') {
+    if (!container) return;
+
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div class="py-16 text-center rounded-2xl bg-[#161b22] border border-[#30363d] p-8 space-y-3">
+          <svg class="w-12 h-12 mx-auto text-[#484f58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 class="text-sm font-bold text-[#f0f6fc] font-mono">Tidak Ditemukan Modul yang Cocok</h3>
+          <p class="text-xs text-[#8b949e]">Coba gunakan kata kunci lain seperti protokol, nama CVE, atau nama tools.</p>
+        </div>
+      `;
+      if (countEl) countEl.textContent = '0 modul ditemukan';
+      return;
+    }
+
+    if (countEl) {
+      countEl.textContent = query 
+        ? `${items.length} modul cocok dengan "${query}"`
+        : `Menampilkan ${items.length} modul`;
+    }
+
+    container.innerHTML = items.map(item => {
+      const snippet = getContextSnippet(item.content, query);
+      return `
+        <a 
+          href="/docs/${item.slug}" 
+          class="block p-5 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-[#00b4d8]/60 transition-all group hover:-translate-y-0.5 shadow-md"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs px-2 py-0.5 rounded bg-[#0d1117] text-[#e84a5f] font-bold border border-[#30363d]">
+                ${item.id}
+              </span>
+              <h2 class="text-base font-bold text-[#f0f6fc] group-hover:text-[#00b4d8] transition-colors">
+                ${item.title}
+              </h2>
+            </div>
+            <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-full" style="background-color: ${item.categoryColor}18; color: ${item.categoryColor}; border: 1px solid ${item.categoryColor}55;">
+              ${item.category}
+            </span>
+          </div>
+          <p class="text-xs text-[#8b949e] line-clamp-3 leading-relaxed font-sans mt-2">
+            ${snippet}
+          </p>
+          <div class="flex items-center justify-between text-[11px] font-mono text-[#6e7681] pt-3 mt-3 border-t border-[#30363d]/60">
+            <div class="flex items-center gap-4">
+              <span>File: <strong class="text-[#8b949e]">${item.filename}</strong></span>
+              <span>In: <strong class="text-[#10b981]">${item.refs_in.length}</strong></span>
+              <span>Out: <strong class="text-[#00b4d8]">${item.refs_out.length}</strong></span>
+            </div>
+            <span class="text-[#00b4d8] group-hover:translate-x-1 transition-transform flex items-center gap-1 font-semibold">
+              Buka Modul →
+            </span>
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function executeSearch() {
+    const q = input?.value.trim() || '';
+    if (clearBtn) {
+      clearBtn.classList.toggle('hidden', q.length === 0);
+    }
+
+    let results = q ? fuse.search(q).map(r => r.item) : pagesData;
+
+    if (activeCategory !== 'all') {
+      results = results.filter(item => item.categoryId === activeCategory);
+    }
+
+    render(results, q);
+  }
+
+  // Handle URL query ?q=...
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialQuery = urlParams.get('q');
+  if (initialQuery && input) {
+    input.value = initialQuery;
+  }
+
+  // Event Listeners
+  input?.addEventListener('input', executeSearch);
+
+  clearBtn?.addEventListener('click', () => {
+    if (input) input.value = '';
+    executeSearch();
+    input?.focus();
+  });
+
+  catButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      catButtons.forEach(b => {
+        b.classList.remove('active', 'bg-[#e84a5f]', 'text-white', 'border-[#e84a5f]');
+        b.classList.add('bg-[#0d1117]', 'text-[#8b949e]', 'border-[#30363d]');
+      });
+      btn.classList.add('active', 'bg-[#e84a5f]', 'text-white', 'border-[#e84a5f]');
+      btn.classList.remove('bg-[#0d1117]', 'text-[#8b949e]', 'border-[#30363d]');
+
+      activeCategory = btn.getAttribute('data-cat') || 'all';
+      executeSearch();
+    });
+  });
+
+  // Initial render
+  executeSearch();
+</script>

@@ -1,0 +1,59 @@
+---
+// MermaidRenderer component
+---
+
+<script>
+  import mermaid from 'mermaid';
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#0c1220',
+      primaryColor: '#06b6d4',
+      primaryTextColor: '#f8fafc',
+      primaryBorderColor: '#1e293b',
+      lineColor: '#38bdf8',
+      secondaryColor: '#162035',
+      tertiaryColor: '#0f172a'
+    },
+    securityLevel: 'loose',
+    fontFamily: 'monospace'
+  });
+
+  async function renderMermaidDiagrams() {
+    // Look for Shiki or Markdown mermaid code blocks
+    const codeBlocks = document.querySelectorAll('pre code.language-mermaid, pre.mermaid, code.language-mermaid');
+    
+    if (codeBlocks.length === 0) return;
+
+    for (let i = 0; i < codeBlocks.length; i++) {
+      const codeEl = codeBlocks[i];
+      const preEl = codeEl.closest('pre') || codeEl;
+      const code = codeEl.textContent || '';
+
+      const container = document.createElement('div');
+      container.className = 'mermaid-container my-6 p-4 rounded-xl bg-[#0c1220] border border-cyber-border overflow-x-auto';
+      
+      const mermaidDiv = document.createElement('div');
+      mermaidDiv.className = 'mermaid';
+      mermaidDiv.textContent = code.trim();
+      
+      container.appendChild(mermaidDiv);
+      preEl.parentNode?.replaceChild(container, preEl);
+    }
+
+    try {
+      await mermaid.run({
+        querySelector: '.mermaid'
+      });
+    } catch (err) {
+      console.error('Mermaid render error:', err);
+    }
+  }
+
+  // Execute on initial load and after view transitions if any
+  document.addEventListener('DOMContentLoaded', renderMermaidDiagrams);
+  renderMermaidDiagrams();
+</script>

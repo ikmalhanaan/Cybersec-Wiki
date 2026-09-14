@@ -1,0 +1,383 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import graphData from '../data/graph.json';
+import categories from '../data/categories.json';
+
+// Mark hub nodes in the graph data
+const HUB_NODE_IDS = ['63', '64'];
+
+const enhancedNodes = graphData.nodes.map(n => {
+  const isHub = HUB_NODE_IDS.includes(n.data.id);
+  return {
+    ...n,
+    data: {
+      ...n.data,
+      isHub: isHub ? 'true' : 'false',
+      displayColor: isHub ? '#e84a5f' : n.data.color
+    }
+  };
+});
+
+const enhancedGraph = {
+  nodes: enhancedNodes,
+  edges: graphData.edges
+};
+---
+
+<BaseLayout 
+  title="Cross-Reference Graph — Cyber Security Wiki"
+  description="Visualisasi interaktif graf relasi referensi antar 73 modul pentest dengan highlight hub nodes."
+  currentPath="/graph"
+>
+  <div class="relative w-full h-[calc(100vh-4rem)] bg-[#0d1117] flex flex-col md:flex-row overflow-hidden">
+    <!-- Left Filter & Control Sidebar -->
+    <aside class="z-20 w-full md:w-80 p-4 bg-[#161b22] border-b md:border-b-0 md:border-r border-[#30363d] flex flex-col gap-4 overflow-y-auto">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#00b4d8] animate-ping"></span>
+          <h2 class="text-sm font-bold text-[#f0f6fc] font-mono tracking-wider">
+            WORKFLOW GRAPH
+          </h2>
+        </div>
+        <p class="text-xs text-[#8b949e] mt-1 font-sans">
+          Jejaring 73 modul & 575 tautan pentest. Klik node untuk membuka modul.
+        </p>
+      </div>
+
+      <!-- Hub Nodes Legend / Notice -->
+      <div class="p-3 rounded-xl bg-[#e84a5f]/15 border border-[#e84a5f]/40 space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#e84a5f]"></span>
+          <span class="text-xs font-mono font-bold text-[#e84a5f] uppercase tracking-wide">
+            ★ Hub Nodes (2x Size)
+          </span>
+        </div>
+        <p class="text-[11px] text-[#c9d1d9] font-sans">
+          Modul sentral persimpangan: <strong class="text-[#f0f6fc]">63. Password Cracking</strong> dan <strong class="text-[#f0f6fc]">64. Pivoting & Tunneling</strong>.
+        </p>
+      </div>
+
+      <!-- Search in Graph -->
+      <div>
+        <label for="graph-node-search" class="block text-[10px] font-mono text-[#8b949e] uppercase mb-1">
+          Cari Node
+        </label>
+        <input 
+          type="text" 
+          id="graph-node-search" 
+          placeholder="Cari (e.g. 05, smb, kerberoast, 63)..." 
+          class="w-full px-3 py-1.5 rounded-lg bg-[#0d1117] border border-[#30363d] text-xs text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none focus:border-[#00b4d8] font-mono"
+        />
+      </div>
+
+      <!-- Category Filter Checkboxes -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-mono text-[#8b949e] uppercase">
+            Filter Workflow Group
+          </span>
+          <button 
+            type="button" 
+            id="btn-toggle-all-cats" 
+            class="text-[10px] font-mono text-[#00b4d8] hover:underline"
+          >
+            Pilih Semua
+          </button>
+        </div>
+
+        <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          {categories.map(cat => (
+            <label class="flex items-center gap-2 p-1.5 rounded hover:bg-[#21262d] cursor-pointer text-xs font-mono select-none">
+              <input 
+                type="checkbox" 
+                class="cat-filter-checkbox rounded bg-[#0d1117] border-[#30363d] text-[#e84a5f] focus:ring-0 focus:ring-offset-0" 
+                data-cat={cat.id} 
+                checked 
+              />
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style={`background-color: ${cat.color};`}></span>
+              <span class="text-[#c9d1d9] truncate text-[11px]">{cat.label}</span>
+              <span class="text-[10px] text-[#8b949e] ml-auto">{cat.files.length}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <!-- Selected Node Inspector Card -->
+      <div id="graph-inspector-card" class="mt-auto border border-[#30363d] rounded-xl p-3.5 bg-[#21262d] space-y-2.5 hidden">
+        <div class="flex items-center justify-between">
+          <span id="inspect-id" class="px-2 py-0.5 rounded bg-[#0d1117] text-[#e84a5f] font-mono text-xs font-bold border border-[#30363d]">00</span>
+          <span id="inspect-category" class="text-[10px] font-mono px-2 py-0.5 rounded text-[#c9d1d9]">Category</span>
+        </div>
+        <h3 id="inspect-title" class="text-xs font-bold text-[#f0f6fc] line-clamp-2 font-sans">Title</h3>
+        <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-[#8b949e] py-1 border-y border-[#30363d]">
+          <div>Inbound: <span id="inspect-refs-in" class="text-[#10b981] font-bold">0</span></div>
+          <div>Outbound: <span id="inspect-refs-out" class="text-[#00b4d8] font-bold">0</span></div>
+        </div>
+        <a 
+          id="inspect-link" 
+          href="#" 
+          class="block w-full py-2 text-center text-xs font-mono font-bold rounded-lg bg-[#e84a5f] hover:bg-[#e84a5f]/80 text-white transition-colors"
+        >
+          Buka Modul Dokumentasi →
+        </a>
+      </div>
+
+      <!-- View Controls -->
+      <div class="flex items-center gap-2 pt-2 border-t border-[#30363d]">
+        <button 
+          type="button" 
+          id="btn-fit-view" 
+          class="flex-1 py-1.5 text-[11px] font-mono bg-[#21262d] border border-[#30363d] hover:border-[#8b949e] rounded-lg text-[#c9d1d9] transition-colors"
+        >
+          Fit Screen
+        </button>
+        <button 
+          type="button" 
+          id="btn-relayout" 
+          class="flex-1 py-1.5 text-[11px] font-mono bg-[#21262d] border border-[#30363d] hover:border-[#8b949e] rounded-lg text-[#c9d1d9] transition-colors"
+        >
+          Re-layout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Cytoscape Graph Canvas -->
+    <div class="relative flex-1 h-full w-full">
+      <div id="cy" class="w-full h-full bg-[#0d1117]"></div>
+
+      <!-- Zoom Controls Floating Panel -->
+      <div class="absolute bottom-6 right-6 z-20 flex flex-col gap-1.5 bg-[#161b22] border border-[#30363d] rounded-lg p-1 shadow-xl">
+        <button id="btn-zoom-in" class="w-8 h-8 flex items-center justify-center text-[#c9d1d9] hover:text-white hover:bg-[#21262d] rounded text-base font-mono" title="Zoom In">+</button>
+        <button id="btn-zoom-out" class="w-8 h-8 flex items-center justify-center text-[#c9d1d9] hover:text-white hover:bg-[#21262d] rounded text-base font-mono" title="Zoom Out">-</button>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<!-- Load Cytoscape.js from CDN as requested -->
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+
+<script define:vars={{ graph: enhancedGraph }}>
+  let cy;
+  const cyContainer = document.getElementById('cy');
+  const searchInput = document.getElementById('graph-node-search');
+  const inspector = document.getElementById('graph-inspector-card');
+  const inspectId = document.getElementById('inspect-id');
+  const inspectCategory = document.getElementById('inspect-category');
+  const inspectTitle = document.getElementById('inspect-title');
+  const inspectRefsIn = document.getElementById('inspect-refs-in');
+  const inspectRefsOut = document.getElementById('inspect-refs-out');
+  const inspectLink = document.getElementById('inspect-link');
+
+  function initCytoscape() {
+    if (!window.cytoscape || !cyContainer) return;
+
+    cy = window.cytoscape({
+      container: cyContainer,
+      elements: graph,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'label': 'data(label)',
+            'color': '#c9d1d9',
+            'font-family': 'JetBrains Mono, monospace',
+            'font-size': '10px',
+            'text-valign': 'bottom',
+            'text-margin-y': 4,
+            'background-color': 'data(displayColor)',
+            // Node size proportional to incoming refs (in-degree)
+            'width': 'mapData(refsInCount, 0, 35, 18, 50)',
+            'height': 'mapData(refsInCount, 0, 35, 18, 50)',
+            'border-width': 1.5,
+            'border-color': '#ffffff',
+            'border-opacity': 0.3,
+            'text-outline-color': '#0d1117',
+            'text-outline-width': 2,
+            'transition-property': 'background-color, line-color, target-arrow-color, width, height, opacity',
+            'transition-duration': '0.2s'
+          }
+        },
+        // Highlight Hub Nodes (63_password_cracking, 64_pivoting) 2x size + red accent
+        {
+          selector: 'node[isHub = "true"]',
+          style: {
+            'background-color': '#e84a5f',
+            'width': 65,
+            'height': 65,
+            'border-width': 3,
+            'border-color': '#ffffff',
+            'border-opacity': 0.9,
+            'font-size': '12px',
+            'font-weight': 'bold',
+            'color': '#f0f6fc',
+            'z-index': 100
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 1.2,
+            'line-color': '#30363d',
+            'target-arrow-color': '#484f58',
+            'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier',
+            'arrow-scale': 0.7,
+            'opacity': 0.6
+          }
+        },
+        {
+          selector: 'edge.highlighted',
+          style: {
+            'line-color': '#00b4d8',
+            'target-arrow-color': '#00b4d8',
+            'width': 2.5,
+            'opacity': 1,
+            'z-index': 99
+          }
+        },
+        {
+          selector: 'node.highlighted',
+          style: {
+            'border-color': '#00b4d8',
+            'border-width': 4,
+            'border-opacity': 1
+          }
+        },
+        {
+          selector: 'node.dimmed',
+          style: {
+            'opacity': 0.15
+          }
+        },
+        {
+          selector: 'edge.dimmed',
+          style: {
+            'opacity': 0.05
+          }
+        }
+      ],
+      layout: {
+        name: 'cose',
+        idealEdgeLength: 90,
+        nodeOverlap: 25,
+        refresh: 20,
+        fit: true,
+        padding: 40,
+        randomize: false,
+        componentSpacing: 110,
+        nodeRepulsion: 450000,
+        edgeElasticity: 100,
+        nestingFactor: 5,
+        gravity: 70,
+        numIter: 1000
+      }
+    });
+
+    // Tap node: show inspector card, highlight connections
+    cy.on('tap', 'node', function (evt) {
+      const node = evt.target;
+      const data = node.data();
+
+      // Show inspector
+      if (inspector) {
+        inspector.classList.remove('hidden');
+        if (inspectId) inspectId.textContent = data.id;
+        if (inspectCategory) {
+          inspectCategory.textContent = data.categoryLabel;
+          inspectCategory.style.backgroundColor = data.color + '22';
+          inspectCategory.style.color = data.color;
+        }
+        if (inspectTitle) inspectTitle.textContent = data.title;
+        if (inspectRefsIn) inspectRefsIn.textContent = data.refsInCount;
+        if (inspectRefsOut) inspectRefsOut.textContent = data.refsOutCount;
+        if (inspectLink) inspectLink.href = `/docs/${data.slug}`;
+      }
+
+      // Highlight connected edges & neighbors
+      cy.elements().removeClass('highlighted dimmed');
+      const connectedEdges = node.connectedEdges();
+      const connectedNodes = connectedEdges.connectedNodes();
+
+      cy.elements().addClass('dimmed');
+      node.removeClass('dimmed').addClass('highlighted');
+      connectedEdges.removeClass('dimmed').addClass('highlighted');
+      connectedNodes.removeClass('dimmed');
+    });
+
+    // Double tap / double click node: navigate directly to documentation page
+    cy.on('dbltap', 'node', function (evt) {
+      const data = evt.target.data();
+      if (data && data.slug) {
+        window.location.href = `/docs/${data.slug}`;
+      }
+    });
+
+    // Tap canvas background: reset highlight
+    cy.on('tap', function (evt) {
+      if (evt.target === cy) {
+        cy.elements().removeClass('highlighted dimmed');
+      }
+    });
+
+    // Category checkbox filters
+    const catCheckboxes = document.querySelectorAll('.cat-filter-checkbox');
+    catCheckboxes.forEach(cb => {
+      cb.addEventListener('change', updateCategoryFilters);
+    });
+
+    function updateCategoryFilters() {
+      const activeCats = Array.from(catCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.getAttribute('data-cat'));
+
+      cy.elements().hide();
+      activeCats.forEach(cat => {
+        cy.nodes(`[category = "${cat}"]`).show();
+        cy.nodes(`[category = "${cat}"]`).connectedEdges().show();
+      });
+    }
+
+    // Toggle all categories button
+    document.getElementById('btn-toggle-all-cats')?.addEventListener('click', () => {
+      const anyUnchecked = Array.from(catCheckboxes).some(cb => !cb.checked);
+      catCheckboxes.forEach(cb => { cb.checked = anyUnchecked; });
+      updateCategoryFilters();
+    });
+
+    // Search input in graph
+    searchInput?.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        cy.elements().removeClass('highlighted dimmed');
+        return;
+      }
+      cy.elements().addClass('dimmed');
+      const matches = cy.nodes().filter(n => {
+        const d = n.data();
+        return d.label.toLowerCase().includes(q) || 
+               d.title.toLowerCase().includes(q) || 
+               d.id.toLowerCase() === q;
+      });
+      matches.removeClass('dimmed').addClass('highlighted');
+      if (matches.length > 0) {
+        cy.center(matches);
+      }
+    });
+
+    // Zoom & View controls
+    document.getElementById('btn-fit-view')?.addEventListener('click', () => cy.fit(undefined, 30));
+    document.getElementById('btn-zoom-in')?.addEventListener('click', () => cy.zoom(cy.zoom() * 1.3));
+    document.getElementById('btn-zoom-out')?.addEventListener('click', () => cy.zoom(cy.zoom() * 0.75));
+    document.getElementById('btn-relayout')?.addEventListener('click', () => {
+      cy.layout({ name: 'cose', animate: true }).run();
+    });
+  }
+
+  // Initialize once DOM and script are loaded
+  if (document.readyState === 'complete') {
+    initCytoscape();
+  } else {
+    window.addEventListener('load', initCytoscape);
+  }
+</script>

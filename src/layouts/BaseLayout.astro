@@ -1,0 +1,53 @@
+---
+import Header from '../components/Header.astro';
+import SearchModal from '../components/SearchModal.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  currentPath?: string;
+}
+
+const {
+  title = 'Cyber Security Wiki — Pentest Master Knowledge Base',
+  description = 'Dokumentasi pentest, exploit workflows, active directory, binary reversing, cryptography, dan privilege escalation.',
+  currentPath = Astro.url.pathname
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="id" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <title>{title}</title>
+    
+    <!-- Theme initialisation script: Default to dark mode, persists to localStorage -->
+    <script is:inline>
+      (function() {
+        const storedTheme = localStorage.getItem('theme');
+        const theme = storedTheme ? storedTheme : 'dark';
+        if (theme === 'light') {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.classList.add('light');
+        } else {
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col bg-[#0d1117] text-[#c9d1d9] selection:bg-[#e84a5f]/30 selection:text-[#f0f6fc]">
+    <Header currentPath={currentPath} />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <SearchModal />
+  </body>
+</html>

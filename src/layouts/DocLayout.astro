@@ -1,0 +1,108 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Backlinks from '../components/Backlinks.astro';
+import MermaidRenderer from '../components/MermaidRenderer.astro';
+
+interface Props {
+  id: string;
+  title: string;
+  category: string;
+  slug: string;
+  refs_out: string[];
+  refs_in: string[];
+  filename?: string;
+  headings?: { depth: number; slug: string; text: string }[];
+}
+
+const {
+  id,
+  title,
+  category,
+  slug,
+  refs_out = [],
+  refs_in = [],
+  filename = '',
+  headings = []
+} = Astro.props;
+
+// Filter headings for mini table of contents
+const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3).slice(0, 15);
+---
+
+<BaseLayout title={`${id}. ${title} | Cyber Security Wiki`} currentPath={`/docs/${slug}`}>
+  <div class="flex max-w-7xl mx-auto w-full">
+    <!-- Left Navigation Sidebar -->
+    <Sidebar currentSlug={slug} />
+
+    <!-- Center Content -->
+    <div class="flex-1 min-w-0 px-4 sm:px-8 py-8 lg:px-12">
+      <!-- Breadcrumb / Header Metadata -->
+      <div class="mb-6 pb-6 border-b border-cyber-border space-y-3">
+        <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <a href="/" class="text-slate-400 hover:text-slate-200">Wiki</a>
+          <span class="text-slate-600">/</span>
+          <span class="text-cyber-accent font-semibold">{category}</span>
+          <span class="text-slate-600">/</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800 text-cyber-neon border border-slate-700 font-bold">
+            MOD-{id}
+          </span>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+          {title}
+        </h1>
+
+        <div class="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400 pt-1">
+          {filename && (
+            <div class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span>{filename}</span>
+            </div>
+          )}
+          <div class="flex items-center gap-3">
+            <span class="text-slate-400">
+              Inbound: <strong class="text-cyber-neon">{refs_in.length}</strong>
+            </span>
+            <span class="text-slate-400">
+              Outbound: <strong class="text-cyber-accent">{refs_out.length}</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Prose Document Body -->
+      <article class="prose prose-invert prose-slate max-w-none">
+        <slot />
+      </article>
+
+      <!-- Backlinks & Reference Network -->
+      <Backlinks refsIn={refs_in} refsOut={refs_out} />
+    </div>
+
+    <!-- Right mini Table of Contents on extra large screens -->
+    {tocHeadings.length > 0 && (
+      <aside class="hidden xl:block w-64 flex-shrink-0 p-6 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+        <span class="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold block mb-3">
+          On This Page
+        </span>
+        <ul class="space-y-1.5 text-xs font-sans border-l border-cyber-border/60 pl-3">
+          {tocHeadings.map(h => (
+            <li class={h.depth === 3 ? 'pl-2 text-slate-400' : 'text-slate-300 font-medium'}>
+              <a 
+                href={`#${h.slug}`} 
+                class="hover:text-cyber-accent transition-colors block truncate"
+              >
+                {h.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </aside>
+    )}
+  </div>
+
+  <MermaidRenderer />
+</BaseLayout>

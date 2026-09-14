@@ -1,0 +1,5081 @@
+{
+  "nodes": [
+    {
+      "data": {
+        "id": "01",
+        "label": "01. mindset-dan-metodologi",
+        "title": "01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental",
+        "category": "fondasi",
+        "categoryLabel": "1. Fondasi",
+        "color": "#10B981",
+        "slug": "mindset-dan-metodologi",
+        "refsInCount": 12,
+        "refsOutCount": 1,
+        "degree": 13
+      }
+    },
+    {
+      "data": {
+        "id": "02",
+        "label": "02. parrot-os-setup-dan-tools",
+        "title": "02. Parrot OS Setup, Tools Ecosystem, dan Workspace Optimization",
+        "category": "fondasi",
+        "categoryLabel": "1. Fondasi",
+        "color": "#10B981",
+        "slug": "parrot-os-setup-dan-tools",
+        "refsInCount": 2,
+        "refsOutCount": 2,
+        "degree": 4
+      }
+    },
+    {
+      "data": {
+        "id": "03",
+        "label": "03. nmap-master",
+        "title": "03. Nmap Master Workflow & Network Scanning — Panduan Komprehensif",
+        "category": "fondasi",
+        "categoryLabel": "1. Fondasi",
+        "color": "#10B981",
+        "slug": "nmap-master",
+        "refsInCount": 11,
+        "refsOutCount": 3,
+        "degree": 14
+      }
+    },
+    {
+      "data": {
+        "id": "04",
+        "label": "04. service-identification-decision-tree",
+        "title": "04. Service Identification & Master Decision Tree — Pentest GPS Navigator",
+        "category": "fondasi",
+        "categoryLabel": "1. Fondasi",
+        "color": "#10B981",
+        "slug": "service-identification-decision-tree",
+        "refsInCount": 5,
+        "refsOutCount": 27,
+        "degree": 32
+      }
+    },
+    {
+      "data": {
+        "id": "05",
+        "label": "05. smb-samba",
+        "title": "05. SMB & Samba Exploitation Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "smb-samba",
+        "refsInCount": 34,
+        "refsOutCount": 14,
+        "degree": 48
+      }
+    },
+    {
+      "data": {
+        "id": "06",
+        "label": "06. ssh",
+        "title": "06. SSH Exploitation & Tunneling Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "ssh",
+        "refsInCount": 40,
+        "refsOutCount": 12,
+        "degree": 52
+      }
+    },
+    {
+      "data": {
+        "id": "07",
+        "label": "07. ftp",
+        "title": "07. FTP & FTPS Exploitation Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "ftp",
+        "refsInCount": 18,
+        "refsOutCount": 8,
+        "degree": 26
+      }
+    },
+    {
+      "data": {
+        "id": "08",
+        "label": "08. smtp",
+        "title": "08. SMTP Exploitation & User Enumeration Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "smtp",
+        "refsInCount": 5,
+        "refsOutCount": 10,
+        "degree": 15
+      }
+    },
+    {
+      "data": {
+        "id": "09",
+        "label": "09. dns",
+        "title": "09. DNS Enumeration & Reconnaissance Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "dns",
+        "refsInCount": 3,
+        "refsOutCount": 13,
+        "degree": 16
+      }
+    },
+    {
+      "data": {
+        "id": "10",
+        "label": "10. snmp",
+        "title": "10. SNMP Enumeration & Information Gathering Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "snmp",
+        "refsInCount": 2,
+        "refsOutCount": 10,
+        "degree": 12
+      }
+    },
+    {
+      "data": {
+        "id": "11",
+        "label": "11. ldap",
+        "title": "11_ldap_workflow.md — Pentest Workflow: LDAP & Active Directory Enumeration",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "ldap",
+        "refsInCount": 11,
+        "refsOutCount": 9,
+        "degree": 20
+      }
+    },
+    {
+      "data": {
+        "id": "12",
+        "label": "12. rdp",
+        "title": "12. RDP Exploitation & Remote Desktop Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "rdp",
+        "refsInCount": 14,
+        "refsOutCount": 9,
+        "degree": 23
+      }
+    },
+    {
+      "data": {
+        "id": "13",
+        "label": "13. nfs",
+        "title": "13. NFS Exploitation & Network File System Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "nfs",
+        "refsInCount": 3,
+        "refsOutCount": 6,
+        "degree": 9
+      }
+    },
+    {
+      "data": {
+        "id": "14a",
+        "label": "14a. mysql",
+        "title": "14a. MySQL & MariaDB Exploitation Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "mysql",
+        "refsInCount": 32,
+        "refsOutCount": 9,
+        "degree": 41
+      }
+    },
+    {
+      "data": {
+        "id": "14b",
+        "label": "14b. mssql",
+        "title": "Pentest Workflow: Microsoft SQL Server (MSSQL) Exploitation",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "mssql",
+        "refsInCount": 20,
+        "refsOutCount": 10,
+        "degree": 30
+      }
+    },
+    {
+      "data": {
+        "id": "14c",
+        "label": "14c. postgresql",
+        "title": "14c. PostgreSQL Exploitation Workflow — Master Field Guide",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "postgresql",
+        "refsInCount": 10,
+        "refsOutCount": 11,
+        "degree": 21
+      }
+    },
+    {
+      "data": {
+        "id": "14d",
+        "label": "14d. redis-and-mongodb",
+        "title": "📦 BAGIAN 1: REDIS & NOSQL FUNDAMENTALS",
+        "category": "network",
+        "categoryLabel": "2. Network Services",
+        "color": "#3B8BD4",
+        "slug": "redis-and-mongodb",
+        "refsInCount": 6,
+        "refsOutCount": 9,
+        "degree": 15
+      }
+    },
+    {
+      "data": {
+        "id": "15",
+        "label": "15. web-recon",
+        "title": "15. Web Reconnaissance & Enumeration Workflow — Master Field Guide",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "web-recon",
+        "refsInCount": 13,
+        "refsOutCount": 16,
+        "degree": 29
+      }
+    },
+    {
+      "data": {
+        "id": "16",
+        "label": "16. directory-vhost-fuzzing",
+        "title": "16. Directory & Virtual Host (VHost) Fuzzing Workflow — Master Field Guide",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "directory-vhost-fuzzing",
+        "refsInCount": 4,
+        "refsOutCount": 7,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "17a",
+        "label": "17a. wordpress",
+        "title": "🛡️ 17a. WordPress Advanced Exploitation & Workflow Guide",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "wordpress",
+        "refsInCount": 9,
+        "refsOutCount": 7,
+        "degree": 16
+      }
+    },
+    {
+      "data": {
+        "id": "17b",
+        "label": "17b. joomla",
+        "title": "📘 17b — Joomla Workflow: Deep Dive untuk CTF",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "joomla",
+        "refsInCount": 5,
+        "refsOutCount": 8,
+        "degree": 13
+      }
+    },
+    {
+      "data": {
+        "id": "17c",
+        "label": "17c. drupal-cms",
+        "title": "💧 File 17c: Drupal Pentesting & Exploitation Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "drupal-cms",
+        "refsInCount": 5,
+        "refsOutCount": 8,
+        "degree": 13
+      }
+    },
+    {
+      "data": {
+        "id": "17d",
+        "label": "17d. other-cms",
+        "title": "🌐 File 17d: Other CMS Exploitation Workflow & Master CMS Reference",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "other-cms",
+        "refsInCount": 1,
+        "refsOutCount": 4,
+        "degree": 5
+      }
+    },
+    {
+      "data": {
+        "id": "17",
+        "label": "17. cms-detection",
+        "title": "🌐 File 17: CMS Detection, Fingerprinting & Exploitation Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "cms-detection",
+        "refsInCount": 2,
+        "refsOutCount": 8,
+        "degree": 10
+      }
+    },
+    {
+      "data": {
+        "id": "18",
+        "label": "18. authentication-bypass",
+        "title": "🔐 18 — Authentication Bypass Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "authentication-bypass",
+        "refsInCount": 6,
+        "refsOutCount": 5,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "19",
+        "label": "19. sql-injection",
+        "title": "💉 19 — SQL Injection Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "sql-injection",
+        "refsInCount": 6,
+        "refsOutCount": 9,
+        "degree": 15
+      }
+    },
+    {
+      "data": {
+        "id": "20",
+        "label": "20. xss",
+        "title": "🔥 20 — XSS Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "xss",
+        "refsInCount": 6,
+        "refsOutCount": 8,
+        "degree": 14
+      }
+    },
+    {
+      "data": {
+        "id": "21",
+        "label": "21. xxe",
+        "title": "🧬 21 — XXE Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "xxe",
+        "refsInCount": 3,
+        "refsOutCount": 8,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "22",
+        "label": "22. ssrf",
+        "title": "🌐 22 — SSRF Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "ssrf",
+        "refsInCount": 8,
+        "refsOutCount": 11,
+        "degree": 19
+      }
+    },
+    {
+      "data": {
+        "id": "23",
+        "label": "23. ssti",
+        "title": "Workflow 23 â€” Server-Side Template Injection (SSTI)",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "ssti",
+        "refsInCount": 6,
+        "refsOutCount": 7,
+        "degree": 13
+      }
+    },
+    {
+      "data": {
+        "id": "24",
+        "label": "24. lfi-rfi",
+        "title": "Workflow 24 — LFI / RFI",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "lfi-rfi",
+        "refsInCount": 4,
+        "refsOutCount": 11,
+        "degree": 15
+      }
+    },
+    {
+      "data": {
+        "id": "25",
+        "label": "25. file-upload",
+        "title": "25 — File Upload Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "file-upload",
+        "refsInCount": 8,
+        "refsOutCount": 7,
+        "degree": 15
+      }
+    },
+    {
+      "data": {
+        "id": "26",
+        "label": "26. command-injection",
+        "title": "🖥️ 26 — Command Injection Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "command-injection",
+        "refsInCount": 4,
+        "refsOutCount": 11,
+        "degree": 15
+      }
+    },
+    {
+      "data": {
+        "id": "27",
+        "label": "27. idor-access-control",
+        "title": "🔐 27 — IDOR / Access Control Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "idor-access-control",
+        "refsInCount": 5,
+        "refsOutCount": 9,
+        "degree": 14
+      }
+    },
+    {
+      "data": {
+        "id": "28",
+        "label": "28. jwt",
+        "title": "🔐 28 — JWT Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "jwt",
+        "refsInCount": 9,
+        "refsOutCount": 7,
+        "degree": 16
+      }
+    },
+    {
+      "data": {
+        "id": "29",
+        "label": "29. csrf",
+        "title": "🛡️ 29 — CSRF Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "csrf",
+        "refsInCount": 5,
+        "refsOutCount": 4,
+        "degree": 9
+      }
+    },
+    {
+      "data": {
+        "id": "30",
+        "label": "30. api-security",
+        "title": "🔌 30 — API Security Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "api-security",
+        "refsInCount": 9,
+        "refsOutCount": 9,
+        "degree": 18
+      }
+    },
+    {
+      "data": {
+        "id": "31",
+        "label": "31. http-smuggling",
+        "title": "🧨 31 — HTTP Request Smuggling Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "http-smuggling",
+        "refsInCount": 2,
+        "refsOutCount": 7,
+        "degree": 9
+      }
+    },
+    {
+      "data": {
+        "id": "32",
+        "label": "32. deserialization",
+        "title": "32 — Deserialization Workflow 🔐",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "deserialization",
+        "refsInCount": 3,
+        "refsOutCount": 8,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "33",
+        "label": "33. cors",
+        "title": "33 — CORS Workflow 🌐",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "cors",
+        "refsInCount": 4,
+        "refsOutCount": 7,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "34",
+        "label": "34. oauth-sso",
+        "title": "🔐 34 — OAuth & SSO Workflow",
+        "category": "web",
+        "categoryLabel": "3. Web Exploitation",
+        "color": "#F59E0B",
+        "slug": "oauth-sso",
+        "refsInCount": 4,
+        "refsOutCount": 6,
+        "degree": 10
+      }
+    },
+    {
+      "data": {
+        "id": "35",
+        "label": "35. ad-initial-enumeration",
+        "title": "🏰 35 — Active Directory Initial Enumeration Workflow",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "ad-initial-enumeration",
+        "refsInCount": 20,
+        "refsOutCount": 13,
+        "degree": 33
+      }
+    },
+    {
+      "data": {
+        "id": "36",
+        "label": "36. ad-bloodhound",
+        "title": "🩸 36 — Active Directory BloodHound Workflow",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "ad-bloodhound",
+        "refsInCount": 8,
+        "refsOutCount": 11,
+        "degree": 19
+      }
+    },
+    {
+      "data": {
+        "id": "37",
+        "label": "37. kerberoasting-asreproasting",
+        "title": "🔥 Workflow 37 — Kerberoasting & AS-REP Roasting",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "kerberoasting-asreproasting",
+        "refsInCount": 14,
+        "refsOutCount": 12,
+        "degree": 26
+      }
+    },
+    {
+      "data": {
+        "id": "38",
+        "label": "38. ad-acl-abuse",
+        "title": "🔐 File 38 — Active Directory ACL Abuse Workflow",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "ad-acl-abuse",
+        "refsInCount": 8,
+        "refsOutCount": 3,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "39",
+        "label": "39. ad-delegation",
+        "title": "🔐 Workflow 39 — Active Directory Delegation",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "ad-delegation",
+        "refsInCount": 4,
+        "refsOutCount": 8,
+        "degree": 12
+      }
+    },
+    {
+      "data": {
+        "id": "40",
+        "label": "40. adcs",
+        "title": "🔐 Workflow 40 — Active Directory Certificate Services (AD CS)",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "adcs",
+        "refsInCount": 3,
+        "refsOutCount": 5,
+        "degree": 8
+      }
+    },
+    {
+      "data": {
+        "id": "41",
+        "label": "41. ntlm-relay",
+        "title": "🔁 Workflow 41 — NTLM Relay",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "ntlm-relay",
+        "refsInCount": 7,
+        "refsOutCount": 11,
+        "degree": 18
+      }
+    },
+    {
+      "data": {
+        "id": "42",
+        "label": "42. lateral-movement",
+        "title": "🧭 Workflow 42 — Lateral Movement",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "lateral-movement",
+        "refsInCount": 15,
+        "refsOutCount": 15,
+        "degree": 30
+      }
+    },
+    {
+      "data": {
+        "id": "43",
+        "label": "43. domain-persistence",
+        "title": "🔐 Workflow 43 — Domain Persistence",
+        "category": "ad",
+        "categoryLabel": "4. Active Directory",
+        "color": "#EF4444",
+        "slug": "domain-persistence",
+        "refsInCount": 11,
+        "refsOutCount": 7,
+        "degree": 18
+      }
+    },
+    {
+      "data": {
+        "id": "44",
+        "label": "44. linux-privesc",
+        "title": "🐧 44 — Linux Privilege Escalation Workflow",
+        "category": "privesc",
+        "categoryLabel": "5. Privilege Escalation",
+        "color": "#8B5CF6",
+        "slug": "linux-privesc",
+        "refsInCount": 24,
+        "refsOutCount": 9,
+        "degree": 33
+      }
+    },
+    {
+      "data": {
+        "id": "45",
+        "label": "45. windows-privesc",
+        "title": "🪟 45 — Windows Privilege Escalation Workflow",
+        "category": "privesc",
+        "categoryLabel": "5. Privilege Escalation",
+        "color": "#8B5CF6",
+        "slug": "windows-privesc",
+        "refsInCount": 19,
+        "refsOutCount": 6,
+        "degree": 25
+      }
+    },
+    {
+      "data": {
+        "id": "46",
+        "label": "46. token-impersonation",
+        "title": "🎫 46 — Token Impersonation Workflow",
+        "category": "privesc",
+        "categoryLabel": "5. Privilege Escalation",
+        "color": "#8B5CF6",
+        "slug": "token-impersonation",
+        "refsInCount": 4,
+        "refsOutCount": 12,
+        "degree": 16
+      }
+    },
+    {
+      "data": {
+        "id": "47",
+        "label": "47. sudo-suid-capabilities",
+        "title": "🐧 47 — Sudo, SUID & Capabilities Workflow",
+        "category": "privesc",
+        "categoryLabel": "5. Privilege Escalation",
+        "color": "#8B5CF6",
+        "slug": "sudo-suid-capabilities",
+        "refsInCount": 7,
+        "refsOutCount": 6,
+        "degree": 13
+      }
+    },
+    {
+      "data": {
+        "id": "48",
+        "label": "48. binary-analysis",
+        "title": "🔬 48 — Binary Analysis Workflow",
+        "category": "binary",
+        "categoryLabel": "6. Binary & Reversing",
+        "color": "#EC4899",
+        "slug": "binary-analysis",
+        "refsInCount": 6,
+        "refsOutCount": 5,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "49",
+        "label": "49. buffer-overflow",
+        "title": "💥 49 — Buffer Overflow Workflow",
+        "category": "binary",
+        "categoryLabel": "6. Binary & Reversing",
+        "color": "#EC4899",
+        "slug": "buffer-overflow",
+        "refsInCount": 3,
+        "refsOutCount": 5,
+        "degree": 8
+      }
+    },
+    {
+      "data": {
+        "id": "50",
+        "label": "50. rop-chain",
+        "title": "🔗 50 — ROP Chain Workflow",
+        "category": "binary",
+        "categoryLabel": "6. Binary & Reversing",
+        "color": "#EC4899",
+        "slug": "rop-chain",
+        "refsInCount": 3,
+        "refsOutCount": 5,
+        "degree": 8
+      }
+    },
+    {
+      "data": {
+        "id": "51",
+        "label": "51. reverse-engineering",
+        "title": "🧭 BAGIAN 0: FONDASI REVERSE ENGINEERING",
+        "category": "binary",
+        "categoryLabel": "6. Binary & Reversing",
+        "color": "#EC4899",
+        "slug": "reverse-engineering",
+        "refsInCount": 5,
+        "refsOutCount": 0,
+        "degree": 5
+      }
+    },
+    {
+      "data": {
+        "id": "52",
+        "label": "52. ctf-binary-patterns",
+        "title": "🧩 File 52 — CTF Binary Patterns",
+        "category": "binary",
+        "categoryLabel": "6. Binary & Reversing",
+        "color": "#EC4899",
+        "slug": "ctf-binary-patterns",
+        "refsInCount": 2,
+        "refsOutCount": 5,
+        "degree": 7
+      }
+    },
+    {
+      "data": {
+        "id": "53",
+        "label": "53. crypto-identification",
+        "title": "🧭 BAGIAN 0: FONDASI CRYPTO CTF",
+        "category": "crypto_forensics",
+        "categoryLabel": "7. Cryptography & Forensics",
+        "color": "#06B6D4",
+        "slug": "crypto-identification",
+        "refsInCount": 4,
+        "refsOutCount": 7,
+        "degree": 11
+      }
+    },
+    {
+      "data": {
+        "id": "54",
+        "label": "54. hash-cracking",
+        "title": "🔐 File 54 — Hash Cracking Workflow",
+        "category": "crypto_forensics",
+        "categoryLabel": "7. Cryptography & Forensics",
+        "color": "#06B6D4",
+        "slug": "hash-cracking",
+        "refsInCount": 5,
+        "refsOutCount": 9,
+        "degree": 14
+      }
+    },
+    {
+      "data": {
+        "id": "55",
+        "label": "55. forensics",
+        "title": "🧭 BAGIAN 0: FONDASI FORENSICS",
+        "category": "crypto_forensics",
+        "categoryLabel": "7. Cryptography & Forensics",
+        "color": "#06B6D4",
+        "slug": "forensics",
+        "refsInCount": 6,
+        "refsOutCount": 6,
+        "degree": 12
+      }
+    },
+    {
+      "data": {
+        "id": "56",
+        "label": "56. steganography",
+        "title": "🏛️ Bagian 0: Fondasi Steganography",
+        "category": "crypto_forensics",
+        "categoryLabel": "7. Cryptography & Forensics",
+        "color": "#06B6D4",
+        "slug": "steganography",
+        "refsInCount": 2,
+        "refsOutCount": 5,
+        "degree": 7
+      }
+    },
+    {
+      "data": {
+        "id": "57",
+        "label": "57. pcap-analysis",
+        "title": "🏛️ Bagian 0: Fondasi PCAP Analysis",
+        "category": "crypto_forensics",
+        "categoryLabel": "7. Cryptography & Forensics",
+        "color": "#06B6D4",
+        "slug": "pcap-analysis",
+        "refsInCount": 5,
+        "refsOutCount": 5,
+        "degree": 10
+      }
+    },
+    {
+      "data": {
+        "id": "58",
+        "label": "58. memory-forensics",
+        "title": "🧠 Bagian 0: Fondasi Memory Forensics",
+        "category": "crypto_forensics",
+        "categoryLabel": "7. Cryptography & Forensics",
+        "color": "#06B6D4",
+        "slug": "memory-forensics",
+        "refsInCount": 5,
+        "refsOutCount": 5,
+        "degree": 10
+      }
+    },
+    {
+      "data": {
+        "id": "59",
+        "label": "59. cloud-enum",
+        "title": "☁️ Bagian 0: Fondasi Cloud Security",
+        "category": "cloud_mobile",
+        "categoryLabel": "8. Cloud & Mobile",
+        "color": "#6366F1",
+        "slug": "cloud-enum",
+        "refsInCount": 3,
+        "refsOutCount": 4,
+        "degree": 7
+      }
+    },
+    {
+      "data": {
+        "id": "60",
+        "label": "60. aws-pentest",
+        "title": "🚀 Bagian 0: Konteks & Lab Setup",
+        "category": "cloud_mobile",
+        "categoryLabel": "8. Cloud & Mobile",
+        "color": "#6366F1",
+        "slug": "aws-pentest",
+        "refsInCount": 5,
+        "refsOutCount": 4,
+        "degree": 9
+      }
+    },
+    {
+      "data": {
+        "id": "61",
+        "label": "61. android-apk",
+        "title": "⚡ Quick Start Checklist (Untuk Pemula)",
+        "category": "cloud_mobile",
+        "categoryLabel": "8. Cloud & Mobile",
+        "color": "#6366F1",
+        "slug": "android-apk",
+        "refsInCount": 2,
+        "refsOutCount": 10,
+        "degree": 12
+      }
+    },
+    {
+      "data": {
+        "id": "62",
+        "label": "62. osint",
+        "title": "⚡ Quick Start: Urutan Kerja OSINT (Untuk Pemula)",
+        "category": "osint_misc",
+        "categoryLabel": "9. OSINT & Misc",
+        "color": "#14B8A6",
+        "slug": "osint",
+        "refsInCount": 2,
+        "refsOutCount": 12,
+        "degree": 14
+      }
+    },
+    {
+      "data": {
+        "id": "63",
+        "label": "63. password-cracking",
+        "title": "⚡ Quick Start: Urutan Kerja Password Cracking (Untuk Pemula)",
+        "category": "osint_misc",
+        "categoryLabel": "9. OSINT & Misc",
+        "color": "#14B8A6",
+        "slug": "password-cracking",
+        "refsInCount": 6,
+        "refsOutCount": 9,
+        "degree": 15
+      }
+    },
+    {
+      "data": {
+        "id": "64",
+        "label": "64. pivoting-tunneling",
+        "title": "⚡ Quick Start: Urutan Kerja Pivoting (Untuk Pemula)",
+        "category": "osint_misc",
+        "categoryLabel": "9. OSINT & Misc",
+        "color": "#14B8A6",
+        "slug": "pivoting-tunneling",
+        "refsInCount": 12,
+        "refsOutCount": 8,
+        "degree": 20
+      }
+    },
+    {
+      "data": {
+        "id": "65",
+        "label": "65. ctf-general-methodology",
+        "title": "🧭 FILE 65 — CTF GENERAL METHODOLOGY",
+        "category": "osint_misc",
+        "categoryLabel": "9. OSINT & Misc",
+        "color": "#14B8A6",
+        "slug": "ctf-general-methodology",
+        "refsInCount": 0,
+        "refsOutCount": 2,
+        "degree": 2
+      }
+    },
+    {
+      "data": {
+        "id": "00",
+        "label": "Overview",
+        "title": "Cyber Security Overview & Index",
+        "category": "fondasi",
+        "categoryLabel": "1. Fondasi",
+        "color": "#10B981",
+        "slug": "cyber-security",
+        "refsInCount": 0,
+        "refsOutCount": 0,
+        "degree": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "data": {
+        "id": "01->02",
+        "source": "01",
+        "target": "02"
+      }
+    },
+    {
+      "data": {
+        "id": "02->01",
+        "source": "02",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "02->03",
+        "source": "02",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "03->01",
+        "source": "03",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "03->02",
+        "source": "03",
+        "target": "02"
+      }
+    },
+    {
+      "data": {
+        "id": "03->04",
+        "source": "03",
+        "target": "04"
+      }
+    },
+    {
+      "data": {
+        "id": "04->03",
+        "source": "04",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "04->05",
+        "source": "04",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "04->06",
+        "source": "04",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "04->07",
+        "source": "04",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "04->08",
+        "source": "04",
+        "target": "08"
+      }
+    },
+    {
+      "data": {
+        "id": "04->09",
+        "source": "04",
+        "target": "09"
+      }
+    },
+    {
+      "data": {
+        "id": "04->10",
+        "source": "04",
+        "target": "10"
+      }
+    },
+    {
+      "data": {
+        "id": "04->11",
+        "source": "04",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "04->12",
+        "source": "04",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "04->13",
+        "source": "04",
+        "target": "13"
+      }
+    },
+    {
+      "data": {
+        "id": "04->14a",
+        "source": "04",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "04->14b",
+        "source": "04",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "04->14c",
+        "source": "04",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "04->14d",
+        "source": "04",
+        "target": "14d"
+      }
+    },
+    {
+      "data": {
+        "id": "04->15",
+        "source": "04",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "04->16",
+        "source": "04",
+        "target": "16"
+      }
+    },
+    {
+      "data": {
+        "id": "04->23",
+        "source": "04",
+        "target": "23"
+      }
+    },
+    {
+      "data": {
+        "id": "04->25",
+        "source": "04",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "04->26",
+        "source": "04",
+        "target": "26"
+      }
+    },
+    {
+      "data": {
+        "id": "04->30",
+        "source": "04",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "04->32",
+        "source": "04",
+        "target": "32"
+      }
+    },
+    {
+      "data": {
+        "id": "04->35",
+        "source": "04",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "04->42",
+        "source": "04",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "04->44",
+        "source": "04",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "04->45",
+        "source": "04",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "04->59",
+        "source": "04",
+        "target": "59"
+      }
+    },
+    {
+      "data": {
+        "id": "04->63",
+        "source": "04",
+        "target": "63"
+      }
+    },
+    {
+      "data": {
+        "id": "05->03",
+        "source": "05",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "05->04",
+        "source": "05",
+        "target": "04"
+      }
+    },
+    {
+      "data": {
+        "id": "05->06",
+        "source": "05",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "05->07",
+        "source": "05",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "05->08",
+        "source": "05",
+        "target": "08"
+      }
+    },
+    {
+      "data": {
+        "id": "05->11",
+        "source": "05",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "05->12",
+        "source": "05",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "05->14a",
+        "source": "05",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "05->14b",
+        "source": "05",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "05->35",
+        "source": "05",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "05->37",
+        "source": "05",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "05->42",
+        "source": "05",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "05->43",
+        "source": "05",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "05->45",
+        "source": "05",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "06->04",
+        "source": "06",
+        "target": "04"
+      }
+    },
+    {
+      "data": {
+        "id": "06->05",
+        "source": "06",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "06->07",
+        "source": "06",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "06->14a",
+        "source": "06",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "06->14b",
+        "source": "06",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "06->14c",
+        "source": "06",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "06->15",
+        "source": "06",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "06->16",
+        "source": "06",
+        "target": "16"
+      }
+    },
+    {
+      "data": {
+        "id": "06->24",
+        "source": "06",
+        "target": "24"
+      }
+    },
+    {
+      "data": {
+        "id": "06->44",
+        "source": "06",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "06->47",
+        "source": "06",
+        "target": "47"
+      }
+    },
+    {
+      "data": {
+        "id": "06->64",
+        "source": "06",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "07->05",
+        "source": "07",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "07->06",
+        "source": "07",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "07->08",
+        "source": "07",
+        "target": "08"
+      }
+    },
+    {
+      "data": {
+        "id": "07->14a",
+        "source": "07",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "07->14b",
+        "source": "07",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "07->15",
+        "source": "07",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "07->44",
+        "source": "07",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "07->48",
+        "source": "07",
+        "target": "48"
+      }
+    },
+    {
+      "data": {
+        "id": "08->05",
+        "source": "08",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "08->06",
+        "source": "08",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "08->07",
+        "source": "08",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "08->09",
+        "source": "08",
+        "target": "09"
+      }
+    },
+    {
+      "data": {
+        "id": "08->11",
+        "source": "08",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "08->12",
+        "source": "08",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "08->14a",
+        "source": "08",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "08->14b",
+        "source": "08",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "08->35",
+        "source": "08",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "08->45",
+        "source": "08",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "09->03",
+        "source": "09",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "09->04",
+        "source": "09",
+        "target": "04"
+      }
+    },
+    {
+      "data": {
+        "id": "09->05",
+        "source": "09",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "09->06",
+        "source": "09",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "09->07",
+        "source": "09",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "09->08",
+        "source": "09",
+        "target": "08"
+      }
+    },
+    {
+      "data": {
+        "id": "09->10",
+        "source": "09",
+        "target": "10"
+      }
+    },
+    {
+      "data": {
+        "id": "09->11",
+        "source": "09",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "09->13",
+        "source": "09",
+        "target": "13"
+      }
+    },
+    {
+      "data": {
+        "id": "09->15",
+        "source": "09",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "09->16",
+        "source": "09",
+        "target": "16"
+      }
+    },
+    {
+      "data": {
+        "id": "09->35",
+        "source": "09",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "09->37",
+        "source": "09",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "10->03",
+        "source": "10",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "10->04",
+        "source": "10",
+        "target": "04"
+      }
+    },
+    {
+      "data": {
+        "id": "10->05",
+        "source": "10",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "10->06",
+        "source": "10",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "10->08",
+        "source": "10",
+        "target": "08"
+      }
+    },
+    {
+      "data": {
+        "id": "10->09",
+        "source": "10",
+        "target": "09"
+      }
+    },
+    {
+      "data": {
+        "id": "10->11",
+        "source": "10",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "10->14a",
+        "source": "10",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "10->37",
+        "source": "10",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "10->64",
+        "source": "10",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "11->05",
+        "source": "11",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "11->06",
+        "source": "11",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "11->12",
+        "source": "11",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "11->14a",
+        "source": "11",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "11->14b",
+        "source": "11",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "11->35",
+        "source": "11",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "11->36",
+        "source": "11",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "11->39",
+        "source": "11",
+        "target": "39"
+      }
+    },
+    {
+      "data": {
+        "id": "11->45",
+        "source": "11",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "12->03",
+        "source": "12",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "12->05",
+        "source": "12",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "12->06",
+        "source": "12",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "12->11",
+        "source": "12",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "12->13",
+        "source": "12",
+        "target": "13"
+      }
+    },
+    {
+      "data": {
+        "id": "12->35",
+        "source": "12",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "12->43",
+        "source": "12",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "12->45",
+        "source": "12",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "12->64",
+        "source": "12",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "13->01",
+        "source": "13",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "13->03",
+        "source": "13",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "13->06",
+        "source": "13",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "13->14a",
+        "source": "13",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "13->15",
+        "source": "13",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "13->44",
+        "source": "13",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->01",
+        "source": "14a",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->03",
+        "source": "14a",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->05",
+        "source": "14a",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->06",
+        "source": "14a",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->07",
+        "source": "14a",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->12",
+        "source": "14a",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->14b",
+        "source": "14a",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->14c",
+        "source": "14a",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "14a->44",
+        "source": "14a",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->05",
+        "source": "14b",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->06",
+        "source": "14b",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->07",
+        "source": "14b",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->12",
+        "source": "14b",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->14a",
+        "source": "14b",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->14c",
+        "source": "14b",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->35",
+        "source": "14b",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->37",
+        "source": "14b",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->42",
+        "source": "14b",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "14b->45",
+        "source": "14b",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->01",
+        "source": "14c",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->03",
+        "source": "14c",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->05",
+        "source": "14c",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->06",
+        "source": "14c",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->07",
+        "source": "14c",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->14a",
+        "source": "14c",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->14b",
+        "source": "14c",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->14d",
+        "source": "14c",
+        "target": "14d"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->35",
+        "source": "14c",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->44",
+        "source": "14c",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "14c->60",
+        "source": "14c",
+        "target": "60"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->06",
+        "source": "14d",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->07",
+        "source": "14d",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->14a",
+        "source": "14d",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->14c",
+        "source": "14d",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->15",
+        "source": "14d",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->25",
+        "source": "14d",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->35",
+        "source": "14d",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->44",
+        "source": "14d",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->47",
+        "source": "14d",
+        "target": "47"
+      }
+    },
+    {
+      "data": {
+        "id": "15->01",
+        "source": "15",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "15->03",
+        "source": "15",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "15->06",
+        "source": "15",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "15->14d",
+        "source": "15",
+        "target": "14d"
+      }
+    },
+    {
+      "data": {
+        "id": "15->16",
+        "source": "15",
+        "target": "16"
+      }
+    },
+    {
+      "data": {
+        "id": "15->17a",
+        "source": "15",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "15->17b",
+        "source": "15",
+        "target": "17b"
+      }
+    },
+    {
+      "data": {
+        "id": "15->17c",
+        "source": "15",
+        "target": "17c"
+      }
+    },
+    {
+      "data": {
+        "id": "15->18",
+        "source": "15",
+        "target": "18"
+      }
+    },
+    {
+      "data": {
+        "id": "15->19",
+        "source": "15",
+        "target": "19"
+      }
+    },
+    {
+      "data": {
+        "id": "15->22",
+        "source": "15",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "15->23",
+        "source": "15",
+        "target": "23"
+      }
+    },
+    {
+      "data": {
+        "id": "15->24",
+        "source": "15",
+        "target": "24"
+      }
+    },
+    {
+      "data": {
+        "id": "15->25",
+        "source": "15",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "15->26",
+        "source": "15",
+        "target": "26"
+      }
+    },
+    {
+      "data": {
+        "id": "15->30",
+        "source": "15",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "16->01",
+        "source": "16",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "16->03",
+        "source": "16",
+        "target": "03"
+      }
+    },
+    {
+      "data": {
+        "id": "16->15",
+        "source": "16",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "16->17",
+        "source": "16",
+        "target": "17"
+      }
+    },
+    {
+      "data": {
+        "id": "16->17a",
+        "source": "16",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "16->25",
+        "source": "16",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "16->30",
+        "source": "16",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "17a->06",
+        "source": "17a",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "17a->07",
+        "source": "17a",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "17a->14a",
+        "source": "17a",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "17a->15",
+        "source": "17a",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "17a->17",
+        "source": "17a",
+        "target": "17"
+      }
+    },
+    {
+      "data": {
+        "id": "17a->17b",
+        "source": "17a",
+        "target": "17b"
+      }
+    },
+    {
+      "data": {
+        "id": "17a->44",
+        "source": "17a",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->05",
+        "source": "17b",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->06",
+        "source": "17b",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->07",
+        "source": "17b",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->12",
+        "source": "17b",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->14a",
+        "source": "17b",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->17a",
+        "source": "17b",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->17c",
+        "source": "17b",
+        "target": "17c"
+      }
+    },
+    {
+      "data": {
+        "id": "17b->44",
+        "source": "17b",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->05",
+        "source": "17c",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->06",
+        "source": "17c",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->07",
+        "source": "17c",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->12",
+        "source": "17c",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->14a",
+        "source": "17c",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->14c",
+        "source": "17c",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->17d",
+        "source": "17c",
+        "target": "17d"
+      }
+    },
+    {
+      "data": {
+        "id": "17c->44",
+        "source": "17c",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "17d->17a",
+        "source": "17d",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "17d->17b",
+        "source": "17d",
+        "target": "17b"
+      }
+    },
+    {
+      "data": {
+        "id": "17d->17c",
+        "source": "17d",
+        "target": "17c"
+      }
+    },
+    {
+      "data": {
+        "id": "17d->18",
+        "source": "17d",
+        "target": "18"
+      }
+    },
+    {
+      "data": {
+        "id": "17->05",
+        "source": "17",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "17->06",
+        "source": "17",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "17->14a",
+        "source": "17",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "17->17a",
+        "source": "17",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "17->17b",
+        "source": "17",
+        "target": "17b"
+      }
+    },
+    {
+      "data": {
+        "id": "17->17c",
+        "source": "17",
+        "target": "17c"
+      }
+    },
+    {
+      "data": {
+        "id": "17->26",
+        "source": "17",
+        "target": "26"
+      }
+    },
+    {
+      "data": {
+        "id": "17->44",
+        "source": "17",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "18->05",
+        "source": "18",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "18->06",
+        "source": "18",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "18->07",
+        "source": "18",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "18->14a",
+        "source": "18",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "18->19",
+        "source": "18",
+        "target": "19"
+      }
+    },
+    {
+      "data": {
+        "id": "19->05",
+        "source": "19",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "19->06",
+        "source": "19",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "19->07",
+        "source": "19",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "19->14a",
+        "source": "19",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "19->17a",
+        "source": "19",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "19->18",
+        "source": "19",
+        "target": "18"
+      }
+    },
+    {
+      "data": {
+        "id": "19->44",
+        "source": "19",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "19->45",
+        "source": "19",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "19->63",
+        "source": "19",
+        "target": "63"
+      }
+    },
+    {
+      "data": {
+        "id": "20->06",
+        "source": "20",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "20->15",
+        "source": "20",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "20->17a",
+        "source": "20",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "20->19",
+        "source": "20",
+        "target": "19"
+      }
+    },
+    {
+      "data": {
+        "id": "20->21",
+        "source": "20",
+        "target": "21"
+      }
+    },
+    {
+      "data": {
+        "id": "20->22",
+        "source": "20",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "20->27",
+        "source": "20",
+        "target": "27"
+      }
+    },
+    {
+      "data": {
+        "id": "20->64",
+        "source": "20",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "21->06",
+        "source": "21",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "21->14a",
+        "source": "21",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "21->14b",
+        "source": "21",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "21->18",
+        "source": "21",
+        "target": "18"
+      }
+    },
+    {
+      "data": {
+        "id": "21->20",
+        "source": "21",
+        "target": "20"
+      }
+    },
+    {
+      "data": {
+        "id": "21->22",
+        "source": "21",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "21->60",
+        "source": "21",
+        "target": "60"
+      }
+    },
+    {
+      "data": {
+        "id": "21->64",
+        "source": "21",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "22->05",
+        "source": "22",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "22->06",
+        "source": "22",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "22->11",
+        "source": "22",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "22->14a",
+        "source": "22",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "22->14c",
+        "source": "22",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "22->14d",
+        "source": "22",
+        "target": "14d"
+      }
+    },
+    {
+      "data": {
+        "id": "22->21",
+        "source": "22",
+        "target": "21"
+      }
+    },
+    {
+      "data": {
+        "id": "22->23",
+        "source": "22",
+        "target": "23"
+      }
+    },
+    {
+      "data": {
+        "id": "22->35",
+        "source": "22",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "22->42",
+        "source": "22",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "22->60",
+        "source": "22",
+        "target": "60"
+      }
+    },
+    {
+      "data": {
+        "id": "23->06",
+        "source": "23",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "23->14a",
+        "source": "23",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "23->14b",
+        "source": "23",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "23->22",
+        "source": "23",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "23->28",
+        "source": "23",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "23->44",
+        "source": "23",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "23->64",
+        "source": "23",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "24->06",
+        "source": "24",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "24->07",
+        "source": "24",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "24->14a",
+        "source": "24",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "24->14c",
+        "source": "24",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "24->14d",
+        "source": "24",
+        "target": "14d"
+      }
+    },
+    {
+      "data": {
+        "id": "24->17a",
+        "source": "24",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "24->23",
+        "source": "24",
+        "target": "23"
+      }
+    },
+    {
+      "data": {
+        "id": "24->25",
+        "source": "24",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "24->44",
+        "source": "24",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "24->47",
+        "source": "24",
+        "target": "47"
+      }
+    },
+    {
+      "data": {
+        "id": "24->64",
+        "source": "24",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "25->05",
+        "source": "25",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "25->06",
+        "source": "25",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "25->07",
+        "source": "25",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "25->14a",
+        "source": "25",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "25->24",
+        "source": "25",
+        "target": "24"
+      }
+    },
+    {
+      "data": {
+        "id": "25->44",
+        "source": "25",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "25->45",
+        "source": "25",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "26->01",
+        "source": "26",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "26->05",
+        "source": "26",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "26->06",
+        "source": "26",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "26->07",
+        "source": "26",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "26->14a",
+        "source": "26",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "26->14c",
+        "source": "26",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "26->25",
+        "source": "26",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "26->44",
+        "source": "26",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "26->45",
+        "source": "26",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "26->47",
+        "source": "26",
+        "target": "47"
+      }
+    },
+    {
+      "data": {
+        "id": "26->64",
+        "source": "26",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "27->19",
+        "source": "27",
+        "target": "19"
+      }
+    },
+    {
+      "data": {
+        "id": "27->20",
+        "source": "27",
+        "target": "20"
+      }
+    },
+    {
+      "data": {
+        "id": "27->22",
+        "source": "27",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "27->23",
+        "source": "27",
+        "target": "23"
+      }
+    },
+    {
+      "data": {
+        "id": "27->24",
+        "source": "27",
+        "target": "24"
+      }
+    },
+    {
+      "data": {
+        "id": "27->25",
+        "source": "27",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "27->26",
+        "source": "27",
+        "target": "26"
+      }
+    },
+    {
+      "data": {
+        "id": "27->28",
+        "source": "27",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "27->30",
+        "source": "27",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "28->19",
+        "source": "28",
+        "target": "19"
+      }
+    },
+    {
+      "data": {
+        "id": "28->22",
+        "source": "28",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "28->25",
+        "source": "28",
+        "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "28->27",
+        "source": "28",
+        "target": "27"
+      }
+    },
+    {
+      "data": {
+        "id": "28->29",
+        "source": "28",
+        "target": "29"
+      }
+    },
+    {
+      "data": {
+        "id": "28->30",
+        "source": "28",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "28->34",
+        "source": "28",
+        "target": "34"
+      }
+    },
+    {
+      "data": {
+        "id": "29->20",
+        "source": "29",
+        "target": "20"
+      }
+    },
+    {
+      "data": {
+        "id": "29->28",
+        "source": "29",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "29->33",
+        "source": "29",
+        "target": "33"
+      }
+    },
+    {
+      "data": {
+        "id": "29->34",
+        "source": "29",
+        "target": "34"
+      }
+    },
+    {
+      "data": {
+        "id": "30->19",
+        "source": "30",
+        "target": "19"
+      }
+    },
+    {
+      "data": {
+        "id": "30->20",
+        "source": "30",
+        "target": "20"
+      }
+    },
+    {
+      "data": {
+        "id": "30->21",
+        "source": "30",
+        "target": "21"
+      }
+    },
+    {
+      "data": {
+        "id": "30->22",
+        "source": "30",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "30->23",
+        "source": "30",
+        "target": "23"
+      }
+    },
+    {
+      "data": {
+        "id": "30->28",
+        "source": "30",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "30->29",
+        "source": "30",
+        "target": "29"
+      }
+    },
+    {
+      "data": {
+        "id": "30->31",
+        "source": "30",
+        "target": "31"
+      }
+    },
+    {
+      "data": {
+        "id": "30->33",
+        "source": "30",
+        "target": "33"
+      }
+    },
+    {
+      "data": {
+        "id": "31->18",
+        "source": "31",
+        "target": "18"
+      }
+    },
+    {
+      "data": {
+        "id": "31->20",
+        "source": "31",
+        "target": "20"
+      }
+    },
+    {
+      "data": {
+        "id": "31->22",
+        "source": "31",
+        "target": "22"
+      }
+    },
+    {
+      "data": {
+        "id": "31->27",
+        "source": "31",
+        "target": "27"
+      }
+    },
+    {
+      "data": {
+        "id": "31->29",
+        "source": "31",
+        "target": "29"
+      }
+    },
+    {
+      "data": {
+        "id": "31->30",
+        "source": "31",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "31->32",
+        "source": "31",
+        "target": "32"
+      }
+    },
+    {
+      "data": {
+        "id": "32->14a",
+        "source": "32",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "32->14c",
+        "source": "32",
+        "target": "14c"
+      }
+    },
+    {
+      "data": {
+        "id": "32->14d",
+        "source": "32",
+        "target": "14d"
+      }
+    },
+    {
+      "data": {
+        "id": "32->31",
+        "source": "32",
+        "target": "31"
+      }
+    },
+    {
+      "data": {
+        "id": "32->33",
+        "source": "32",
+        "target": "33"
+      }
+    },
+    {
+      "data": {
+        "id": "32->35",
+        "source": "32",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "32->44",
+        "source": "32",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "32->45",
+        "source": "32",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "33->20",
+        "source": "33",
+        "target": "20"
+      }
+    },
+    {
+      "data": {
+        "id": "33->27",
+        "source": "33",
+        "target": "27"
+      }
+    },
+    {
+      "data": {
+        "id": "33->28",
+        "source": "33",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "33->29",
+        "source": "33",
+        "target": "29"
+      }
+    },
+    {
+      "data": {
+        "id": "33->30",
+        "source": "33",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "33->32",
+        "source": "33",
+        "target": "32"
+      }
+    },
+    {
+      "data": {
+        "id": "33->34",
+        "source": "33",
+        "target": "34"
+      }
+    },
+    {
+      "data": {
+        "id": "34->27",
+        "source": "34",
+        "target": "27"
+      }
+    },
+    {
+      "data": {
+        "id": "34->28",
+        "source": "34",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "34->29",
+        "source": "34",
+        "target": "29"
+      }
+    },
+    {
+      "data": {
+        "id": "34->30",
+        "source": "34",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "34->33",
+        "source": "34",
+        "target": "33"
+      }
+    },
+    {
+      "data": {
+        "id": "34->35",
+        "source": "34",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "35->05",
+        "source": "35",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "35->06",
+        "source": "35",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "35->07",
+        "source": "35",
+        "target": "07"
+      }
+    },
+    {
+      "data": {
+        "id": "35->11",
+        "source": "35",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "35->12",
+        "source": "35",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "35->14a",
+        "source": "35",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "35->14b",
+        "source": "35",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "35->34",
+        "source": "35",
+        "target": "34"
+      }
+    },
+    {
+      "data": {
+        "id": "35->36",
+        "source": "35",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "35->37",
+        "source": "35",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "35->38",
+        "source": "35",
+        "target": "38"
+      }
+    },
+    {
+      "data": {
+        "id": "35->42",
+        "source": "35",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "35->45",
+        "source": "35",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "36->05",
+        "source": "36",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "36->06",
+        "source": "36",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "36->12",
+        "source": "36",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "36->14b",
+        "source": "36",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "36->35",
+        "source": "36",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "36->37",
+        "source": "36",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "36->38",
+        "source": "36",
+        "target": "38"
+      }
+    },
+    {
+      "data": {
+        "id": "36->41",
+        "source": "36",
+        "target": "41"
+      }
+    },
+    {
+      "data": {
+        "id": "36->43",
+        "source": "36",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "36->45",
+        "source": "36",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "36->63",
+        "source": "36",
+        "target": "63"
+      }
+    },
+    {
+      "data": {
+        "id": "37->05",
+        "source": "37",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "37->06",
+        "source": "37",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "37->11",
+        "source": "37",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "37->12",
+        "source": "37",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "37->14a",
+        "source": "37",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "37->14b",
+        "source": "37",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "37->36",
+        "source": "37",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "37->38",
+        "source": "37",
+        "target": "38"
+      }
+    },
+    {
+      "data": {
+        "id": "37->42",
+        "source": "37",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "37->43",
+        "source": "37",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "37->45",
+        "source": "37",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "37->46",
+        "source": "37",
+        "target": "46"
+      }
+    },
+    {
+      "data": {
+        "id": "38->05",
+        "source": "38",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "38->39",
+        "source": "38",
+        "target": "39"
+      }
+    },
+    {
+      "data": {
+        "id": "38->45",
+        "source": "38",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "39->05",
+        "source": "39",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "39->14b",
+        "source": "39",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "39->37",
+        "source": "39",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "39->38",
+        "source": "39",
+        "target": "38"
+      }
+    },
+    {
+      "data": {
+        "id": "39->40",
+        "source": "39",
+        "target": "40"
+      }
+    },
+    {
+      "data": {
+        "id": "39->41",
+        "source": "39",
+        "target": "41"
+      }
+    },
+    {
+      "data": {
+        "id": "39->42",
+        "source": "39",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "39->43",
+        "source": "39",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "40->38",
+        "source": "40",
+        "target": "38"
+      }
+    },
+    {
+      "data": {
+        "id": "40->39",
+        "source": "40",
+        "target": "39"
+      }
+    },
+    {
+      "data": {
+        "id": "40->41",
+        "source": "40",
+        "target": "41"
+      }
+    },
+    {
+      "data": {
+        "id": "40->42",
+        "source": "40",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "40->43",
+        "source": "40",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "41->05",
+        "source": "41",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "41->06",
+        "source": "41",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "41->11",
+        "source": "41",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "41->12",
+        "source": "41",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "41->14b",
+        "source": "41",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "41->35",
+        "source": "41",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "41->36",
+        "source": "41",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "41->39",
+        "source": "41",
+        "target": "39"
+      }
+    },
+    {
+      "data": {
+        "id": "41->40",
+        "source": "41",
+        "target": "40"
+      }
+    },
+    {
+      "data": {
+        "id": "41->42",
+        "source": "41",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "41->43",
+        "source": "41",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "42->05",
+        "source": "42",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "42->06",
+        "source": "42",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "42->11",
+        "source": "42",
+        "target": "11"
+      }
+    },
+    {
+      "data": {
+        "id": "42->12",
+        "source": "42",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "42->14a",
+        "source": "42",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "42->14b",
+        "source": "42",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "42->35",
+        "source": "42",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "42->36",
+        "source": "42",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "42->37",
+        "source": "42",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "42->38",
+        "source": "42",
+        "target": "38"
+      }
+    },
+    {
+      "data": {
+        "id": "42->41",
+        "source": "42",
+        "target": "41"
+      }
+    },
+    {
+      "data": {
+        "id": "42->43",
+        "source": "42",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "42->44",
+        "source": "42",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "42->45",
+        "source": "42",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "42->46",
+        "source": "42",
+        "target": "46"
+      }
+    },
+    {
+      "data": {
+        "id": "43->36",
+        "source": "43",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "43->37",
+        "source": "43",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "43->38",
+        "source": "43",
+        "target": "38"
+      }
+    },
+    {
+      "data": {
+        "id": "43->40",
+        "source": "43",
+        "target": "40"
+      }
+    },
+    {
+      "data": {
+        "id": "43->42",
+        "source": "43",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "43->44",
+        "source": "43",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "43->45",
+        "source": "43",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "44->06",
+        "source": "44",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "44->14a",
+        "source": "44",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "44->15",
+        "source": "44",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "44->35",
+        "source": "44",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "44->42",
+        "source": "44",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "44->43",
+        "source": "44",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "44->45",
+        "source": "44",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "44->54",
+        "source": "44",
+        "target": "54"
+      }
+    },
+    {
+      "data": {
+        "id": "44->64",
+        "source": "44",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "45->35",
+        "source": "45",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "45->36",
+        "source": "45",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "45->41",
+        "source": "45",
+        "target": "41"
+      }
+    },
+    {
+      "data": {
+        "id": "45->42",
+        "source": "45",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "45->43",
+        "source": "45",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "45->46",
+        "source": "45",
+        "target": "46"
+      }
+    },
+    {
+      "data": {
+        "id": "46->05",
+        "source": "46",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "46->12",
+        "source": "46",
+        "target": "12"
+      }
+    },
+    {
+      "data": {
+        "id": "46->35",
+        "source": "46",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "46->36",
+        "source": "46",
+        "target": "36"
+      }
+    },
+    {
+      "data": {
+        "id": "46->37",
+        "source": "46",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "46->41",
+        "source": "46",
+        "target": "41"
+      }
+    },
+    {
+      "data": {
+        "id": "46->42",
+        "source": "46",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "46->43",
+        "source": "46",
+        "target": "43"
+      }
+    },
+    {
+      "data": {
+        "id": "46->44",
+        "source": "46",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "46->45",
+        "source": "46",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "46->47",
+        "source": "46",
+        "target": "47"
+      }
+    },
+    {
+      "data": {
+        "id": "46->64",
+        "source": "46",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "47->42",
+        "source": "47",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "47->44",
+        "source": "47",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "47->46",
+        "source": "47",
+        "target": "46"
+      }
+    },
+    {
+      "data": {
+        "id": "47->48",
+        "source": "47",
+        "target": "48"
+      }
+    },
+    {
+      "data": {
+        "id": "47->54",
+        "source": "47",
+        "target": "54"
+      }
+    },
+    {
+      "data": {
+        "id": "47->64",
+        "source": "47",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "48->44",
+        "source": "48",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "48->47",
+        "source": "48",
+        "target": "47"
+      }
+    },
+    {
+      "data": {
+        "id": "48->49",
+        "source": "48",
+        "target": "49"
+      }
+    },
+    {
+      "data": {
+        "id": "48->50",
+        "source": "48",
+        "target": "50"
+      }
+    },
+    {
+      "data": {
+        "id": "48->51",
+        "source": "48",
+        "target": "51"
+      }
+    },
+    {
+      "data": {
+        "id": "49->44",
+        "source": "49",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "49->47",
+        "source": "49",
+        "target": "47"
+      }
+    },
+    {
+      "data": {
+        "id": "49->48",
+        "source": "49",
+        "target": "48"
+      }
+    },
+    {
+      "data": {
+        "id": "49->50",
+        "source": "49",
+        "target": "50"
+      }
+    },
+    {
+      "data": {
+        "id": "49->51",
+        "source": "49",
+        "target": "51"
+      }
+    },
+    {
+      "data": {
+        "id": "50->48",
+        "source": "50",
+        "target": "48"
+      }
+    },
+    {
+      "data": {
+        "id": "50->49",
+        "source": "50",
+        "target": "49"
+      }
+    },
+    {
+      "data": {
+        "id": "50->51",
+        "source": "50",
+        "target": "51"
+      }
+    },
+    {
+      "data": {
+        "id": "50->52",
+        "source": "50",
+        "target": "52"
+      }
+    },
+    {
+      "data": {
+        "id": "50->64",
+        "source": "50",
+        "target": "64"
+      }
+    },
+    {
+      "data": {
+        "id": "52->48",
+        "source": "52",
+        "target": "48"
+      }
+    },
+    {
+      "data": {
+        "id": "52->49",
+        "source": "52",
+        "target": "49"
+      }
+    },
+    {
+      "data": {
+        "id": "52->50",
+        "source": "52",
+        "target": "50"
+      }
+    },
+    {
+      "data": {
+        "id": "52->51",
+        "source": "52",
+        "target": "51"
+      }
+    },
+    {
+      "data": {
+        "id": "52->53",
+        "source": "52",
+        "target": "53"
+      }
+    },
+    {
+      "data": {
+        "id": "53->06",
+        "source": "53",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "53->28",
+        "source": "53",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "53->37",
+        "source": "53",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "53->51",
+        "source": "53",
+        "target": "51"
+      }
+    },
+    {
+      "data": {
+        "id": "53->52",
+        "source": "53",
+        "target": "52"
+      }
+    },
+    {
+      "data": {
+        "id": "53->54",
+        "source": "53",
+        "target": "54"
+      }
+    },
+    {
+      "data": {
+        "id": "53->63",
+        "source": "53",
+        "target": "63"
+      }
+    },
+    {
+      "data": {
+        "id": "54->05",
+        "source": "54",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "54->06",
+        "source": "54",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "54->14b",
+        "source": "54",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "54->37",
+        "source": "54",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "54->41",
+        "source": "54",
+        "target": "41"
+      }
+    },
+    {
+      "data": {
+        "id": "54->44",
+        "source": "54",
+        "target": "44"
+      }
+    },
+    {
+      "data": {
+        "id": "54->53",
+        "source": "54",
+        "target": "53"
+      }
+    },
+    {
+      "data": {
+        "id": "54->55",
+        "source": "54",
+        "target": "55"
+      }
+    },
+    {
+      "data": {
+        "id": "54->58",
+        "source": "54",
+        "target": "58"
+      }
+    },
+    {
+      "data": {
+        "id": "55->48",
+        "source": "55",
+        "target": "48"
+      }
+    },
+    {
+      "data": {
+        "id": "55->53",
+        "source": "55",
+        "target": "53"
+      }
+    },
+    {
+      "data": {
+        "id": "55->54",
+        "source": "55",
+        "target": "54"
+      }
+    },
+    {
+      "data": {
+        "id": "55->56",
+        "source": "55",
+        "target": "56"
+      }
+    },
+    {
+      "data": {
+        "id": "55->57",
+        "source": "55",
+        "target": "57"
+      }
+    },
+    {
+      "data": {
+        "id": "55->58",
+        "source": "55",
+        "target": "58"
+      }
+    },
+    {
+      "data": {
+        "id": "56->53",
+        "source": "56",
+        "target": "53"
+      }
+    },
+    {
+      "data": {
+        "id": "56->54",
+        "source": "56",
+        "target": "54"
+      }
+    },
+    {
+      "data": {
+        "id": "56->55",
+        "source": "56",
+        "target": "55"
+      }
+    },
+    {
+      "data": {
+        "id": "56->57",
+        "source": "56",
+        "target": "57"
+      }
+    },
+    {
+      "data": {
+        "id": "56->58",
+        "source": "56",
+        "target": "58"
+      }
+    },
+    {
+      "data": {
+        "id": "57->05",
+        "source": "57",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "57->28",
+        "source": "57",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "57->55",
+        "source": "57",
+        "target": "55"
+      }
+    },
+    {
+      "data": {
+        "id": "57->56",
+        "source": "57",
+        "target": "56"
+      }
+    },
+    {
+      "data": {
+        "id": "57->58",
+        "source": "57",
+        "target": "58"
+      }
+    },
+    {
+      "data": {
+        "id": "58->05",
+        "source": "58",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "58->06",
+        "source": "58",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "58->55",
+        "source": "58",
+        "target": "55"
+      }
+    },
+    {
+      "data": {
+        "id": "58->57",
+        "source": "58",
+        "target": "57"
+      }
+    },
+    {
+      "data": {
+        "id": "58->59",
+        "source": "58",
+        "target": "59"
+      }
+    },
+    {
+      "data": {
+        "id": "59->14a",
+        "source": "59",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "59->14b",
+        "source": "59",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "59->58",
+        "source": "59",
+        "target": "58"
+      }
+    },
+    {
+      "data": {
+        "id": "59->60",
+        "source": "59",
+        "target": "60"
+      }
+    },
+    {
+      "data": {
+        "id": "60->14a",
+        "source": "60",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "60->14b",
+        "source": "60",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "60->59",
+        "source": "60",
+        "target": "59"
+      }
+    },
+    {
+      "data": {
+        "id": "60->61",
+        "source": "60",
+        "target": "61"
+      }
+    },
+    {
+      "data": {
+        "id": "61->01",
+        "source": "61",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "61->05",
+        "source": "61",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "61->06",
+        "source": "61",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "61->14a",
+        "source": "61",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "61->15",
+        "source": "61",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "61->28",
+        "source": "61",
+        "target": "28"
+      }
+    },
+    {
+      "data": {
+        "id": "61->30",
+        "source": "61",
+        "target": "30"
+      }
+    },
+    {
+      "data": {
+        "id": "61->55",
+        "source": "61",
+        "target": "55"
+      }
+    },
+    {
+      "data": {
+        "id": "61->60",
+        "source": "61",
+        "target": "60"
+      }
+    },
+    {
+      "data": {
+        "id": "61->62",
+        "source": "61",
+        "target": "62"
+      }
+    },
+    {
+      "data": {
+        "id": "62->01",
+        "source": "62",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "62->05",
+        "source": "62",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "62->06",
+        "source": "62",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "62->14a",
+        "source": "62",
+        "target": "14a"
+      }
+    },
+    {
+      "data": {
+        "id": "62->15",
+        "source": "62",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "62->17a",
+        "source": "62",
+        "target": "17a"
+      }
+    },
+    {
+      "data": {
+        "id": "62->17b",
+        "source": "62",
+        "target": "17b"
+      }
+    },
+    {
+      "data": {
+        "id": "62->17c",
+        "source": "62",
+        "target": "17c"
+      }
+    },
+    {
+      "data": {
+        "id": "62->18",
+        "source": "62",
+        "target": "18"
+      }
+    },
+    {
+      "data": {
+        "id": "62->57",
+        "source": "62",
+        "target": "57"
+      }
+    },
+    {
+      "data": {
+        "id": "62->61",
+        "source": "62",
+        "target": "61"
+      }
+    },
+    {
+      "data": {
+        "id": "62->63",
+        "source": "62",
+        "target": "63"
+      }
+    },
+    {
+      "data": {
+        "id": "63->01",
+        "source": "63",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "63->05",
+        "source": "63",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "63->06",
+        "source": "63",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "63->14b",
+        "source": "63",
+        "target": "14b"
+      }
+    },
+    {
+      "data": {
+        "id": "63->35",
+        "source": "63",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "63->37",
+        "source": "63",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "63->45",
+        "source": "63",
+        "target": "45"
+      }
+    },
+    {
+      "data": {
+        "id": "63->55",
+        "source": "63",
+        "target": "55"
+      }
+    },
+    {
+      "data": {
+        "id": "63->62",
+        "source": "63",
+        "target": "62"
+      }
+    },
+    {
+      "data": {
+        "id": "64->01",
+        "source": "64",
+        "target": "01"
+      }
+    },
+    {
+      "data": {
+        "id": "64->05",
+        "source": "64",
+        "target": "05"
+      }
+    },
+    {
+      "data": {
+        "id": "64->06",
+        "source": "64",
+        "target": "06"
+      }
+    },
+    {
+      "data": {
+        "id": "64->15",
+        "source": "64",
+        "target": "15"
+      }
+    },
+    {
+      "data": {
+        "id": "64->35",
+        "source": "64",
+        "target": "35"
+      }
+    },
+    {
+      "data": {
+        "id": "64->42",
+        "source": "64",
+        "target": "42"
+      }
+    },
+    {
+      "data": {
+        "id": "64->57",
+        "source": "64",
+        "target": "57"
+      }
+    },
+    {
+      "data": {
+        "id": "64->63",
+        "source": "64",
+        "target": "63"
+      }
+    },
+    {
+      "data": {
+        "id": "65->37",
+        "source": "65",
+        "target": "37"
+      }
+    },
+    {
+      "data": {
+        "id": "65->38",
+        "source": "65",
+        "target": "38"
+      }
+    }
+  ]
+}

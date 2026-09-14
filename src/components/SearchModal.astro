@@ -1,0 +1,207 @@
+---
+import pages from '../data/pages.json';
+---
+
+<!-- Search Modal Backdrop -->
+<div 
+  id="search-modal" 
+  class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm transition-opacity duration-200 p-4 sm:p-6 md:p-20 overflow-y-auto"
+  role="dialog" 
+  aria-modal="true"
+>
+  <div class="relative max-w-2xl mx-auto bg-[#161b22] border border-[#30363d] rounded-xl shadow-2xl overflow-hidden">
+    <!-- Search Input Header -->
+    <div class="flex items-center px-4 py-3 border-b border-[#30363d] bg-[#0d1117]">
+      <svg class="w-5 h-5 text-[#00b4d8] mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input 
+        type="text" 
+        id="search-input" 
+        class="w-full bg-transparent border-0 text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none text-sm font-sans" 
+        placeholder="Cari modul, exploit, CVE, port, tool (e.g. smb, ms17-010, kerberoasting, sudo)..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button 
+        type="button" 
+        id="close-search-btn" 
+        class="p-1 text-[#8b949e] hover:text-[#f0f6fc] rounded hover:bg-[#21262d] transition-colors"
+        aria-label="Close search"
+      >
+        <kbd class="px-1.5 py-0.5 text-[10px] bg-[#21262d] border border-[#30363d] rounded text-[#8b949e]">ESC</kbd>
+      </button>
+    </div>
+
+    <!-- Results Container -->
+    <div id="search-results" class="max-h-96 overflow-y-auto p-2 space-y-1 divide-y divide-[#21262d]">
+      <div id="search-empty-state" class="py-12 text-center text-[#8b949e] text-xs">
+        <svg class="w-8 h-8 mx-auto text-[#484f58] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p>Ketik kata kunci untuk mencari di 73 modul dokumentasi cybersecurity.</p>
+        <div class="mt-3 flex flex-wrap justify-center gap-1.5 font-mono">
+          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">05_smb</span>
+          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">kerberoasting</span>
+          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">linux privesc</span>
+          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">buffer overflow</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Shortcuts -->
+    <div class="px-4 py-2 bg-[#0d1117] border-t border-[#30363d] flex items-center justify-between text-[11px] text-[#8b949e] font-mono">
+      <div class="flex items-center gap-3">
+        <span><kbd class="px-1.5 py-0.2 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↑</kbd> <kbd class="px-1.5 py-0.2 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↓</kbd> Navigasi</span>
+        <span><kbd class="px-1.5 py-0.2 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↵</kbd> Buka</span>
+      </div>
+      <a href="/search" class="text-[#00b4d8] hover:underline">Halaman Pencarian Lengkap →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  import pagesData from '../data/pages.json';
+  import { createSearchIndex } from '../utils/search-index';
+  import { setupKeyboardNav } from '../hooks/useKeyboardNav';
+
+  const modal = document.getElementById('search-modal');
+  const openBtn = document.getElementById('open-search-btn');
+  const closeBtn = document.getElementById('close-search-btn');
+  const input = document.getElementById('search-input') as HTMLInputElement | null;
+  const resultsContainer = document.getElementById('search-results');
+
+  const fuse = createSearchIndex(pagesData as any);
+  let selectedIndex = 0;
+  let currentResults: any[] = [];
+  let debounceTimer: any = null;
+
+  function openModal() {
+    modal?.classList.remove('hidden');
+    input?.focus();
+  }
+
+  function closeModal() {
+    modal?.classList.add('hidden');
+    if (input) input.value = '';
+    renderEmptyState();
+  }
+
+  function renderEmptyState() {
+    if (!resultsContainer) return;
+    resultsContainer.innerHTML = `
+      <div id="search-empty-state" class="py-12 text-center text-[#8b949e] text-xs">
+        <p>Ketik kata kunci untuk mencari di antara ${pagesData.length} modul dokumentasi cybersecurity.</p>
+      </div>
+    `;
+    currentResults = [];
+  }
+
+  function renderResults(results: any[]) {
+    if (!resultsContainer) return;
+    currentResults = results;
+    selectedIndex = 0;
+
+    if (results.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="py-8 text-center text-[#8b949e] text-xs font-mono">
+          Tidak ditemukan modul yang cocok.
+        </div>
+      `;
+      return;
+    }
+
+    resultsContainer.innerHTML = results.slice(0, 10).map((item, index) => {
+      return `
+        <a 
+          href="/docs/${item.slug}" 
+          class="search-result-item block p-3 rounded-lg transition-colors ${index === 0 ? 'bg-[#21262d] border border-[#00b4d8]/50' : 'hover:bg-[#21262d]/60'} group"
+          data-index="${index}"
+        >
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs px-1.5 py-0.5 rounded bg-[#0d1117] text-[#e84a5f] border border-[#30363d] font-bold">
+                ${item.id}
+              </span>
+              <span class="text-sm font-semibold text-[#f0f6fc] group-hover:text-[#00b4d8] transition-colors">
+                ${item.title}
+              </span>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-mono text-[#c9d1d9]" style="background-color: ${item.categoryColor}18; border: 1px solid ${item.categoryColor}55;">
+              ${item.category}
+            </span>
+          </div>
+          <p class="text-xs text-[#8b949e] line-clamp-2 pl-7 font-sans">
+            ${item.content}
+          </p>
+          <div class="flex items-center gap-3 mt-1 pl-7 text-[10px] text-[#6e7681] font-mono">
+            <span>In: ${item.refs_in.length}</span>
+            <span>Out: ${item.refs_out.length}</span>
+            ${item.tags && item.tags.length > 0 ? `<span class="text-[#00b4d8]">Tools: ${item.tags.slice(0, 3).join(', ')}</span>` : ''}
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  openBtn?.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // 300ms Debounce implementation
+  input?.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const val = (e.target as HTMLInputElement).value.trim();
+      if (!val) {
+        renderEmptyState();
+        return;
+      }
+      const results = fuse.search(val).map(r => r.item);
+      renderResults(results);
+    }, 300);
+  });
+
+  // Connect useKeyboardNav hook
+  setupKeyboardNav({
+    onOpenSearch: () => {
+      if (modal?.classList.contains('hidden')) openModal();
+      else closeModal();
+    },
+    onCloseSearch: () => closeModal(),
+    onNavigateNext: () => {
+      if (currentResults.length > 0) {
+        selectedIndex = (selectedIndex + 1) % Math.min(currentResults.length, 10);
+        updateSelection();
+      }
+    },
+    onNavigatePrev: () => {
+      if (currentResults.length > 0) {
+        selectedIndex = (selectedIndex - 1 + Math.min(currentResults.length, 10)) % Math.min(currentResults.length, 10);
+        updateSelection();
+      }
+    },
+    onSelectCurrent: () => {
+      const target = currentResults[selectedIndex];
+      if (target) {
+        window.location.href = `/docs/${target.slug}`;
+      }
+    }
+  });
+
+  function updateSelection() {
+    const items = resultsContainer?.querySelectorAll('.search-result-item');
+    items?.forEach((el, idx) => {
+      if (idx === selectedIndex) {
+        el.classList.add('bg-[#21262d]', 'border', 'border-[#00b4d8]/50');
+        el.classList.remove('hover:bg-[#21262d]/60');
+        el.scrollIntoView({ block: 'nearest' });
+      } else {
+        el.classList.remove('bg-[#21262d]', 'border', 'border-[#00b4d8]/50');
+      }
+    });
+  }
+</script>

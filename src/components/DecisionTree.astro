@@ -1,0 +1,117 @@
+---
+// DecisionTree component: Converts ASCII decision trees (starting with START: or containing ├─ / └─)
+// into interactive Mermaid.js flowcharts with a toggle to view either Flowchart or Raw ASCII.
+---
+
+<script>
+  import mermaid from 'mermaid';
+  import { convertAsciiTreeToMermaid } from '../utils/decision-tree';
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#161b22',
+      primaryColor: '#e84a5f',
+      primaryTextColor: '#f0f6fc',
+      primaryBorderColor: '#30363d',
+      lineColor: '#00b4d8',
+      secondaryColor: '#21262d',
+      tertiaryColor: '#0d1117'
+    },
+    securityLevel: 'loose',
+    fontFamily: 'JetBrains Mono, monospace'
+  });
+
+  async function processDecisionTrees() {
+    const preBlocks = document.querySelectorAll('article pre');
+
+    for (let i = 0; i < preBlocks.length; i++) {
+      const pre = preBlocks[i] as HTMLElement;
+      const code = pre.textContent || '';
+
+      // Check if this block is a decision tree
+      const isDecisionTree = 
+        code.includes('START:') || 
+        ((code.includes('├─') || code.includes('└─')) && code.split('\n').length > 3);
+
+      if (!isDecisionTree) continue;
+
+      const mermaidSyntax = convertAsciiTreeToMermaid(code);
+      if (!mermaidSyntax) continue;
+
+      // Create interactive container card
+      const card = document.createElement('div');
+      card.className = 'mermaid-diagram-card my-6 border border-[#30363d] rounded-xl bg-[#161b22] overflow-hidden shadow-lg';
+
+      const uniqueId = `tree_${Math.random().toString(36).substring(2, 9)}`;
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between px-4 py-2.5 bg-[#21262d] border-b border-[#30363d] text-xs font-mono">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-[#e84a5f] animate-pulse"></span>
+            <span class="font-bold text-[#f0f6fc]">⚡ Decision Tree Flowchart</span>
+            <span class="text-[10px] text-[#8b949e] px-1.5 py-0.2 rounded bg-[#0d1117] border border-[#30363d]">Interactive Mermaid</span>
+          </div>
+          <div class="flex items-center gap-1 bg-[#0d1117] p-0.5 rounded-lg border border-[#30363d]">
+            <button type="button" class="btn-view-flowchart px-2 py-1 rounded text-[10px] font-semibold bg-[#e84a5f] text-white transition-colors" data-id="${uniqueId}">
+              📊 Flowchart
+            </button>
+            <button type="button" class="btn-view-ascii px-2 py-1 rounded text-[10px] text-[#8b949e] hover:text-[#f0f6fc] transition-colors" data-id="${uniqueId}">
+              📝 ASCII View
+            </button>
+          </div>
+        </div>
+        <div class="flowchart-container p-4 overflow-x-auto flex justify-center bg-[#161b22]" id="flowchart_${uniqueId}">
+          <div class="mermaid text-center" id="mermaid_${uniqueId}">
+            ${mermaidSyntax}
+          </div>
+        </div>
+        <div class="ascii-container p-4 overflow-x-auto hidden bg-[#0d1117]" id="ascii_${uniqueId}">
+          <pre class="text-xs font-mono text-[#c9d1d9] bg-transparent border-0 p-0 m-0 leading-relaxed">${code}</pre>
+        </div>
+      `;
+
+      // Replace pre with our enhanced card
+      const wrapper = pre.closest('.code-block-wrapper') || pre;
+      wrapper.parentNode?.replaceChild(card, wrapper);
+
+      // Event listeners for toggle tabs
+      const btnFlowchart = card.querySelector('.btn-view-flowchart') as HTMLElement;
+      const btnAscii = card.querySelector('.btn-view-ascii') as HTMLElement;
+      const flowchartDiv = card.querySelector(`#flowchart_${uniqueId}`) as HTMLElement;
+      const asciiDiv = card.querySelector(`#ascii_${uniqueId}`) as HTMLElement;
+
+      btnFlowchart?.addEventListener('click', () => {
+        flowchartDiv.classList.remove('hidden');
+        asciiDiv.classList.add('hidden');
+        btnFlowchart.classList.add('bg-[#e84a5f]', 'text-white');
+        btnFlowchart.classList.remove('text-[#8b949e]');
+        btnAscii.classList.remove('bg-[#e84a5f]', 'text-white');
+        btnAscii.classList.add('text-[#8b949e]');
+      });
+
+      btnAscii?.addEventListener('click', () => {
+        asciiDiv.classList.remove('hidden');
+        flowchartDiv.classList.add('hidden');
+        btnAscii.classList.add('bg-[#e84a5f]', 'text-white');
+        btnAscii.classList.remove('text-[#8b949e]');
+        btnFlowchart.classList.remove('bg-[#e84a5f]', 'text-white');
+        btnFlowchart.classList.add('text-[#8b949e]');
+      });
+    }
+
+    // Render Mermaid diagrams
+    try {
+      await mermaid.run({
+        querySelector: '.mermaid'
+      });
+    } catch (err) {
+      console.warn('Mermaid rendering warning:', err);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', processDecisionTrees);
+  processDecisionTrees();
+</script>
