@@ -5131,7 +5131,7 @@ JSON
 }
 ```
 
-➡️ Lanjut ke `[🚀 Bagian 0: Konteks & Lab Setup](/docs/aws-pentest)` untuk full cloud exploitation.
+➡️ Lanjut ke [🚀 Bagian 0: Konteks & Lab Setup](/docs/aws-pentest) untuk full cloud exploitation.
 
 **OUTPUT GAGAL ❌ — AWS 401 / IMDSv2 Required:**
 
@@ -5978,5 +5978,5 @@ python3 SSRFmap/ssrfmap.py --help              # Auto-test SSRF
 > - Cloud credentials → `<a href="/docs/aws-pentest" class="text-[#00b4d8] hover:underline font-mono font-semibold">60_aws_pentest_workflow.md</a>`
 > - Redis RCE → `<a href="/docs/redis-and-mongodb" class="text-[#00b4d8] hover:underline font-mono font-semibold">14d_redis_mongodb_workflow.md</a>`
 > - Jenkins access → lateral movement ke `<a href="/docs/lateral-movement" class="text-[#00b4d8] hover:underline font-mono font-semibold">42_lateral_movement_workflow.md</a>`
-> - File disclosure → cari creds → `<a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>` atau `[05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)`
-> - Selanjutnya dalam seri web: `[Workflow 23 â€” Server-Side Template Injection (SSTI)](/docs/ssti)`
+> - File disclosure → cari creds → `<a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>` atau [05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)
+> - Selanjutnya dalam seri web: [Workflow 23 â€” Server-Side Template Injection (SSTI)](/docs/ssti)

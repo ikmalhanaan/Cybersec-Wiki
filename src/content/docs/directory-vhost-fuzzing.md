@@ -2543,7 +2543,7 @@ Berikut adalah matriks pengambilan keputusan berdasarkan kode status yang ditemu
 |**301 / 302**|Redirect URL|Periksa header `Location:`. Tambahkan trailing slash (`/`) pada fuzzer.|Navigasi Portal|
 |**401 Unauthorized**|HTTP Basic Auth|Uji kredensial default (`admin:admin`, `guest:guest`).|Audit Otentikasi|
 |**403 Forbidden**|Akses Ditolak|Uji manipulasi URL path (trailing slash, case sensitivity, header proxy).|403 Analysis|
-|**405 Method Not Allowed**|Metode GET ditolak|Ubah metode HTTP menjadi POST, PUT, atau OPTIONS via curl.|`[🔌 30 — API Security Workflow](/docs/api-security)`|
+|**405 Method Not Allowed**|Metode GET ditolak|Ubah metode HTTP menjadi POST, PUT, atau OPTIONS via curl.|[🔌 30 — API Security Workflow](/docs/api-security)|
 |**500 Server Error**|Crash / Unhandled Code|Masukkan input tidak terduga pada parameter; cek error debug trace.|Parameter Discovery|
 
 ### Strategi Pencarian Teknis (Jika Menemui Jalan Buntu)
@@ -2692,4 +2692,4 @@ jq -r '.results[] | select(.status == 200 or .status == 301) | "\(.status)\t\(.l
 
 ---
 
-> **➡️ NEXT WORKFLOW:** Jika dari hasil fuzzing ini terdeteksi indikasi Content Management System (seperti `/wp-content/`, `/administrator/`, atau `/core/`), lanjutkan ke panduan: **`[🌐 File 17: CMS Detection, Fingerprinting & Exploitation Workflow](/docs/cms-detection)`** untuk fingerprinting modul, tema, dan celah otentikasi spesifik.
+> **➡️ NEXT WORKFLOW:** Jika dari hasil fuzzing ini terdeteksi indikasi Content Management System (seperti `/wp-content/`, `/administrator/`, atau `/core/`), lanjutkan ke panduan: **[🌐 File 17: CMS Detection, Fingerprinting & Exploitation Workflow](/docs/cms-detection)** untuk fingerprinting modul, tema, dan celah otentikasi spesifik.

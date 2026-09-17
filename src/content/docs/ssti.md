@@ -6287,7 +6287,7 @@ python3 ~/tools/sstimap/sstimap.py -u "${INJECT_URL}?${INJECT_PARAM}=*"
 
 > **➡️ NEXT:** Setelah SSTI berhasil dan dapat shell, lanjut ke:
 > 
-> - **`[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)`** jika target Linux
+> - **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** jika target Linux
 > - **`14_database_workflow.md`** jika ketemu DB credentials dari config
-> - **`[⚡ Quick Start: Urutan Kerja Pivoting (Untuk Pemula)](/docs/pivoting-tunneling)`** jika perlu pivot ke network internal
+> - **[⚡ Quick Start: Urutan Kerja Pivoting (Untuk Pemula)](/docs/pivoting-tunneling)** jika perlu pivot ke network internal
 

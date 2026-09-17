@@ -4789,8 +4789,8 @@ curl -si -X POST "$TARGET/api/endpoint" -H "Cookie: session=$SESSION" \
 
 ---
 
-> **➡️ NEXT:** Setelah berhasil exploit CSRF, jika email berhasil diubah ke [attacker@evil.com](mailto:attacker@evil.com) — lanjut ke **password reset flow** menggunakan email tersebut untuk full account takeover. Cross-reference ke **`[🔥 20 — XSS Workflow](/docs/xss)`** untuk chaining dengan XSS, dan **`[🔐 34 — OAuth & SSO Workflow](/docs/oauth-sso)`** untuk Login CSRF via OAuth state bypass.
+> **➡️ NEXT:** Setelah berhasil exploit CSRF, jika email berhasil diubah ke [attacker@evil.com](mailto:attacker@evil.com) — lanjut ke **password reset flow** menggunakan email tersebut untuk full account takeover. Cross-reference ke **[🔥 20 — XSS Workflow](/docs/xss)** untuk chaining dengan XSS, dan **[🔐 34 — OAuth & SSO Workflow](/docs/oauth-sso)** untuk Login CSRF via OAuth state bypass.
 > 
-> **⬅️ PREV:** `[🔐 28 — JWT Workflow](/docs/jwt)` — JWT manipulation dan algorithm confusion.
+> **⬅️ PREV:** [🔐 28 — JWT Workflow](/docs/jwt) — JWT manipulation dan algorithm confusion.
 
 [](https://messages-prod.27c852f3500f38c1e7786e2c9ff9e48f.r2.cloudflarestorage.com/aad5bafd-ac04-4d8f-9667-3d87b6995a58/1789120736363-29_csrf_workflow.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=b33de61d4f22a31b59b25364ab5037c5%2F20260911%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260911T095858Z&X-Amz-Expires=3600&X-Amz-Signature=703281e20dac217a7896f28a0ce4c03c5d5a32f560d8131e3d635f3b012328b5&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)

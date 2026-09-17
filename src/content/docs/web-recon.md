@@ -2959,7 +2959,7 @@ daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
 www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
 ```
 
-➡️ **LFI found!** Lanjut ke `[Workflow 24 — LFI / RFI](/docs/lfi-rfi)`:
+➡️ **LFI found!** Lanjut ke [Workflow 24 — LFI / RFI](/docs/lfi-rfi):
 
 Bash
 

@@ -6884,4 +6884,4 @@ START: Low-privilege shell didapat
 
 ---
 
-> **➡️ NEXT:** Setelah root dan collect credentials/hashes, lanjut ke **`[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`** jika ada Windows host di network, atau **`[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)`** untuk pivot ke target berikutnya. Jika environment AD, langsung ke **`[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)`**.
+> **➡️ NEXT:** Setelah root dan collect credentials/hashes, lanjut ke **[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)** jika ada Windows host di network, atau **[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)** untuk pivot ke target berikutnya. Jika environment AD, langsung ke **[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)**.

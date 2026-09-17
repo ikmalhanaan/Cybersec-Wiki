@@ -4208,5 +4208,5 @@ curl -si "$TARGET_API/api/account" -X OPTIONS \
 > 
 > **Golden Rule:** `curl ≠ browser`. CORS adalah browser-enforced policy. Selalu validasi di browser!
 > 
-> **➡️ PREV:** `[32 — Deserialization Workflow 🔐](/docs/deserialization)`  
-> **➡️ NEXT:** `[🔐 34 — OAuth & SSO Workflow](/docs/oauth-sso)` — Setelah dapat OAuth/access token via CORS, gunakan untuk OAuth attack chain.
+> **➡️ PREV:** [32 — Deserialization Workflow 🔐](/docs/deserialization)  
+> **➡️ NEXT:** [🔐 34 — OAuth & SSO Workflow](/docs/oauth-sso) — Setelah dapat OAuth/access token via CORS, gunakan untuk OAuth attack chain.

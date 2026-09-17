@@ -3150,6 +3150,6 @@ trufflehog git https://github.com/ORG/REPO  # Secret scanner di GitHub
 
 ---
 
-> **➡️ NEXT:** Setelah enumeration selesai dan dapat credentials/akses, lanjut ke **`[🚀 Bagian 0: Konteks & Lab Setup](/docs/aws-pentest)`** untuk eksploitasi mendalam, privilege escalation lanjutan, dan persistence di infrastruktur AWS.
+> **➡️ NEXT:** Setelah enumeration selesai dan dapat credentials/akses, lanjut ke **[🚀 Bagian 0: Konteks & Lab Setup](/docs/aws-pentest)** untuk eksploitasi mendalam, privilege escalation lanjutan, dan persistence di infrastruktur AWS.
 > 
-> **➡️ PREV:** Jika memory dump dari cloud VM ditemukan, ke **`[🧠 Bagian 0: Fondasi Memory Forensics](/docs/memory-forensics)`** untuk analisis Volatility.
+> **➡️ PREV:** Jika memory dump dari cloud VM ditemukan, ke **[🧠 Bagian 0: Fondasi Memory Forensics](/docs/memory-forensics)** untuk analisis Volatility.

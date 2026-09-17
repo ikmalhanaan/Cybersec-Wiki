@@ -5437,4 +5437,4 @@ echo "[+] Captured tokens: [tokens]" >> ~/smuggling_loot/notes/findings.txt
 
 ---
 
-> **➡️ NEXT:** Setelah HTTP Smuggling selesai, lanjut ke **`[32 — Deserialization Workflow 🔐](/docs/deserialization)`** untuk exploit Java/PHP/Python deserialization yang sering muncul di service yang sama dengan target web ini.
+> **➡️ NEXT:** Setelah HTTP Smuggling selesai, lanjut ke **[32 — Deserialization Workflow 🔐](/docs/deserialization)** untuk exploit Java/PHP/Python deserialization yang sering muncul di service yang sama dengan target web ini.

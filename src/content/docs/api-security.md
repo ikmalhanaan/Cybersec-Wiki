@@ -5198,7 +5198,7 @@ JSON
 {"users":[{"id":1,"username":"admin"}]}
 ```
 
-➡️ **CRITICAL! JWT algorithm confusion.** Lanjut ke `[🔐 28 — JWT Workflow](/docs/jwt)`.
+➡️ **CRITICAL! JWT algorithm confusion.** Lanjut ke [🔐 28 — JWT Workflow](/docs/jwt).
 
 Bash
 
@@ -5217,7 +5217,7 @@ text
 eyJhbGc...:secret123
 ```
 
-➡️ Forge token dengan secret tersebut. Lihat `[🔐 28 — JWT Workflow](/docs/jwt)`.
+➡️ Forge token dengan secret tersebut. Lihat [🔐 28 — JWT Workflow](/docs/jwt).
 
 ---
 
@@ -5615,7 +5615,7 @@ text
 {"error":"You have an error in your SQL syntax near '''"}
 ```
 
-➡️ **SQLi ditemukan!** Lanjut ke `[💉 19 — SQL Injection Workflow](/docs/sql-injection)` untuk full exploitation.
+➡️ **SQLi ditemukan!** Lanjut ke [💉 19 — SQL Injection Workflow](/docs/sql-injection) untuk full exploitation.
 
 Bash
 
@@ -5975,7 +5975,7 @@ text
 10.10.11.200 - - [GET /ssrf-test HTTP/1.1] 200
 ```
 
-➡️ **SSRF confirmed!** Lanjut ke `[🌐 22 — SSRF Workflow](/docs/ssrf)` untuk full exploitation.
+➡️ **SSRF confirmed!** Lanjut ke [🌐 22 — SSRF Workflow](/docs/ssrf) untuk full exploitation.
 
 **OUTPUT BERHASIL ✅ — Internal SSRF:**
 
@@ -6290,6 +6290,6 @@ curl -si -X POST "$TARGET/api/v1/fetch" -H "Authorization: Bearer $TOKEN_A" \
 
 ---
 
-> **➡️ NEXT:** Setelah API security testing selesai, jika ada HTTP smuggling indicator (proxy/CDN di depan API), lanjut ke **`[🧨 31 — HTTP Request Smuggling Workflow](/docs/http-smuggling)`**.
+> **➡️ NEXT:** Setelah API security testing selesai, jika ada HTTP smuggling indicator (proxy/CDN di depan API), lanjut ke **[🧨 31 — HTTP Request Smuggling Workflow](/docs/http-smuggling)**.
 > 
-> **⬅️ PREV:** `[🛡️ 29 — CSRF Workflow](/docs/csrf)` — CSRF dan bypass SameSite di web/API yang menggunakan cookie auth.
+> **⬅️ PREV:** [🛡️ 29 — CSRF Workflow](/docs/csrf) — CSRF dan bypass SameSite di web/API yang menggunakan cookie auth.

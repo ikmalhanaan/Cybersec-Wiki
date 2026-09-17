@@ -6191,6 +6191,6 @@ impacket-secretsdump -k -no-pass "$DOMAIN/administrator@DC01.$DOMAIN"
 
 ---
 
-> **➡️ NEXT:** Setelah domain persistence berhasil, lanjut ke **`[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)`** atau **`[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`** untuk host-level escalation, atau ke **`[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)`** untuk memperluas akses ke network segments lain.
+> **➡️ NEXT:** Setelah domain persistence berhasil, lanjut ke **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** atau **[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)** untuk host-level escalation, atau ke **[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)** untuk memperluas akses ke network segments lain.
 
 [](https://messages-prod.27c852f3500f38c1e7786e2c9ff9e48f.r2.cloudflarestorage.com/aad5bafd-ac04-4d8f-9667-3d87b6995a58/1789141966876-43_domain_persistence_workflow.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=b33de61d4f22a31b59b25364ab5037c5%2F20260911%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260911T155248Z&X-Amz-Expires=3600&X-Amz-Signature=c77224fcd028600b308e2d12589c1b932d4faa09449cce856e11ef6295022c3d&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)

@@ -4519,7 +4519,7 @@ Jika password yang diekstrak berupa nilai hash:
    ```
 
 ### Skenario 3: Kredensial & Artefak Lain Ditemukan
-- **Email Pengguna:** Uji fitur reset password untuk *Password Reset Token Poisoning* (lihat `[🔐 18 — Authentication Bypass Workflow](/docs/authentication-bypass)`).
+- **Email Pengguna:** Uji fitur reset password untuk *Password Reset Token Poisoning* (lihat [🔐 18 — Authentication Bypass Workflow](/docs/authentication-bypass)).
 - **API Keys / JWT Secrets:** Eksekusi authenticated REST endpoints atau buat JWT admin dengan secret yang didapat.
 - **Private Key (id_rsa):** Simpan string key ke file lokal, set permission `chmod 600 id_rsa`, dan login:
   ```bash
@@ -6684,4 +6684,4 @@ curl -s "http://$TARGET/sh.php?c=id"
 > - Hash → **`<a href="/docs/password-cracking" class="text-[#00b4d8] hover:underline font-mono font-semibold">63_password_cracking_workflow.md</a>`** untuk cracking
 > - Akses SSH → **`<a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>`**
 > - Akses web admin → **`<a href="/docs/wordpress" class="text-[#00b4d8] hover:underline font-mono font-semibold">17a_wordpress_workflow.md</a>`** atau file lain sesuai CMS
-> - Shell dari RCE → **`<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`** atau **`[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`**
+> - Shell dari RCE → **`<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`** atau **[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)**

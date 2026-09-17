@@ -1114,10 +1114,10 @@ PORT   STATE SERVICE
 
 - ➡️ **Kesimpulan:** **JANGAN LAKUKAN BRUTE FORCE PASSWORD!** Server menolak semua password secara eksplisit.
 - ➡️ **Tindakan:** Kamu WAJIB mencari private key (`id_rsa` / `id_ed25519`) dari service lain:
-    - Check SMB shares (`[05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)`)
-    - Check Anonymous FTP (`[07. FTP & FTPS Exploitation Workflow — Master Field Guide](/docs/ftp)`)
-    - Check Web Directory Traversal / LFI (`[Workflow 24 — LFI / RFI](/docs/lfi-rfi)` -> cek `/home/user/.ssh/id_rsa`)
-    - Check Web backup file (`[16. Directory & Virtual Host (VHost) Fuzzing Workflow — Master Field Guide](/docs/directory-vhost-fuzzing)` -> `backup.zip`)
+    - Check SMB shares ([05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba))
+    - Check Anonymous FTP ([07. FTP & FTPS Exploitation Workflow — Master Field Guide](/docs/ftp))
+    - Check Web Directory Traversal / LFI ([Workflow 24 — LFI / RFI](/docs/lfi-rfi) -> cek `/home/user/.ssh/id_rsa`)
+    - Check Web backup file ([16. Directory & Virtual Host (VHost) Fuzzing Workflow — Master Field Guide](/docs/directory-vhost-fuzzing) -> `backup.zip`)
 
 ---
 
@@ -2045,4 +2045,4 @@ fuser -k 1080/tcp
 
 ---
 
-> **➡️ NEXT:** Jika kamu menemukan kredensial yang sama digunakan untuk service FTP, atau mendeteksi file transfer staging di server, lanjutkan ke **`[07. FTP & FTPS Exploitation Workflow — Master Field Guide](/docs/ftp)`** untuk mengeksploitasi Anonymous FTP, ProFTPD/vsftpd exploits, serta webroot sync attacks.
+> **➡️ NEXT:** Jika kamu menemukan kredensial yang sama digunakan untuk service FTP, atau mendeteksi file transfer staging di server, lanjutkan ke **[07. FTP & FTPS Exploitation Workflow — Master Field Guide](/docs/ftp)** untuk mengeksploitasi Anonymous FTP, ProFTPD/vsftpd exploits, serta webroot sync attacks.

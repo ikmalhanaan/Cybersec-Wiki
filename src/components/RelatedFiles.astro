@@ -19,6 +19,12 @@ const outboundPages = refsOut.map(id => pageMap.get(id)).filter(Boolean);
 const isSmbModule = currentId === '05' || currentSlug.includes('smb');
 const shortcutPasswordCracking = pageMap.get('63'); // 63_password_cracking_workflow
 const shortcutSsh = pageMap.get('06');              // 06_ssh_workflow
+
+// Special 1-click cross-workflow shortcuts for 08 SMTP
+const isSmtpModule = currentId === '08' || currentSlug.includes('smtp');
+const shortcutSmb = pageMap.get('05');              // 05_smb_samba_workflow
+const shortcutDns = pageMap.get('09');              // 09_dns_workflow
+const shortcutAdInit = pageMap.get('35');          // 35_ad_initial_enumeration_workflow
 ---
 
 <aside class="w-72 flex-shrink-0 border-l border-[#30363d] bg-[#0d1117] h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto p-4 hidden xl:block">
@@ -86,6 +92,73 @@ const shortcutSsh = pageMap.get('06');              // 06_ssh_workflow
             >
               <span class="truncate">→ 06. SSH Workflow</span>
               <span class="text-[10px] text-[#8b949e] group-hover:text-[#0d1117] font-mono">1-Klik</span>
+            </a>
+          )}
+        </div>
+      </div>
+    )}
+
+    <!-- PENTING: Quick 1-Click Cross-Workflow Shortcuts for 08_smtp -->
+    {isSmtpModule && (
+      <div class="p-3.5 rounded-xl bg-gradient-to-br from-[#00b4d8]/15 to-[#e84a5f]/10 border border-[#00b4d8]/40 space-y-2.5">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-[#00b4d8] animate-ping"></span>
+          <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-[#00b4d8]">
+            ⚡ SMTP Pivot Shortcuts
+          </span>
+        </div>
+        <p class="text-[11px] text-[#c9d1d9] font-sans">
+          Navigasi cepat panduan & lintas workflow:
+        </p>
+        <div class="space-y-1.5 pt-1">
+          <a
+            href="#smtp-complete-attack-workflow--interactive-decision-guide"
+            class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 text-[#f0f6fc] text-xs font-mono border border-[#00b4d8]/60 hover:border-[#00b4d8] transition-all group font-medium"
+          >
+            <span class="truncate text-[#00b4d8]">🎯 Decision Guide</span>
+            <span class="text-[10px] text-[#8b949e] group-hover:text-white font-mono">Jump ↓</span>
+          </a>
+          <a
+            href="#cross-service-chart-dari-smtp"
+            class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#21262d] hover:bg-[#e84a5f]/20 text-[#f0f6fc] text-xs font-mono border border-[#30363d] hover:border-[#e84a5f] transition-all group font-medium"
+          >
+            <span class="truncate text-[#e84a5f]">📊 Cross-Service Tree</span>
+            <span class="text-[10px] text-[#8b949e] group-hover:text-[#e84a5f] font-mono">Jump ↓</span>
+          </a>
+          {shortcutSsh && (
+            <a
+              href={`/docs/${shortcutSsh.slug}`}
+              class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#21262d] hover:bg-[#00b4d8] text-[#f0f6fc] hover:text-[#0d1117] text-xs font-mono border border-[#30363d] hover:border-[#00b4d8] transition-all group font-medium"
+            >
+              <span class="truncate">→ 06. SSH Spray</span>
+              <span class="text-[10px] text-[#8b949e] group-hover:text-[#0d1117] font-mono">1-Klik</span>
+            </a>
+          )}
+          {shortcutSmb && (
+            <a
+              href={`/docs/${shortcutSmb.slug}`}
+              class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#21262d] hover:bg-[#e84a5f] text-[#f0f6fc] text-xs font-mono border border-[#30363d] hover:border-[#e84a5f] transition-all group font-medium"
+            >
+              <span class="truncate">→ 05. SMB Spray</span>
+              <span class="text-[10px] text-[#8b949e] group-hover:text-white font-mono">1-Klik</span>
+            </a>
+          )}
+          {shortcutDns && (
+            <a
+              href={`/docs/${shortcutDns.slug}`}
+              class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#21262d] hover:bg-[#10b981] text-[#f0f6fc] hover:text-[#0d1117] text-xs font-mono border border-[#30363d] hover:border-[#10b981] transition-all group font-medium"
+            >
+              <span class="truncate">→ 09. DNS Discovery</span>
+              <span class="text-[10px] text-[#8b949e] group-hover:text-[#0d1117] font-mono">1-Klik</span>
+            </a>
+          )}
+          {shortcutAdInit && (
+            <a
+              href={`/docs/${shortcutAdInit.slug}`}
+              class="flex items-center justify-between px-3 py-2 rounded-lg bg-[#21262d] hover:bg-[#ef4444] text-[#f0f6fc] text-xs font-mono border border-[#30363d] hover:border-[#ef4444] transition-all group font-medium"
+            >
+              <span class="truncate">→ 35. AD Enum</span>
+              <span class="text-[10px] text-[#8b949e] group-hover:text-white font-mono">1-Klik</span>
             </a>
           )}
         </div>

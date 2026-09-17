@@ -6650,4 +6650,4 @@ BloodHound Creds/Hash Found
 
 ---
 
-> **➡️ NEXT:** Setelah BloodHound mapping selesai dan ada creds, lanjut ke **`[🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)`** untuk full Kerberos attack chain, atau ke **`[🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)`** jika ada ACL edge yang ditemukan BloodHound.
+> **➡️ NEXT:** Setelah BloodHound mapping selesai dan ada creds, lanjut ke **[🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)** untuk full Kerberos attack chain, atau ke **[🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)** jika ada ACL edge yang ditemukan BloodHound.

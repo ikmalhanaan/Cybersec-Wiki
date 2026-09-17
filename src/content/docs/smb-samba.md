@@ -2291,4 +2291,4 @@ impacket-GetUserSPNs "$DOMAIN/$USER:$PASS" -dc-ip $TARGET -request  # Kerberoast
 
 ---
 
-> **➡️ NEXT:** Setelah SMB selesai dan dapat credentials, lanjut ke **`[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)`** untuk handle SSH keys, bypass algoritma legacy, dan port forwarding untuk pivot ke jaringan internal.
+> **➡️ NEXT:** Setelah SMB selesai dan dapat credentials, lanjut ke **[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)** untuk handle SSH keys, bypass algoritma legacy, dan port forwarding untuk pivot ke jaringan internal.

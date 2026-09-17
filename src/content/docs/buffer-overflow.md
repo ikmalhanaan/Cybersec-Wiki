@@ -4162,7 +4162,7 @@ CODE REUSE / CODE EXECUTION
 
 > **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
 > 
-> **Prerequisites:** File `[🔬 48 — Binary Analysis Workflow](/docs/binary-analysis)` sudah selesai — binary sudah diidentifikasi, crash sudah direproduksi, dan ada indikasi input dapat mengontrol control data.
+> **Prerequisites:** File [🔬 48 — Binary Analysis Workflow](/docs/binary-analysis) sudah selesai — binary sudah diidentifikasi, crash sudah direproduksi, dan ada indikasi input dapat mengontrol control data.
 
 ---
 
@@ -5161,7 +5161,7 @@ Bash
 ROPgadget --binary $LIBC_PATH | grep "pop rdi ; ret"
 ```
 
-Atau gunakan ret2csu (lanjut ke `[🔗 50 — ROP Chain Workflow](/docs/rop-chain)`)
+Atau gunakan ret2csu (lanjut ke [🔗 50 — ROP Chain Workflow](/docs/rop-chain))
 
 ---
 
@@ -5977,9 +5977,9 @@ p = process(elf.path); p.sendline(payload); p.interactive()
 
 ---
 
-> **➡️ NEXT:** Setelah memahami BOF dasar, lanjut ke **`[🔗 50 — ROP Chain Workflow](/docs/rop-chain)`** untuk teknik ROP chain yang lebih kompleks (leak libc dengan ASLR, ret2csu, dll), dan **`[🧭 BAGIAN 0: FONDASI REVERSE ENGINEERING](/docs/reverse-engineering)`** jika binary perlu di-reverse lebih dalam untuk menemukan vulnerability.
+> **➡️ NEXT:** Setelah memahami BOF dasar, lanjut ke **[🔗 50 — ROP Chain Workflow](/docs/rop-chain)** untuk teknik ROP chain yang lebih kompleks (leak libc dengan ASLR, ret2csu, dll), dan **[🧭 BAGIAN 0: FONDASI REVERSE ENGINEERING](/docs/reverse-engineering)** jika binary perlu di-reverse lebih dalam untuk menemukan vulnerability.
 > 
-> **⬅️ BACK:** Jika binary belum teridentifikasi tipe vulnerability-nya, kembali ke **`[🔬 48 — Binary Analysis Workflow](/docs/binary-analysis)`**.
+> **⬅️ BACK:** Jika binary belum teridentifikasi tipe vulnerability-nya, kembali ke **[🔬 48 — Binary Analysis Workflow](/docs/binary-analysis)**.
 > 
 > **🔗 CROSS-REFERENCE:** Jika binary ini adalah SUID binary di sistem target → hasilnya bisa langsung jadi privilege escalation → **`<a href="/docs/sudo-suid-capabilities" class="text-[#00b4d8] hover:underline font-mono font-semibold">47_sudo_suid_capabilities_workflow.md</a>`**.
 

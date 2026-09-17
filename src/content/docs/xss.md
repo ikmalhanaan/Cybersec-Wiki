@@ -5752,6 +5752,6 @@ done
 
 ---
 
-> **➡️ NEXT:** Setelah XSS selesai dan berhasil mendapat session/credentials, lanjut ke **`[🧬 21 — XXE Workflow](/docs/xxe)`** untuk handle XML-based injection, atau ke **`[🔐 27 — IDOR / Access Control Workflow](/docs/idor-access-control)`** jika akses admin panel sudah didapat tapi perlu escalate privileges lebih lanjut.
+> **➡️ NEXT:** Setelah XSS selesai dan berhasil mendapat session/credentials, lanjut ke **[🧬 21 — XXE Workflow](/docs/xxe)** untuk handle XML-based injection, atau ke **[🔐 27 — IDOR / Access Control Workflow](/docs/idor-access-control)** jika akses admin panel sudah didapat tapi perlu escalate privileges lebih lanjut.
 > 
-> **Jika XSS menghasilkan internal network access:** lanjut ke **`[🌐 22 — SSRF Workflow](/docs/ssrf)`** karena XSS + fetch ke internal = SSRF via victim browser.
+> **Jika XSS menghasilkan internal network access:** lanjut ke **[🌐 22 — SSRF Workflow](/docs/ssrf)** karena XSS + fetch ke internal = SSRF via victim browser.

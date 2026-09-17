@@ -2201,7 +2201,7 @@ $
 ➡️ **SHELL sebagai www-data!** Selanjutnya:
 
 - Upgrade shell: `python3 -c 'import pty; pty.spawn("/bin/bash")'`
-- Lanjut ke `[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)` untuk privilege escalation
+- Lanjut ke [🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc) untuk privilege escalation
 
 **OUTPUT GAGAL ❌ — ERROR 1086 (File already exists):**
 
@@ -2658,7 +2658,7 @@ ssh root@$TARGET
 sshpass -p "Password123!" ssh root@$TARGET
 ```
 
-➡️ Lanjut ke **`[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)`**
+➡️ Lanjut ke **[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)**
 
 ---
 
@@ -2882,8 +2882,8 @@ hydra -l root -P /usr/share/wordlists/rockyou.txt mysql://$TARGET -t 4
 
 > **➡️ NEXT:** Setelah MySQL selesai dan dapat credentials atau shell, lanjut ke:
 > 
-> - **`[Pentest Workflow: Microsoft SQL Server (MSSQL) Exploitation](/docs/mssql)`** — Jika ada port 1433 (MSSQL/Windows environment)
-> - **`[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)`** — Jika dapat shell www-data dan perlu escalate ke root
-> - **`[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)`** — Jika dapat SSH key atau password yang valid untuk SSH
+> - **[Pentest Workflow: Microsoft SQL Server (MSSQL) Exploitation](/docs/mssql)** — Jika ada port 1433 (MSSQL/Windows environment)
+> - **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** — Jika dapat shell www-data dan perlu escalate ke root
+> - **[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)** — Jika dapat SSH key atau password yang valid untuk SSH
 
 [](https://messages-prod.27c852f3500f38c1e7786e2c9ff9e48f.r2.cloudflarestorage.com/aad5bafd-ac04-4d8f-9667-3d87b6995a58/1789036421233-14a_mysql_workflow.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=b33de61d4f22a31b59b25364ab5037c5%2F20260910%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260910T103343Z&X-Amz-Expires=3600&X-Amz-Signature=d59b0d3305ea9bc6a1f05df9a87d8ae152c9c20348397a6c6f7e46f43657177e&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)

@@ -6158,7 +6158,7 @@ krbtgt:502:aad3b435b51404eeaad3b435b51404ee:9d765b482771505cbe97411065f6a9ed:::
 
 ➡️ **DOMAIN COMPROMISED!** Lanjut ke:
 
-- **`[🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)`** — Buat persistence sebelum hash diubah
+- **[🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)** — Buat persistence sebelum hash diubah
 - Catat semua hash penting untuk lateral movement
 
 ---
@@ -6309,6 +6309,6 @@ openssl pkcs12 -in administrator.pfx -nodes -nokeys 2>/dev/null | \
 
 > **➡️ NEXT:** Setelah AD CS exploitation berhasil dan dapat Domain Admin hash/ticket, lanjut ke:
 > 
-> - **`[🔁 Workflow 41 — NTLM Relay](/docs/ntlm-relay)`** — Untuk teknik relay yang lebih dalam (ESC8 bergantung pada ini)
-> - **`[🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)`** — Buat persistence sebelum hash diubah (certificate-based persistence sangat powerful karena tidak expire saat password reset)
-> - **`[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)`** — Gunakan hash untuk pivot ke machine lain di network
+> - **[🔁 Workflow 41 — NTLM Relay](/docs/ntlm-relay)** — Untuk teknik relay yang lebih dalam (ESC8 bergantung pada ini)
+> - **[🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)** — Buat persistence sebelum hash diubah (certificate-based persistence sangat powerful karena tidak expire saat password reset)
+> - **[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)** — Gunakan hash untuk pivot ke machine lain di network

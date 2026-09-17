@@ -6198,7 +6198,7 @@ trustType: 2
 flatName: CHILD
 ```
 
-> ⚠️ Jika ada trust → ada kemungkinan **cross-domain attack**. Catat ini untuk `<a href="/docs/ad-acl-abuse" class="text-[#00b4d8] hover:underline font-mono font-semibold">38_ad_acl_abuse_workflow.md</a>` dan `[🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)`
+> ⚠️ Jika ada trust → ada kemungkinan **cross-domain attack**. Catat ini untuk `<a href="/docs/ad-acl-abuse" class="text-[#00b4d8] hover:underline font-mono font-semibold">38_ad_acl_abuse_workflow.md</a>` dan [🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)
 
 ---
 
@@ -6734,6 +6734,6 @@ text
 
 ---
 
-> **➡️ NEXT:** Setelah data terkumpul, lanjut ke **`[🩸 36 — Active Directory BloodHound Workflow](/docs/ad-bloodhound)`** untuk analisis attack path dan temukan jalur dari current user ke Domain Admin menggunakan BloodHound CE graph analysis.
+> **➡️ NEXT:** Setelah data terkumpul, lanjut ke **[🩸 36 — Active Directory BloodHound Workflow](/docs/ad-bloodhound)** untuk analisis attack path dan temukan jalur dari current user ke Domain Admin menggunakan BloodHound CE graph analysis.
 
 [](https://messages-prod.27c852f3500f38c1e7786e2c9ff9e48f.r2.cloudflarestorage.com/aad5bafd-ac04-4d8f-9667-3d87b6995a58/1789125263609-35_ad_initial_enumeration_workflow.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=b33de61d4f22a31b59b25364ab5037c5%2F20260911%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260911T111426Z&X-Amz-Expires=3600&X-Amz-Signature=a07417357c6a8a49600bf9e608e4cfb77abf29ce266234887a7ed190c601cf82&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)

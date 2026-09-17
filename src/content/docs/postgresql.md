@@ -2769,7 +2769,7 @@ hydra -l postgres -P /usr/share/wordlists/rockyou.txt postgresql://$TARGET -t 4 
 
 > **➡️ NEXT:** Setelah PostgreSQL selesai:
 > 
-> - **`[📦 BAGIAN 1: REDIS & NOSQL FUNDAMENTALS](/docs/redis-and-mongodb)`** — Jika ada port 6379 (Redis) atau 27017 (MongoDB)
-> - **`[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)`** — Jika dapat shell postgres dan perlu escalate ke root
-> - **`[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)`** — Jika dapat SSH key dari pg_read_file()
-> - **`[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)`** — Jika environment Active Directory
+> - **[📦 BAGIAN 1: REDIS & NOSQL FUNDAMENTALS](/docs/redis-and-mongodb)** — Jika ada port 6379 (Redis) atau 27017 (MongoDB)
+> - **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** — Jika dapat shell postgres dan perlu escalate ke root
+> - **[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)** — Jika dapat SSH key dari pg_read_file()
+> - **[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)** — Jika environment Active Directory

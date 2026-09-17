@@ -4696,7 +4696,7 @@ python3 /opt/impacket/examples/rbcd.py "$DOMAIN/$USERNAME:$PASSWORD" \
 
 > **➡️ NEXT:** Setelah delegation berhasil dan dapat privileged access, lanjut ke:
 > 
-> - **`[🔐 Workflow 40 — Active Directory Certificate Services (AD CS)](/docs/adcs)`** — Jika environment punya AD Certificate Services
-> - **`[🔁 Workflow 41 — NTLM Relay](/docs/ntlm-relay)`** — Untuk gabungkan coercion dengan relay attack
-> - **`[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)`** — Gunakan hash/ticket untuk pivot ke mesin lain
-> - **`[🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)`** — Setelah dapat DA, buat persistence
+> - **[🔐 Workflow 40 — Active Directory Certificate Services (AD CS)](/docs/adcs)** — Jika environment punya AD Certificate Services
+> - **[🔁 Workflow 41 — NTLM Relay](/docs/ntlm-relay)** — Untuk gabungkan coercion dengan relay attack
+> - **[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)** — Gunakan hash/ticket untuk pivot ke mesin lain
+> - **[🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)** — Setelah dapat DA, buat persistence

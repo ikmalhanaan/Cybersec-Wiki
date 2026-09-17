@@ -6438,4 +6438,4 @@ python3 ~/tools/jwt_tool/jwt_tool.py "$JWT" \
 
 ---
 
-> **➡️ NEXT:** Setelah JWT berhasil dieksploitasi dan dapat akses admin, lanjut ke **`[🛡️ 29 — CSRF Workflow](/docs/csrf)`** untuk test CSRF di admin panel, atau jika menemukan API endpoints → **`<a href="/docs/api-security" class="text-[#00b4d8] hover:underline font-mono font-semibold">30_api_security_workflow.md</a>`**. Jika sub/user_id bisa dimanipulasi → **`<a href="/docs/idor-access-control" class="text-[#00b4d8] hover:underline font-mono font-semibold">27_idor_access_control_workflow.md</a>`**.
+> **➡️ NEXT:** Setelah JWT berhasil dieksploitasi dan dapat akses admin, lanjut ke **[🛡️ 29 — CSRF Workflow](/docs/csrf)** untuk test CSRF di admin panel, atau jika menemukan API endpoints → **`<a href="/docs/api-security" class="text-[#00b4d8] hover:underline font-mono font-semibold">30_api_security_workflow.md</a>`**. Jika sub/user_id bisa dimanipulasi → **`<a href="/docs/idor-access-control" class="text-[#00b4d8] hover:underline font-mono font-semibold">27_idor_access_control_workflow.md</a>`**.

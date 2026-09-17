@@ -4943,7 +4943,7 @@ SHELL
 
 > **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
 > 
-> **Prerequisites:** File `[🔬 48 — Binary Analysis Workflow](/docs/binary-analysis)` dan `[💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow)` sudah selesai — kamu sudah bisa kontrol RIP/EIP, sudah tahu offset, dan paham bahwa target tidak punya `win()` atau ASLR menghalangi hardcode address.
+> **Prerequisites:** File [🔬 48 — Binary Analysis Workflow](/docs/binary-analysis) dan [💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow) sudah selesai — kamu sudah bisa kontrol RIP/EIP, sudah tahu offset, dan paham bahwa target tidak punya `win()` atau ASLR menghalangi hardcode address.
 
 ---
 
@@ -5058,7 +5058,7 @@ text
     NX:       NX enabled
 ```
 
-➡️ Butuh canary bypass dulu. Lihat `[💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow)` Fase 6, baru kembali ke sini.
+➡️ Butuh canary bypass dulu. Lihat [💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow) Fase 6, baru kembali ke sini.
 
 **OUTPUT BERBEDA 🟡 — Ada `win()` atau `system()` di PLT:**
 
@@ -5070,7 +5070,7 @@ Symbols: ['win', 'main', 'vuln']
 PLT: ['puts', 'system', 'gets']
 ```
 
-➡️ **STOP!** Tidak perlu ROP kompleks. Kembali ke `[💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow)` Fase 4A (ret2win) atau Fase 4B (ret2libc simple). File ini untuk kasus yang lebih sulit.
+➡️ **STOP!** Tidak perlu ROP kompleks. Kembali ke [💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow) Fase 4A (ret2win) atau Fase 4B (ret2libc simple). File ini untuk kasus yang lebih sulit.
 
 ---
 
@@ -5108,7 +5108,7 @@ text
 # Segfault tapi RIP tidak 0x4242...
 ```
 
-➡️ Offset salah. Kembali ke `[💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow)` Langkah 2.2 untuk re-cari offset.
+➡️ Offset salah. Kembali ke [💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow) Langkah 2.2 untuk re-cari offset.
 
 ---
 
@@ -6452,8 +6452,8 @@ p.interactive()
 
 ---
 
-> **➡️ NEXT:** Setelah ROP chain berhasil, lanjut ke **`[🧭 BAGIAN 0: FONDASI REVERSE ENGINEERING](/docs/reverse-engineering)`** untuk binary yang perlu di-reverse lebih dalam (stripped, obfuscated), dan **`[🧩 File 52 — CTF Binary Patterns](/docs/ctf-binary-patterns)`** untuk pattern recognition yang lebih cepat saat CTF.
+> **➡️ NEXT:** Setelah ROP chain berhasil, lanjut ke **[🧭 BAGIAN 0: FONDASI REVERSE ENGINEERING](/docs/reverse-engineering)** untuk binary yang perlu di-reverse lebih dalam (stripped, obfuscated), dan **[🧩 File 52 — CTF Binary Patterns](/docs/ctf-binary-patterns)** untuk pattern recognition yang lebih cepat saat CTF.
 > 
-> **⬅️ BACK:** Jika belum bisa kontrol RIP atau belum tahu offset, kembali ke **`[💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow)`**.
+> **⬅️ BACK:** Jika belum bisa kontrol RIP atau belum tahu offset, kembali ke **[💥 49 — Buffer Overflow Workflow](/docs/buffer-overflow)**.
 > 
 > **🧠 MUSCLE MEMORY:** Ketika melihat `NX ON + ASLR ON + No win()`, otakmu harus langsung thinking: `checksec → gadget → leak chain → libc base → ret2libc`

@@ -392,6 +392,16 @@ function resolveRefsInMarkdown(rawMarkdown) {
     return match;
   });
 
+  // 4. Clean up any markdown link that became wrapped in backticks (e.g. `[Title](/docs/slug)`)
+  body = body.replace(/`(\[[^\]]+\]\(\/docs\/[^)]+\))`|\`(\[.+?\]\(.+?\))\`/g, (m, g1, g2) => g1 || g2);
+
+  // 5. Sanitize dummy AWS keys to prevent GitHub Secret Scanning false-positive alerts
+  body = body.replace(/ASIAQAAAAAAAZEXAMPLE/g, 'ASIA_EXAMPLE_TEMP_KEY');
+  body = body.replace(/ASIAEXAMPLEACCESSKEY/g, 'ASIA_EXAMPLE_TEMP_KEY');
+  body = body.replace(/ASIAIOSFODNN7EXAMPLE/g, 'ASIA_EXAMPLE_TEMP_KEY');
+  body = body.replace(/AKIACREATEDKEYID1234/g, 'AKIA_EXAMPLE_CREATED_KEY');
+  body = body.replace(/AKIAEXAMPLEHOTPOCKET/g, 'AKIAIOSFODNN7EXAMPLE');
+
   return body;
 }
 

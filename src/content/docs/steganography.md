@@ -9,7 +9,7 @@ refs_in: ["55","57"]
 ---
 
 > **Target Environment:** Parrot OS XFCE (Debian-based)  
-> **Prerequisites:** Memahami konsep dasar Linux CLI, hex editor, dan inspeksi file dasar (referensi: `[🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)`).  
+> **Prerequisites:** Memahami konsep dasar Linux CLI, hex editor, dan inspeksi file dasar (referensi: [🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)).  
 > **Fokus Utama:** Menyelesaikan challenge steganography di platform CTF (PicoCTF, HackTheBox, TryHackMe) tanpa bergantung pada pencarian manual di Google.
 
 ---

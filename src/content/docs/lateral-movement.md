@@ -4581,7 +4581,7 @@ Dan muscle memory paling penting:
 
 > **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
 > 
-> **Prerequisites:** Sudah punya credential dari `[🔁 Workflow 41 — NTLM Relay](/docs/ntlm-relay)`, `[🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)`, atau fase exploitation sebelumnya.
+> **Prerequisites:** Sudah punya credential dari [🔁 Workflow 41 — NTLM Relay](/docs/ntlm-relay), [🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting), atau fase exploitation sebelumnya.
 
 ---
 
@@ -6085,7 +6085,7 @@ New Credentials Found
 
 > **➡️ NEXT STEPS setelah Lateral Movement:**
 > 
-> - Dapat SYSTEM/root di Windows → `<a href="/docs/windows-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">45_windows_privesc_workflow.md</a>` (privesc analysis) atau `[🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)`
+> - Dapat SYSTEM/root di Windows → `<a href="/docs/windows-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">45_windows_privesc_workflow.md</a>` (privesc analysis) atau [🔐 Workflow 43 — Domain Persistence](/docs/domain-persistence)
 > - Dapat shell di Linux → `<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`
 > - Dapat krbtgt hash → `<a href="/docs/domain-persistence" class="text-[#00b4d8] hover:underline font-mono font-semibold">43_domain_persistence_workflow.md</a>` (Golden Ticket)
 > - Butuh akses internal network → Setup pivot dulu (Fase 5)

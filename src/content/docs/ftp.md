@@ -2607,4 +2607,4 @@ curl -k --ftp-ssl -u "$USER:$PASS" ftp://$TARGET/
 
 ---
 
-> **➡️ NEXT:** Setelah FTP selesai dan dapat credentials/shell, lanjut ke **`[08. SMTP Exploitation & User Enumeration Workflow — Master Field Guide](/docs/smtp)`** untuk user enumeration via VRFY/EXPN, deteksi open relay, dan intercept email credentials.
+> **➡️ NEXT:** Setelah FTP selesai dan dapat credentials/shell, lanjut ke **[08. SMTP Exploitation & User Enumeration Workflow — Master Field Guide](/docs/smtp)** untuk user enumeration via VRFY/EXPN, deteksi open relay, dan intercept email credentials.

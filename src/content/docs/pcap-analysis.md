@@ -9,7 +9,7 @@ refs_in: ["55","56","58","62","64"]
 ---
 
 > **Target Environment:** Parrot OS XFCE (Debian-based)  
-> **Prerequisites:** Memahami dasar Linux CLI, konsep dasar IP/TCP/UDP, dan inspeksi file dasar (referensi: `[🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)`).  
+> **Prerequisites:** Memahami dasar Linux CLI, konsep dasar IP/TCP/UDP, dan inspeksi file dasar (referensi: [🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)).  
 > **Fokus Utama:** Network Forensics tingkat lanjut untuk CTF (HackTheBox, TryHackMe, PicoCTF) dan investigasi insiden tanpa ketergantungan pada browsing manual.
 
 ---
@@ -1315,7 +1315,7 @@ Berikut adalah 12 pola challenge PCAP yang paling sering ditemui dalam CTF:
     tshark -r target.pcap --export-objects "http,recovered_images" -q
     ```
     
-- **Analisis:** Buka file gambar hasil ekstraksi menggunakan image viewer atau teruskan ke workflow steganography (`[🏛️ Bagian 0: Fondasi Steganography](/docs/steganography)`).
+- **Analisis:** Buka file gambar hasil ekstraksi menggunakan image viewer atau teruskan ke workflow steganography ([🏛️ Bagian 0: Fondasi Steganography](/docs/steganography)).
 
 ---
 
@@ -3528,4 +3528,4 @@ tshark -r $PCAP -q -z "follow,tcp,raw,0" | tail -n +7 | head -n -1 | xxd -r -p >
 
 ---
 
-> **➡️ NEXT:** Setelah analisis PCAP selesai dan flag ditemukan atau artifacts di-extract, lanjut ke **`[🧠 Bagian 0: Fondasi Memory Forensics](/docs/memory-forensics)`** jika challenge memberikan memory dump, atau ke **`[🏛️ Bagian 0: Fondasi Steganography](/docs/steganography)`** jika ditemukan file gambar/audio yang mencurigakan dari hasil ekstraksi HTTP/FTP.
+> **➡️ NEXT:** Setelah analisis PCAP selesai dan flag ditemukan atau artifacts di-extract, lanjut ke **[🧠 Bagian 0: Fondasi Memory Forensics](/docs/memory-forensics)** jika challenge memberikan memory dump, atau ke **[🏛️ Bagian 0: Fondasi Steganography](/docs/steganography)** jika ditemukan file gambar/audio yang mencurigakan dari hasil ekstraksi HTTP/FTP.

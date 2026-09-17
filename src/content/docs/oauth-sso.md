@@ -4918,7 +4918,7 @@ echo "SAML_BASE64" | base64 -d | xmllint --format - 2>/dev/null
 
 > **➡️ NEXT:** Setelah OAuth/SSO testing selesai:
 > 
-> - **`[🔐 28 — JWT Workflow](/docs/jwt)`** — Detail JWT testing (algorithm confusion, key confusion, dll)
-> - **`[🛡️ 29 — CSRF Workflow](/docs/csrf)`** — OAuth CSRF lebih detail
-> - **`[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)`** — Jika OAuth terhubung ke Active Directory / enterprise SSO
-> - **`[🔌 30 — API Security Workflow](/docs/api-security)`** — Testing API endpoints yang diakses dengan OAuth token
+> - **[🔐 28 — JWT Workflow](/docs/jwt)** — Detail JWT testing (algorithm confusion, key confusion, dll)
+> - **[🛡️ 29 — CSRF Workflow](/docs/csrf)** — OAuth CSRF lebih detail
+> - **[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)** — Jika OAuth terhubung ke Active Directory / enterprise SSO
+> - **[🔌 30 — API Security Workflow](/docs/api-security)** — Testing API endpoints yang diakses dengan OAuth token

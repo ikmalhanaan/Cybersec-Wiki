@@ -5746,4 +5746,4 @@ curl -G --data-urlencode "cmd=grep -r 'password' /var/www/ 2>/dev/null" "http://
 
 ---
 
-> **➡️ NEXT:** Setelah berhasil upload dan dapat shell, lanjut ke **`[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)`** (Linux) atau **`[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`** (Windows) untuk privilege escalation. Jika menemukan credentials dari config file, test ke semua service dengan **`[05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)`** dan **`[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)`**.
+> **➡️ NEXT:** Setelah berhasil upload dan dapat shell, lanjut ke **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** (Linux) atau **[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)** (Windows) untuk privilege escalation. Jika menemukan credentials dari config file, test ke semua service dengan **[05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)** dan **[06. SSH Exploitation & Tunneling Workflow — Master Field Guide](/docs/ssh)**.

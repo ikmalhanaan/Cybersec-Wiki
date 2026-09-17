@@ -3422,4 +3422,4 @@ Hash cracking deep-dive     → <a href="/docs/hash-cracking" class="text-[#00b4
 
 ---
 
-> **➡️ NEXT:** Setelah berhasil identifikasi dan solve crypto challenge, lanjut ke **`[🔐 File 54 — Hash Cracking Workflow](/docs/hash-cracking)`** untuk teknik hash cracking yang lebih advanced — GPU acceleration, distributed cracking, dan custom rule creation.
+> **➡️ NEXT:** Setelah berhasil identifikasi dan solve crypto challenge, lanjut ke **[🔐 File 54 — Hash Cracking Workflow](/docs/hash-cracking)** untuk teknik hash cracking yang lebih advanced — GPU acceleration, distributed cracking, dan custom rule creation.

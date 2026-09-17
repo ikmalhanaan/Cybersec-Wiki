@@ -2290,4 +2290,4 @@ SNMP Findings
 
 ---
 
-> **➡️ NEXT:** Setelah SNMP selesai dan punya daftar user Windows/Linux, lanjut ke **`[11_ldap_workflow.md — Pentest Workflow: LDAP & Active Directory Enumeration](/docs/ldap)`** untuk Anonymous Bind LDAP dan dump seluruh struktur Active Directory termasuk SPN accounts untuk Kerberoasting.
+> **➡️ NEXT:** Setelah SNMP selesai dan punya daftar user Windows/Linux, lanjut ke **[11_ldap_workflow.md — Pentest Workflow: LDAP & Active Directory Enumeration](/docs/ldap)** untuk Anonymous Bind LDAP dan dump seluruh struktur Active Directory termasuk SPN accounts untuk Kerberoasting.

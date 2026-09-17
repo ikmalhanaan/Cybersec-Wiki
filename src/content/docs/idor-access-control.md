@@ -6188,4 +6188,4 @@ curl -si -b userA.cookies -X POST \
 
 ---
 
-> **➡️ NEXT:** Setelah IDOR selesai, jika ditemukan JWT yang menarik lanjut ke **`[🔐 28 — JWT Workflow](/docs/jwt)`**. Jika ada file upload yang bisa diakses via IDOR → **`<a href="/docs/file-upload" class="text-[#00b4d8] hover:underline font-mono font-semibold">25_file_upload_workflow.md</a>`**.
+> **➡️ NEXT:** Setelah IDOR selesai, jika ditemukan JWT yang menarik lanjut ke **[🔐 28 — JWT Workflow](/docs/jwt)**. Jika ada file upload yang bisa diakses via IDOR → **`<a href="/docs/file-upload" class="text-[#00b4d8] hover:underline font-mono font-semibold">25_file_upload_workflow.md</a>`**.

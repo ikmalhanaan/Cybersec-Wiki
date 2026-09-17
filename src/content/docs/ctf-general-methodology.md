@@ -2982,7 +2982,7 @@ Kapan digunakan:
 → ketika authentication context sudah diketahui
 ```
 
-File ini tersedia di library sebagai `[🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)`.
+File ini tersedia di library sebagai [🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting).
 
 ## File 38 — AD ACL Abuse
 
@@ -2996,7 +2996,7 @@ Kapan digunakan:
 → AddMember
 ```
 
-File ini tersedia sebagai `[🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)`.
+File ini tersedia sebagai [🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse).
 
 ## File 39–43
 

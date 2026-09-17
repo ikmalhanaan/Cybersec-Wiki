@@ -5008,4 +5008,4 @@ nc -lvnp $LPORT &
 
 ---
 
-> **➡️ NEXT:** Setelah deserialization selesai, lanjut ke **`[33 — CORS Workflow 🌐](/docs/cors)`** untuk CORS misconfiguration yang sering muncul bersamaan di aplikasi yang sama, atau jika dapat shell → ke **`<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`** / **`[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`** untuk privilege escalation.
+> **➡️ NEXT:** Setelah deserialization selesai, lanjut ke **[33 — CORS Workflow 🌐](/docs/cors)** untuk CORS misconfiguration yang sering muncul bersamaan di aplikasi yang sama, atau jika dapat shell → ke **`<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`** / **[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)** untuk privilege escalation.

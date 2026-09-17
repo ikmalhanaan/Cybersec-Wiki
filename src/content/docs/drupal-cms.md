@@ -2887,4 +2887,4 @@ find / -name "*.bak" -o -name "id_rsa" 2>/dev/null
 
 ---
 
-> **➡️ NEXT:** Setelah Drupal selesai dan dapat shell atau credentials, lanjut ke **`[🌐 File 17d: Other CMS Exploitation Workflow & Master CMS Reference](/docs/other-cms)`** untuk CMS lain yang lebih jarang tapi tetap muncul di CTF (Magento, Ghost, TYPO3, dll). Atau jika credentials dari Drupal bisa dipakai di service lain, ikuti Cross-Service chart di Fase 6.4.
+> **➡️ NEXT:** Setelah Drupal selesai dan dapat shell atau credentials, lanjut ke **[🌐 File 17d: Other CMS Exploitation Workflow & Master CMS Reference](/docs/other-cms)** untuk CMS lain yang lebih jarang tapi tetap muncul di CTF (Magento, Ghost, TYPO3, dll). Atau jika credentials dari Drupal bisa dipakai di service lain, ikuti Cross-Service chart di Fase 6.4.

@@ -2638,7 +2638,7 @@ text
 ➡️ Service account ini tidak punya privilege impersonation. Coba:
 
 - Cek privilege lain yang bisa dieksploitasi
-- Lanjut ke `[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`
+- Lanjut ke [🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)
 
 ---
 
@@ -3073,8 +3073,8 @@ evil-winrm -i $TARGET -u "Administrator" -H "$NTLM_HASH"  # Shell via WinRM
 
 > **➡️ NEXT:** Setelah MSSQL selesai:
 > 
-> - **`[14c. PostgreSQL Exploitation Workflow — Master Field Guide](/docs/postgresql)`** — Jika ada port 5432 (PostgreSQL, sering di Linux)
-> - **`[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`** — Jika dapat shell dan perlu escalate privilege
-> - **`[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)`** — Jika environment AD dan punya domain credentials
-> - **`[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)`** — Jika dapat NTLM hashes untuk lateral movement
+> - **[14c. PostgreSQL Exploitation Workflow — Master Field Guide](/docs/postgresql)** — Jika ada port 5432 (PostgreSQL, sering di Linux)
+> - **[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)** — Jika dapat shell dan perlu escalate privilege
+> - **[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)** — Jika environment AD dan punya domain credentials
+> - **[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)** — Jika dapat NTLM hashes untuk lateral movement
 

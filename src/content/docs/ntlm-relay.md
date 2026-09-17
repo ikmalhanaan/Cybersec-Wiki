@@ -3901,7 +3901,7 @@ Dan kalimat yang harus benar-benar tertanam:
 
 > **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
 > 
-> **Prerequisites:** SMB Signing check sudah dilakukan (dari `[05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)`), atau sudah dalam AD environment dari `[🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)`
+> **Prerequisites:** SMB Signing check sudah dilakukan (dari [05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)), atau sudah dalam AD environment dari [🏰 35 — Active Directory Initial Enumeration Workflow](/docs/ad-initial-enumeration)
 
 ---
 
@@ -4817,7 +4817,7 @@ text
 [*] FAKEMACHINE can now impersonate users on DC01 via S4U2Proxy
 ```
 
-➡️ Lanjut ke `[🔐 Workflow 39 — Active Directory Delegation](/docs/ad-delegation)` untuk eksploitasi RBCD dengan S4U2Self/S4U2Proxy
+➡️ Lanjut ke [🔐 Workflow 39 — Active Directory Delegation](/docs/ad-delegation) untuk eksploitasi RBCD dengan S4U2Self/S4U2Proxy
 
 **OUTPUT BERHASIL ✅ — Shadow Credentials ditambahkan:**
 
@@ -5350,7 +5350,7 @@ cat /etc/hosts
 ```
 
 ➡️ Setiap IP baru yang ditemukan = potential pivot target  
-➡️ Lanjut ke `[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)`  
+➡️ Lanjut ke [🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)  
 ➡️ Jika sudah DA → lanjut ke `<a href="/docs/domain-persistence" class="text-[#00b4d8] hover:underline font-mono font-semibold">43_domain_persistence_workflow.md</a>`
 
 ---

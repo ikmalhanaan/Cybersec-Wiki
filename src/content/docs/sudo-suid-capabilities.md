@@ -6129,6 +6129,6 @@ cat /root/.bash_history
 
 ---
 
-> **➡️ NEXT:** Setelah berhasil root, credentials yang didapat (hash dari /etc/shadow, SSH keys) bisa digunakan di **`[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)`** untuk persistence, atau di **`[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)`** untuk pivot ke mesin lain di jaringan yang sama. Hash dari shadow bisa di-crack menggunakan **`[🔐 File 54 — Hash Cracking Workflow](/docs/hash-cracking)`**.
+> **➡️ NEXT:** Setelah berhasil root, credentials yang didapat (hash dari /etc/shadow, SSH keys) bisa digunakan di **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** untuk persistence, atau di **[🧭 Workflow 42 — Lateral Movement](/docs/lateral-movement)** untuk pivot ke mesin lain di jaringan yang sama. Hash dari shadow bisa di-crack menggunakan **[🔐 File 54 — Hash Cracking Workflow](/docs/hash-cracking)**.
 
 [](https://messages-prod.27c852f3500f38c1e7786e2c9ff9e48f.r2.cloudflarestorage.com/aad5bafd-ac04-4d8f-9667-3d87b6995a58/1789143859916-47_sudo_suid_capabilities_workflow.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=b33de61d4f22a31b59b25364ab5037c5%2F20260911%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260911T162423Z&X-Amz-Expires=3600&X-Amz-Signature=81556964bd80501421df2f9346641636ae61e4af41b2d3cf3df47a2abb95e45f&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject)

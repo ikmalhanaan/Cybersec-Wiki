@@ -3340,8 +3340,8 @@ nxc smb $TARGET -u $DB_USER -p $DB_PASS          # → <a href="/docs/smb-samba"
 
 > **➡️ NEXT:** Setelah CMS detection dan web shell didapat, lanjut ke:
 > 
-> - **`[🛡️ 17a. WordPress Advanced Exploitation & Workflow Guide](/docs/wordpress)`** — WordPress exploitation lanjutan (WAF bypass, advanced persistence)
-> - **`[📘 17b — Joomla Workflow: Deep Dive untuk CTF](/docs/joomla)`** — Joomla exploitation detail
-> - **`[💧 File 17c: Drupal Pentesting & Exploitation Workflow](/docs/drupal-cms)`** — Drupal exploitation detail
-> - **`[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)`** — Privesc setelah dapat www-data shell
-> - **`[14a. MySQL & MariaDB Exploitation Workflow — Master Field Guide](/docs/mysql)`** — Jika DB credentials ditemukan
+> - **[🛡️ 17a. WordPress Advanced Exploitation & Workflow Guide](/docs/wordpress)** — WordPress exploitation lanjutan (WAF bypass, advanced persistence)
+> - **[📘 17b — Joomla Workflow: Deep Dive untuk CTF](/docs/joomla)** — Joomla exploitation detail
+> - **[💧 File 17c: Drupal Pentesting & Exploitation Workflow](/docs/drupal-cms)** — Drupal exploitation detail
+> - **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** — Privesc setelah dapat www-data shell
+> - **[14a. MySQL & MariaDB Exploitation Workflow — Master Field Guide](/docs/mysql)** — Jika DB credentials ditemukan

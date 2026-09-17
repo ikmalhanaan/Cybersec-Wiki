@@ -2206,7 +2206,7 @@ SETELAH PASSWORD DIDAPAT
 
 # ➡️ Lanjut ke File Berikutnya
 
-## 🔗 `[🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)`
+## 🔗 [🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)
 
 Setelah mendapatkan credentials dari **Kerberoasting** atau **AS-REP Roasting**, langkah selanjutnya adalah melihat **apa yang bisa dilakukan dengan credentials tersebut melalui ACL abuse**.
 
@@ -2299,7 +2299,7 @@ Format
 
 > **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
 > 
-> **Konteks:** Dokumen ini diasumsikan kamu sudah masuk ke environment Active Directory — entah dari SMB enumeration, dari exploit sebelumnya, atau dari credentials yang ditemukan di share. Jika belum, kembali ke `[05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)` dulu.
+> **Konteks:** Dokumen ini diasumsikan kamu sudah masuk ke environment Active Directory — entah dari SMB enumeration, dari exploit sebelumnya, atau dari credentials yang ditemukan di share. Jika belum, kembali ke [05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba) dulu.
 
 ---
 
@@ -3429,7 +3429,7 @@ text
 MSSQL  10.10.10.100  1433  DC01  [+] CORP\svc_sql:Summer2023! (Pwn3d!)
 ```
 
-➡️ Lanjut ke `[Pentest Workflow: Microsoft SQL Server (MSSQL) Exploitation](/docs/mssql)`:
+➡️ Lanjut ke [Pentest Workflow: Microsoft SQL Server (MSSQL) Exploitation](/docs/mssql):
 
 Bash
 
@@ -3519,7 +3519,7 @@ text
 # Atau: svc_sql adalah member "Account Operators"
 ```
 
-➡️ Lanjut ke `[🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)`
+➡️ Lanjut ke [🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)
 
 ---
 
@@ -3906,4 +3906,4 @@ nxc ldap $DC_IP -u "$USERNAME" -p "$PASSWORD" --asreproast ~/ad_loot/hashes/asre
 
 ---
 
-> **➡️ NEXT:** Setelah dapat credentials dari Kerberoasting/AS-REP Roasting dan tahu account punya ACL tertentu di BloodHound, lanjut ke **`[🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)`** untuk abuse GenericAll, GenericWrite, WriteDACL, dan ACL lainnya untuk eskalasi privilege ke Domain Admin.
+> **➡️ NEXT:** Setelah dapat credentials dari Kerberoasting/AS-REP Roasting dan tahu account punya ACL tertentu di BloodHound, lanjut ke **[🔐 File 38 — Active Directory ACL Abuse Workflow](/docs/ad-acl-abuse)** untuk abuse GenericAll, GenericWrite, WriteDACL, dan ACL lainnya untuk eskalasi privilege ke Domain Admin.

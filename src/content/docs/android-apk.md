@@ -9,7 +9,7 @@ refs_in: ["60","62"]
 ---
 
 > **arget Environment:** Parrot OS XFCE (Debian-based)  
-> **Prerequisites:** Memahami konsep dasar Linux CLI, analisis web/API dasar, dan penggunaan Burp Suite (referensi: `[01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi)`, `[🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)`).  
+> **Prerequisites:** Memahami konsep dasar Linux CLI, analisis web/API dasar, dan penggunaan Burp Suite (referensi: [01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi), [🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)).  
 > **Fokus Utama:** Static analysis, dynamic analysis, SSL pinning bypass, Frida runtime instrumentation, dan eksploitasi komponen Android untuk CTF (HackTheBox, TryHackMe, Google CTF) dan Android Bug Bounty.
 
 ---
@@ -3448,6 +3448,6 @@ sudo docker run -d --name mobsf -p 8000:8000 opensecurity/mobile-security-framew
 
 ---
 
-> **➡️ NEXT:** Setelah mendapatkan API endpoint atau credentials dari Android APK, lanjut ke **`[🔌 30 — API Security Workflow](/docs/api-security)`** untuk full API security testing, atau **`[⚡ Quick Start: Urutan Kerja OSINT (Untuk Pemula)](/docs/osint)`** untuk memperluas recon terhadap target.
+> **➡️ NEXT:** Setelah mendapatkan API endpoint atau credentials dari Android APK, lanjut ke **[🔌 30 — API Security Workflow](/docs/api-security)** untuk full API security testing, atau **[⚡ Quick Start: Urutan Kerja OSINT (Untuk Pemula)](/docs/osint)** untuk memperluas recon terhadap target.
 
-> **⬅️ PREV:** **`[🚀 Bagian 0: Konteks & Lab Setup](/docs/aws-pentest)`** — AWS infrastructure penetration testing dan IAM privilege escalation.
+> **⬅️ PREV:** **[🚀 Bagian 0: Konteks & Lab Setup](/docs/aws-pentest)** — AWS infrastructure penetration testing dan IAM privilege escalation.

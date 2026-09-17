@@ -2633,4 +2633,4 @@ dig @$TARGET internal.$DOMAIN A +norecurse +short             # Cek cache
 
 ---
 
-> **➡️ NEXT:** Setelah DNS selesai dan peta infrastruktur sudah terbentuk, lanjut ke **`[10. SNMP Enumeration & Information Gathering Workflow — Master Field Guide](/docs/snmp)`** untuk dump MIB tree dan ekstrak daftar proses, routing table, serta credentials plaintext yang tersimpan di memory sistem target.
+> **➡️ NEXT:** Setelah DNS selesai dan peta infrastruktur sudah terbentuk, lanjut ke **[10. SNMP Enumeration & Information Gathering Workflow — Master Field Guide](/docs/snmp)** untuk dump MIB tree dan ekstrak daftar proses, routing table, serta credentials plaintext yang tersimpan di memory sistem target.

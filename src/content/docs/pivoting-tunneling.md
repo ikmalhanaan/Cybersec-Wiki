@@ -9,7 +9,7 @@ refs_in: ["06","10","12","20","21","23","24","26","44","46","47","50"]
 ---
 
 > **Target Environment:** Parrot OS XFCE (Debian-based)  
-> **Prerequisites:** Memahami Linux CLI dasar, manajemen proses, networking dasar (CIDR, Subnet, Routing), dan reverse shell handling (referensi: `[01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi)`, `[🏛️ Bagian 0: Fondasi PCAP Analysis](/docs/pcap-analysis)`).  
+> **Prerequisites:** Memahami Linux CLI dasar, manajemen proses, networking dasar (CIDR, Subnet, Routing), dan reverse shell handling (referensi: [01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi), [🏛️ Bagian 0: Fondasi PCAP Analysis](/docs/pcap-analysis)).  
 > **Fokus Utama:** Menembus batas isolasi jaringan, perutean multi-subnet, lateral movement, dan pengalihan port (_port forwarding_) menggunakan SSH, Chisel, Ligolo-ng, Socat, dan ProxyChains pada CTF (HackTheBox, TryHackMe) dan uji penetrasi internal nyata.
 
 ---
@@ -1705,7 +1705,7 @@ Server: Apache/2.4.41
 Content-Type: text/html
 ```
 
-➡️ Buka browser ke `http://127.0.0.1:8080` untuk akses web internal target. Lanjut ke workflow yang sesuai (web: `[15. Web Reconnaissance & Enumeration Workflow — Master Field Guide](/docs/web-recon)`).
+➡️ Buka browser ke `http://127.0.0.1:8080` untuk akses web internal target. Lanjut ke workflow yang sesuai (web: [15. Web Reconnaissance & Enumeration Workflow — Master Field Guide](/docs/web-recon)).
 
 ---
 
@@ -3024,4 +3024,4 @@ sudo ip link set ligolo down; sudo ip tuntap del ligolo mode tun 2>/dev/null
 > - Active Directory DC → **`<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`** via proxy
 > - Perlu lateral movement → **`<a href="/docs/lateral-movement" class="text-[#00b4d8] hover:underline font-mono font-semibold">42_lateral_movement_workflow.md</a>`**
 > 
-> **← SEBELUMNYA:** **`[⚡ Quick Start: Urutan Kerja Password Cracking (Untuk Pemula)](/docs/password-cracking)`** — Cracking hash yang ditemukan dari shares, shadow file, atau memory dump untuk mendapatkan credentials yang bisa dipakai di tunnel ini.
+> **← SEBELUMNYA:** **[⚡ Quick Start: Urutan Kerja Password Cracking (Untuk Pemula)](/docs/password-cracking)** — Cracking hash yang ditemukan dari shares, shadow file, atau memory dump untuk mendapatkan credentials yang bisa dipakai di tunnel ini.

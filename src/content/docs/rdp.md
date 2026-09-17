@@ -2502,4 +2502,4 @@ RDP Creds / Shell Found
 
 ---
 
-> **➡️ NEXT:** Setelah RDP selesai, lanjut ke **`[13. NFS Exploitation & Network File System Workflow — Master Field Guide](/docs/nfs)`** untuk Network File System — eksploitasi `no_root_squash`, UID spoofing, dan root shell langsung dari mount NFS. Atau jika sudah dapat credentials Domain Admin → langsung ke **`<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`** untuk full AD takeover.
+> **➡️ NEXT:** Setelah RDP selesai, lanjut ke **[13. NFS Exploitation & Network File System Workflow — Master Field Guide](/docs/nfs)** untuk Network File System — eksploitasi `no_root_squash`, UID spoofing, dan root shell langsung dari mount NFS. Atau jika sudah dapat credentials Domain Admin → langsung ke **`<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`** untuk full AD takeover.

@@ -3211,4 +3211,4 @@ ldapsearch -x -H ldap://$TARGET -b "dc=example,dc=org" "(objectClass=posixAccoun
 
 ---
 
-> **➡️ NEXT:** Setelah LDAP selesai dan dapat credentials atau hash, lanjut ke **`[12. RDP Exploitation & Remote Desktop Workflow — Master Field Guide](/docs/rdp)`** untuk akses GUI Windows via RDP (xfreerdp, BlueKeep CVE-2019-0708, RDP Session Hijacking), atau jika environment AD → langsung ke **`<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`** untuk full AD attack chain dengan BloodHound.
+> **➡️ NEXT:** Setelah LDAP selesai dan dapat credentials atau hash, lanjut ke **[12. RDP Exploitation & Remote Desktop Workflow — Master Field Guide](/docs/rdp)** untuk akses GUI Windows via RDP (xfreerdp, BlueKeep CVE-2019-0708, RDP Session Hijacking), atau jika environment AD → langsung ke **`<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`** untuk full AD attack chain dengan BloodHound.

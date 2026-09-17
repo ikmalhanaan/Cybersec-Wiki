@@ -2277,4 +2277,4 @@ mysql -u DB_USER -p'DB_PASS' DB_NAME -e "SELECT username,password FROM jos_users
 
 ---
 
-> **➡️ NEXT:** Setelah Joomla selesai dan dapat shell atau credentials, lanjut ke **`[💧 File 17c: Drupal Pentesting & Exploitation Workflow](/docs/drupal-cms)`** untuk Drupalgeddon dan vulnerability patterns yang berbeda di Drupal. Atau jika credentials dari Joomla bisa dipakai di service lain, ikuti Cross-Service chart di Fase 6.3.
+> **➡️ NEXT:** Setelah Joomla selesai dan dapat shell atau credentials, lanjut ke **[💧 File 17c: Drupal Pentesting & Exploitation Workflow](/docs/drupal-cms)** untuk Drupalgeddon dan vulnerability patterns yang berbeda di Drupal. Atau jika credentials dari Joomla bisa dipakai di service lain, ikuti Cross-Service chart di Fase 6.3.

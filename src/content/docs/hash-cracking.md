@@ -4124,7 +4124,7 @@ FIND ACCESS / FLAG
 
 # 🔐 Hash Cracking — Complete Attack Workflow
 
-> **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. File ini melanjutkan langsung dari `[🧭 BAGIAN 0: FONDASI CRYPTO CTF](/docs/crypto-identification)` — File 53 menjawab "hash ini apa?", File 54 menjawab "bagaimana cara crack-nya?"
+> **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. File ini melanjutkan langsung dari [🧭 BAGIAN 0: FONDASI CRYPTO CTF](/docs/crypto-identification) — File 53 menjawab "hash ini apa?", File 54 menjawab "bagaimana cara crack-nya?"
 
 ---
 
@@ -5607,4 +5607,4 @@ KeePass database              → Isi biasanya berisi banyak credential → semu
 
 ---
 
-> **➡️ NEXT:** Setelah hash cracking selesai, lanjut ke **`[🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)`** — kadang credential material tidak ada dalam bentuk hash yang siap dicrack, tapi tersembunyi di dalam memory dump, disk image, registry, atau Windows/Linux artifacts. File 55 mengajarkan cara mencari dan mengekstrak material tersebut.
+> **➡️ NEXT:** Setelah hash cracking selesai, lanjut ke **[🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)** — kadang credential material tidak ada dalam bentuk hash yang siap dicrack, tapi tersembunyi di dalam memory dump, disk image, registry, atau Windows/Linux artifacts. File 55 mengajarkan cara mencari dan mengekstrak material tersebut.

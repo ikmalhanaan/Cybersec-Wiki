@@ -12,7 +12,7 @@ refs_in: ["15","16","17","17b","17d","19","20","24","62"]
 
 > **Target OS:** Parrot OS XFCE (Debian-based)
 > **Focus:** CTF Muscle Memory (HackTheBox, TryHackMe, Proving Grounds)
-> **Prerequisites:** `[🌐 File 17: CMS Detection, Fingerprinting & Exploitation Workflow](/docs/cms-detection)`
+> **Prerequisites:** [🌐 File 17: CMS Detection, Fingerprinting & Exploitation Workflow](/docs/cms-detection)
 
 ---
 
@@ -3004,4 +3004,4 @@ WordPress Shell Obtained
 
 ---
 
-> **➡️ NEXT:** Setelah WordPress selesai, lanjut ke **`[📘 17b — Joomla Workflow: Deep Dive untuk CTF](/docs/joomla)`** — arsitektur berbeda tapi konsep similar: admin panel `/administrator/`, extension exploit, dan `configuration.php` sebagai target utama.
+> **➡️ NEXT:** Setelah WordPress selesai, lanjut ke **[📘 17b — Joomla Workflow: Deep Dive untuk CTF](/docs/joomla)** — arsitektur berbeda tapi konsep similar: admin panel `/administrator/`, extension exploit, dan `configuration.php` sebagai target utama.

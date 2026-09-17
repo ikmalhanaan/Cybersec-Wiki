@@ -9,7 +9,7 @@ refs_in: ["54","55","56","57","59"]
 ---
 
 > **Target Environment:** Parrot OS XFCE (Debian-based)  
-> **Prerequisites:** Memahami dasar Linux CLI, analisis heksadesimal, dan konsep dasar investigasi disk/PCAP (referensi: `[🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)`, `[🏛️ Bagian 0: Fondasi PCAP Analysis](/docs/pcap-analysis)`).  
+> **Prerequisites:** Memahami dasar Linux CLI, analisis heksadesimal, dan konsep dasar investigasi disk/PCAP (referensi: [🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics), [🏛️ Bagian 0: Fondasi PCAP Analysis](/docs/pcap-analysis)).  
 > **Fokus Utama:** Memory Forensics tingkat lanjut (Windows & Linux) untuk CTF (HackTheBox, TryHackMe, PicoCTF) dan Incident Response tanpa bergantung pada pencarian manual.
 
 ---

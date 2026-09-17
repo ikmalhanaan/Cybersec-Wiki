@@ -9,7 +9,7 @@ refs_in: ["61","63"]
 ---
 
 > **Target Environment:** Parrot OS XFCE (Debian-based)  
-> **Prerequisites:** Memahami dasar Linux CLI, konsep dasar DNS/HTTP, dan network tools (referensi: `[01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi)`, `[🏛️ Bagian 0: Fondasi PCAP Analysis](/docs/pcap-analysis)`).  
+> **Prerequisites:** Memahami dasar Linux CLI, konsep dasar DNS/HTTP, dan network tools (referensi: [01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi), [🏛️ Bagian 0: Fondasi PCAP Analysis](/docs/pcap-analysis)).  
 > **Fokus Utama:** Investigasi intelijen sumber terbuka (_Open Source Intelligence_), passive footprinting, recon bug bounty, dan pemecahan tantangan CTF OSINT/GeoCTF.
 
 ---
@@ -2883,6 +2883,6 @@ exiftool -c "%.6f" -GPSLatitude -GPSLongitude -DateTimeOriginal foto.jpg
 
 ---
 
-> **➡️ NEXT:** Setelah informasi terkumpul dan credentials/hashes ditemukan, lanjut ke **`[⚡ Quick Start: Urutan Kerja Password Cracking (Untuk Pemula)](/docs/password-cracking)`** untuk crack hash dengan Hashcat/John dan optimasi wordlist.
+> **➡️ NEXT:** Setelah informasi terkumpul dan credentials/hashes ditemukan, lanjut ke **[⚡ Quick Start: Urutan Kerja Password Cracking (Untuk Pemula)](/docs/password-cracking)** untuk crack hash dengan Hashcat/John dan optimasi wordlist.
 
-> **⬅️ PREV:** **`[⚡ Quick Start Checklist (Untuk Pemula)](/docs/android-apk)`** — Android APK reverse engineering, Frida instrumentation, dan SSL pinning bypass.
+> **⬅️ PREV:** **[⚡ Quick Start Checklist (Untuk Pemula)](/docs/android-apk)** — Android APK reverse engineering, Frida instrumentation, dan SSL pinning bypass.

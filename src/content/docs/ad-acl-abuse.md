@@ -3855,7 +3855,7 @@ NEXT EDGE
 
 # 🔗 BAGIAN 19 — Lanjut ke File Berikutnya
 
-## `[🔐 Workflow 39 — Active Directory Delegation](/docs/ad-delegation)`
+## [🔐 Workflow 39 — Active Directory Delegation](/docs/ad-delegation)
 
 File berikutnya membahas **Active Directory Delegation**, terutama **Resource-Based Constrained Delegation (RBCD)**.
 

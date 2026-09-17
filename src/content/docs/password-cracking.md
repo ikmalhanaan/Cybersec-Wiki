@@ -9,7 +9,7 @@ refs_in: ["04","19","36","53","62","64"]
 ---
 
 > **Target Environment:** Parrot OS XFCE (Debian-based)  
-> **Prerequisites:** Memahami dasar Linux CLI, file permissions, dan inspeksi biner dasar (referensi: `[01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi)`, `[🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)`).  
+> **Prerequisites:** Memahami dasar Linux CLI, file permissions, dan inspeksi biner dasar (referensi: [01. Mindset, Metodologi, dan Workflow Pentesting — Panduan Fundamental](/docs/mindset-dan-metodologi), [🧭 BAGIAN 0: FONDASI FORENSICS](/docs/forensics)).  
 > **Fokus Utama:** Identifikasi tipe hash, strategi wordlist, serangan mutasi rules, komputasi cracking via Hashcat & John the Ripper, ekstraksi hash format file, serta metodologi pemecahan tantangan CTF dan audit keamanan kredensial legal.
 
 ---
@@ -2916,4 +2916,4 @@ nxc ssh $TARGET -u "user" -p "crackedpass"
 > - Credentials untuk AD → **`<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`**
 > - Kerberoast hash cracked → **`<a href="/docs/kerberoasting-asreproasting" class="text-[#00b4d8] hover:underline font-mono font-semibold">37_kerberoasting_asreproasting_workflow.md</a>`**
 > 
-> **← SEBELUMNYA:** **`[⚡ Quick Start: Urutan Kerja OSINT (Untuk Pemula)](/docs/osint)`** — OSINT untuk password profiling (CUPP), dorking credential leak, dan pemetaan digital footprint target sebelum cracking.
+> **← SEBELUMNYA:** **[⚡ Quick Start: Urutan Kerja OSINT (Untuk Pemula)](/docs/osint)** — OSINT untuk password profiling (CUPP), dorking credential leak, dan pemetaan digital footprint target sebelum cracking.

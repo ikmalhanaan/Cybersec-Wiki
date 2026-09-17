@@ -4007,7 +4007,7 @@ SeChangeNotifyPrivilege    Bypass traverse checking    Enabled
 SeShutdownPrivilege        Shut down the system        Disabled
 ```
 
-➡️ Tidak ada privilege berbahaya. **→ Kembali ke `[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)`** untuk vector lain (service exploit, registry, scheduled task, dll.)
+➡️ Tidak ada privilege berbahaya. **→ Kembali ke [🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)** untuk vector lain (service exploit, registry, scheduled task, dll.)
 
 ---
 
