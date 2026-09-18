@@ -10,6 +10,8 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SOURCE_DIR = process.env.SOURCE_DIR || path.resolve(PROJECT_ROOT, '..');
 const CONTENT_DOCS_DIR = path.resolve(PROJECT_ROOT, 'src/content/docs');
 const DATA_DIR = path.resolve(PROJECT_ROOT, 'src/data');
+const PUBLIC_DIR = path.resolve(PROJECT_ROOT, 'public');
+fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 
 // Category mapping based on user directory structure
 export const CATEGORY_DEFINITIONS = [
@@ -323,6 +325,91 @@ fs.writeFileSync(path.join(DATA_DIR, 'categories.json'), JSON.stringify(categori
 console.log(`✅ Saved ${pages.length} pages to pages.json`);
 console.log(`✅ Saved graph (${graphNodes.length} nodes, ${graphEdges.length} edges) to graph.json`);
 console.log(`✅ Saved ${categoriesData.length} categories to categories.json`);
+
+
+function slugifyHeading(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s\-—–]/gu, '')
+    .replace(/\s*—\s*/g, '--')
+    .replace(/\s*–\s*/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+const commandLangs = new Set([
+  'bash', 'sh', 'python', 'powershell', 'cmd', 'c', 'sql', 'json', 'yaml', 'http', 'asm', 'gdb', 'php', 'javascript', 'html', 'xml'
+]);
+
+function extractCodeSnippets(rawContent) {
+  const lines = rawContent.split(/\r?\n/);
+  let currentHeading = '';
+  let currentHeadingSlug = '';
+  let inCode = false;
+  let codeLang = '';
+  let codeLines = [];
+  const snippets = [];
+
+  for (let line of lines) {
+    if (line.startsWith('#') && !inCode) {
+      currentHeading = line.replace(/^#+\s*/, '').trim();
+      currentHeadingSlug = slugifyHeading(currentHeading);
+      continue;
+    }
+    if (line.startsWith('```')) {
+      if (!inCode) {
+        inCode = true;
+        codeLang = line.replace('```', '').trim().toLowerCase();
+        codeLines = [];
+      } else {
+        inCode = false;
+        const codeText = codeLines.join('\n').trim();
+        const isVisualBox = /^[+=\-|#\s]+$/.test(codeText.replace(/[\r\n]/g, ''));
+        const isCommandLang = commandLangs.has(codeLang);
+        const hasCommandKeywords = /(?:^|\n)\s*(?:sudo|nmap|curl|cat|export|import|python|echo|chmod|chown|grep|find|nc|netcat|socat|impacket|enum4linux|smbclient|smbmap|crackmapexec|netexec|nxc|secretsdump|psexec|wmiexec|bloodhound|sharphound|mimikatz|hashcat|john|hydra|gobuster|ffuf|feroxbuster|dirsearch|wfuzz|sqlmap|commix|burp|chisel|ligolo|ssh|powershell|cmd|whoami|id|ls\s|cd\s|msfconsole|msfvenom|gcc|gdb|radare2|r2|volatility|binwalk|steghide|stegseek)/i.test(codeText);
+
+        if (codeText.length > 5 && !isVisualBox && (isCommandLang || hasCommandKeywords || codeLang === 'text')) {
+          snippets.push({
+            h: currentHeading,
+            s: currentHeadingSlug,
+            l: codeLang || 'bash',
+            c: codeText.length > 800 ? codeText.slice(0, 800) + '...' : codeText
+          });
+        }
+      }
+      continue;
+    }
+    if (inCode) {
+      codeLines.push(line);
+    }
+  }
+  return snippets;
+}
+
+
+// Build comprehensive search index with code snippets
+const searchIndexData = rawFiles.map(file => {
+  const p = pageMap.get(file.id);
+  const snippets = extractCodeSnippets(file.rawContent);
+  return {
+    id: file.id,
+    slug: file.slug,
+    title: file.title,
+    category: file.category,
+    categoryId: file.categoryId,
+    categoryColor: file.categoryColor,
+    filename: file.filename,
+    tags: file.tags || [],
+    excerpt: p ? p.content : extractExcerpt(file.content, 300),
+    snippets
+  };
+});
+
+fs.writeFileSync(path.join(PUBLIC_DIR, 'search-index.json'), JSON.stringify(searchIndexData), 'utf8');
+fs.writeFileSync(path.join(DATA_DIR, 'search-index.json'), JSON.stringify(searchIndexData), 'utf8');
+console.log(`✅ Saved search index with code snippets to public/search-index.json & src/data/search-index.json`);
+
 
 // Cross-Reference Auto-Linker implementation
 function resolveRefsInMarkdown(rawMarkdown) {

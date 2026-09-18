@@ -5,8 +5,8 @@ import pages from '../data/pages.json';
 ---
 
 <BaseLayout 
-  title="Search Full-Text — Cyber Security Wiki"
-  description="Pencarian mendalam di seluruh 73 modul dokumentasi keamanan siber."
+  title="Pencarian Mendalam & Cheatsheet Kode — Cyber Security Wiki"
+  description="Pencarian instan tools, commands, exploit, sintaks, CVE, dan modul di seluruh 73 modul dokumentasi cybersecurity."
   currentPath="/search"
 >
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -16,18 +16,18 @@ import pages from '../data/pages.json';
         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <span>Full-Text Search Engine</span>
+        <span>Deep Command & Full-Text Search Engine</span>
       </div>
       <h1 class="text-3xl sm:text-4xl font-extrabold text-[#f0f6fc] font-sans tracking-tight">
-        Pencarian Dokumentasi & Cheat Sheet
+        Pencarian Command & Dokumentasi Pentest
       </h1>
       <p class="text-sm text-[#8b949e]">
-        Cari di antara 73 modul, sintaks exploit, CVE, port, dan teknik pentesting.
+        Cari di antara 73 modul, 14,000+ baris sintaks exploit, tools (Impacket, Nmap, Enum4linux, BloodHound, dll), dan panduan CTF.
       </p>
     </div>
 
     <!-- Search Input & Filters Box -->
-    <div class="space-y-4 p-5 rounded-2xl bg-[#161b22] border border-[#30363d] shadow-lg">
+    <div class="space-y-4 p-5 rounded-2xl bg-[#161b22] border border-[#30363d] shadow-xl">
       <div class="relative">
         <svg class="w-5 h-5 text-[#00b4d8] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -36,21 +36,34 @@ import pages from '../data/pages.json';
           type="text" 
           id="fulltext-search-input"
           class="w-full pl-12 pr-12 py-3.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none text-base font-sans transition-colors"
-          placeholder="Ketik kata kunci pencarian (e.g. eternalblue, mimikatz, hydra, privilege escalation, jwt)..."
+          placeholder="Ketik command atau tool apa saja (e.g. impacket, sudo nmap, enum4linux, secretsdump, rootbash, sqlmap)..."
           autocomplete="off"
+          spellcheck="false"
         />
         <button 
           id="clear-search-btn"
           type="button" 
-          class="absolute right-4 top-1/2 -translate-y-1/2 text-[#8b949e] hover:text-[#f0f6fc] hidden"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-[#8b949e] hover:text-[#f0f6fc] hidden p-1 rounded hover:bg-[#21262d]"
           aria-label="Clear input"
         >
           ✕
         </button>
       </div>
 
+      <!-- Quick Preset Suggestions -->
+      <div class="flex flex-wrap items-center gap-2 pt-1">
+        <span class="text-[11px] font-mono text-[#8b949e]">Paling dicari:</span>
+        <button type="button" class="search-preset-btn px-2.5 py-0.5 rounded-md bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-preset="impacket">impacket</button>
+        <button type="button" class="search-preset-btn px-2.5 py-0.5 rounded-md bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-preset="sudo nmap">sudo nmap</button>
+        <button type="button" class="search-preset-btn px-2.5 py-0.5 rounded-md bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-preset="enum4linux">enum4linux</button>
+        <button type="button" class="search-preset-btn px-2.5 py-0.5 rounded-md bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-preset="secretsdump">secretsdump</button>
+        <button type="button" class="search-preset-btn px-2.5 py-0.5 rounded-md bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-preset="rootbash">rootbash</button>
+        <button type="button" class="search-preset-btn px-2.5 py-0.5 rounded-md bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-preset="sqlmap">sqlmap</button>
+        <button type="button" class="search-preset-btn px-2.5 py-0.5 rounded-md bg-[#0d1117] hover:bg-[#21262d] border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-preset="kerberoasting">kerberoasting</button>
+      </div>
+
       <!-- Category Filter Pills -->
-      <div class="space-y-1.5">
+      <div class="space-y-1.5 pt-2 border-t border-[#30363d]/60">
         <span class="text-[11px] font-mono text-[#8b949e] uppercase">
           Filter Kategori:
         </span>
@@ -77,64 +90,46 @@ import pages from '../data/pages.json';
     </div>
 
     <!-- Results Status Bar -->
-    <div class="flex items-center justify-between text-xs font-mono text-[#8b949e] px-1">
-      <span id="results-count">Menampilkan semua 73 modul</span>
-      <span>Tekan <kbd class="px-1.5 py-0.5 rounded bg-[#161b22] border border-[#30363d] text-[#c9d1d9]">Ctrl K</kbd> untuk modal popup</span>
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-[#8b949e] px-1">
+      <span id="results-count">Memuat indeks pencarian...</span>
+      <span>Shortcut: <kbd class="px-1.5 py-0.5 rounded bg-[#161b22] border border-[#30363d] text-[#c9d1d9]">Ctrl K</kbd> untuk modal instan</span>
     </div>
 
     <!-- Search Results List -->
-    <div id="results-container" class="space-y-3"></div>
+    <div id="results-container" class="space-y-4"></div>
   </div>
 </BaseLayout>
 
-<script define:vars={{ pagesData: pages }}>
-  import Fuse from 'fuse.js';
+<script>
+  import pagesFallback from '../data/pages.json';
+  import { loadSearchIndex, performSearch, highlightText, type SearchDoc, type SearchResult } from '../utils/search-engine';
 
-  const input = document.getElementById('fulltext-search-input');
+  const input = document.getElementById('fulltext-search-input') as HTMLInputElement | null;
   const clearBtn = document.getElementById('clear-search-btn');
   const container = document.getElementById('results-container');
   const countEl = document.getElementById('results-count');
   const catButtons = document.querySelectorAll('#search-cat-filters .cat-btn');
+  const presetButtons = document.querySelectorAll('.search-preset-btn');
 
   let activeCategory = 'all';
+  let allDocs: SearchDoc[] = (pagesFallback as any).map((p: any) => ({
+    ...p,
+    snippets: []
+  }));
 
-  const fuse = new Fuse(pagesData, {
-    keys: [
-      { name: 'title', weight: 0.4 },
-      { name: 'id', weight: 0.2 },
-      { name: 'category', weight: 0.2 },
-      { name: 'content', weight: 0.2 }
-    ],
-    includeMatches: true,
-    threshold: 0.35,
-    minMatchCharLength: 2
-  });
-
-  function getContextSnippet(content, query) {
-    if (!query) return content.substring(0, 220) + '...';
-
-    const clean = content.replace(/\s+/g, ' ');
-    const lower = clean.toLowerCase();
-    const qLower = query.toLowerCase().trim();
-    const idx = lower.indexOf(qLower);
-
-    if (idx === -1) {
-      return clean.substring(0, 220) + '...';
+  async function init() {
+    try {
+      const loaded = await loadSearchIndex();
+      if (loaded && loaded.length > 0) {
+        allDocs = loaded;
+      }
+    } catch (e) {
+      console.warn('Fallback to pagesFallback');
     }
-
-    const start = Math.max(0, idx - 70);
-    const end = Math.min(clean.length, idx + qLower.length + 120);
-    let snippet = clean.substring(start, end);
-
-    if (start > 0) snippet = '...' + snippet;
-    if (end < clean.length) snippet = snippet + '...';
-
-    // Highlight keyword in snippet
-    const regex = new RegExp(`(${qLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return snippet.replace(regex, '<mark class="bg-[#e84a5f]/30 text-[#f0f6fc] px-1 py-0.2 rounded font-semibold">$1</mark>');
+    executeSearch();
   }
 
-  function render(items, query = '') {
+  function render(items: SearchResult[], query: string = '') {
     if (!container) return;
 
     if (items.length === 0) {
@@ -143,56 +138,132 @@ import pages from '../data/pages.json';
           <svg class="w-12 h-12 mx-auto text-[#484f58]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h3 class="text-sm font-bold text-[#f0f6fc] font-mono">Tidak Ditemukan Modul yang Cocok</h3>
-          <p class="text-xs text-[#8b949e]">Coba gunakan kata kunci lain seperti protokol, nama CVE, atau nama tools.</p>
+          <h3 class="text-sm font-bold text-[#f0f6fc] font-mono">Tidak Ditemukan Hasil yang Cocok</h3>
+          <p class="text-xs text-[#8b949e]">Coba gunakan kata kunci lain seperti nama perintah, tool, protokol, atau CVE.</p>
         </div>
       `;
-      if (countEl) countEl.textContent = '0 modul ditemukan';
+      if (countEl) countEl.textContent = '0 hasil ditemukan';
       return;
     }
 
+    let totalCodeMatches = 0;
+    items.forEach(it => totalCodeMatches += it.totalCodeMatches);
+
     if (countEl) {
-      countEl.textContent = query 
-        ? `${items.length} modul cocok dengan "${query}"`
-        : `Menampilkan ${items.length} modul`;
+      countEl.innerHTML = query 
+        ? `Ditemukan <strong class="text-[#f0f6fc]">${items.length} modul</strong> & <strong class="text-[#00b4d8]">${totalCodeMatches} baris kode/command</strong> yang cocok dengan "${escapeHtmlText(query)}"`
+        : `Menampilkan semua ${items.length} modul (${totalCodeMatches} kode/command terindeks)`;
     }
 
     container.innerHTML = items.map(item => {
-      const snippet = getContextSnippet(item.content, query);
+      const topSnippets = item.matchedSnippets || [];
+      const hasCode = topSnippets.length > 0;
+      const firstHeadingSlug = hasCode ? topSnippets[0].headingSlug : '';
+      const primaryUrl = firstHeadingSlug ? `/docs/${item.slug}#${firstHeadingSlug}` : `/docs/${item.slug}`;
+
       return `
-        <a 
-          href="/docs/${item.slug}" 
-          class="block p-5 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-[#00b4d8]/60 transition-all group hover:-translate-y-0.5 shadow-md"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <div class="flex items-center gap-2">
-              <span class="font-mono text-xs px-2 py-0.5 rounded bg-[#0d1117] text-[#e84a5f] font-bold border border-[#30363d]">
+        <div class="p-5 sm:p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-[#00b4d8]/60 transition-all shadow-lg space-y-4">
+          <!-- Top Row: ID, Title, Category Badge -->
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#30363d]/60 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="font-mono text-xs px-2.5 py-0.5 rounded-md bg-[#0d1117] text-[#e84a5f] font-bold border border-[#30363d]">
                 ${item.id}
               </span>
-              <h2 class="text-base font-bold text-[#f0f6fc] group-hover:text-[#00b4d8] transition-colors">
-                ${item.title}
-              </h2>
+              <a href="${primaryUrl}" class="text-base sm:text-lg font-bold text-[#f0f6fc] hover:text-[#00b4d8] transition-colors font-sans">
+                ${highlightText(item.title, query)}
+              </a>
             </div>
-            <span class="text-[10px] font-mono px-2.5 py-0.5 rounded-full" style="background-color: ${item.categoryColor}18; color: ${item.categoryColor}; border: 1px solid ${item.categoryColor}55;">
-              ${item.category}
-            </span>
-          </div>
-          <p class="text-xs text-[#8b949e] line-clamp-3 leading-relaxed font-sans mt-2">
-            ${snippet}
-          </p>
-          <div class="flex items-center justify-between text-[11px] font-mono text-[#6e7681] pt-3 mt-3 border-t border-[#30363d]/60">
-            <div class="flex items-center gap-4">
-              <span>File: <strong class="text-[#8b949e]">${item.filename}</strong></span>
-              <span>In: <strong class="text-[#10b981]">${item.refs_in.length}</strong></span>
-              <span>Out: <strong class="text-[#00b4d8]">${item.refs_out.length}</strong></span>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-mono px-3 py-0.5 rounded-full" style="background-color: ${item.categoryColor}18; color: ${item.categoryColor}; border: 1px solid ${item.categoryColor}55;">
+                ${item.category}
+              </span>
+              <a href="${primaryUrl}" class="text-xs text-[#00b4d8] hover:underline font-mono font-semibold hidden sm:inline-block">
+                Buka Modul →
+              </a>
             </div>
-            <span class="text-[#00b4d8] group-hover:translate-x-1 transition-transform flex items-center gap-1 font-semibold">
-              Buka Modul →
-            </span>
           </div>
-        </a>
+
+          <!-- Code Snippets / Command matches -->
+          ${hasCode ? `
+            <div class="space-y-3">
+              ${topSnippets.map((snip, sIdx) => `
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between text-xs font-mono text-[#8b949e]">
+                    <a href="/docs/${item.slug}#${snip.headingSlug}" class="hover:text-[#00b4d8] hover:underline truncate flex items-center gap-1.5 text-[#00b4d8] font-medium">
+                      <span>📍</span>
+                      <span>${highlightText(snip.heading || 'Kode / Command Terkait', query)}</span>
+                    </a>
+                    <span class="text-[10px] text-[#6e7681] uppercase font-mono">${snip.lang || 'bash'}</span>
+                  </div>
+
+                  <div class="relative rounded-xl bg-[#0d1117] border border-[#30363d] p-3 sm:p-4 text-xs font-mono text-[#58a6ff] overflow-x-auto group">
+                    <button 
+                      type="button" 
+                      class="copy-code-btn absolute right-3 top-3 px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#c9d1d9] hover:text-white border border-[#30363d] text-xs font-mono transition-all flex items-center gap-1 z-10"
+                      data-code="${escapeAttribute(snip.fullCode)}"
+                      title="Copy code"
+                    >
+                      <span>📋</span>
+                      <span class="btn-text">Copy</span>
+                    </button>
+                    <pre class="m-0 text-[12px] leading-relaxed select-text font-mono text-[#79c0ff] whitespace-pre-wrap"><code class="block">${highlightText(snip.codePreview, query)}</code></pre>
+                  </div>
+                </div>
+              `).join('')}
+
+              ${item.totalCodeMatches > topSnippets.length ? `
+                <div class="pt-1 text-xs font-mono text-[#8b949e]">
+                  <a href="/docs/${item.slug}" class="text-[#00b4d8] hover:underline font-medium">
+                    + Masih ada ${item.totalCodeMatches - topSnippets.length} perintah / snippet lain di modul ini →
+                  </a>
+                </div>
+              ` : ''}
+            </div>
+          ` : `
+            <p class="text-sm text-[#8b949e] leading-relaxed font-sans">
+              ${highlightText(item.excerpt, query)}
+            </p>
+          `}
+
+          <!-- Footer Info -->
+          <div class="flex items-center justify-between text-[11px] font-mono text-[#6e7681] pt-3 border-t border-[#30363d]/50">
+            <span>File: <strong class="text-[#8b949e]">${item.filename}</strong></span>
+            <a href="${primaryUrl}" class="text-[#00b4d8] hover:underline flex items-center gap-1 font-semibold">
+              Buka Bagian Terkait ↗
+            </a>
+          </div>
+        </div>
       `;
     }).join('');
+
+    bindCopyButtons();
+  }
+
+  function escapeHtmlText(str: string) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function escapeAttribute(str: string) {
+    return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function bindCopyButtons() {
+    const copyButtons = container?.querySelectorAll('.copy-code-btn');
+    copyButtons?.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const codeToCopy = (btn as HTMLElement).getAttribute('data-code') || '';
+        navigator.clipboard.writeText(codeToCopy).then(() => {
+          const textSpan = btn.querySelector('.btn-text');
+          if (textSpan) textSpan.textContent = '✓ Copied!';
+          btn.classList.add('bg-[#238636]', 'text-white');
+          setTimeout(() => {
+            if (textSpan) textSpan.textContent = 'Copy';
+            btn.classList.remove('bg-[#238636]', 'text-white');
+          }, 2000);
+        });
+      });
+    });
   }
 
   function executeSearch() {
@@ -201,12 +272,7 @@ import pages from '../data/pages.json';
       clearBtn.classList.toggle('hidden', q.length === 0);
     }
 
-    let results = q ? fuse.search(q).map(r => r.item) : pagesData;
-
-    if (activeCategory !== 'all') {
-      results = results.filter(item => item.categoryId === activeCategory);
-    }
-
+    const results = performSearch(allDocs, q, activeCategory);
     render(results, q);
   }
 
@@ -240,6 +306,16 @@ import pages from '../data/pages.json';
     });
   });
 
-  // Initial render
-  executeSearch();
+  presetButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const query = btn.getAttribute('data-preset');
+      if (query && input) {
+        input.value = query;
+        executeSearch();
+      }
+    });
+  });
+
+  // Start initialization
+  init();
 </script>

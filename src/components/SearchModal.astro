@@ -5,80 +5,125 @@ import pages from '../data/pages.json';
 <!-- Search Modal Backdrop -->
 <div 
   id="search-modal" 
-  class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm transition-opacity duration-200 p-4 sm:p-6 md:p-20 overflow-y-auto"
+  class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md transition-opacity duration-200 p-3 sm:p-6 md:p-12 overflow-y-auto"
   role="dialog" 
   aria-modal="true"
 >
-  <div class="relative max-w-2xl mx-auto bg-[#161b22] border border-[#30363d] rounded-xl shadow-2xl overflow-hidden">
+  <div class="relative max-w-3xl mx-auto bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
     <!-- Search Input Header -->
-    <div class="flex items-center px-4 py-3 border-b border-[#30363d] bg-[#0d1117]">
-      <svg class="w-5 h-5 text-[#00b4d8] mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="flex items-center px-4 py-3.5 border-b border-[#30363d] bg-[#0d1117] sticky top-0 z-10 gap-3">
+      <svg class="w-5 h-5 text-[#00b4d8] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
       <input 
         type="text" 
         id="search-input" 
-        class="w-full bg-transparent border-0 text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none text-sm font-sans" 
-        placeholder="Cari modul, exploit, CVE, port, tool (e.g. smb, ms17-010, kerberoasting, sudo)..."
+        class="w-full bg-transparent border-0 text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none text-base font-sans" 
+        placeholder="Cari tools, commands, exploit, sintaks (e.g. impacket, sudo nmap, enum4linux, secretsdump)..."
         autocomplete="off"
         spellcheck="false"
       />
+      <div id="search-spinner" class="hidden animate-spin rounded-full h-4 w-4 border-2 border-[#00b4d8] border-t-transparent flex-shrink-0"></div>
       <button 
         type="button" 
         id="close-search-btn" 
-        class="p-1 text-[#8b949e] hover:text-[#f0f6fc] rounded hover:bg-[#21262d] transition-colors"
+        class="p-1 text-[#8b949e] hover:text-[#f0f6fc] rounded-lg hover:bg-[#21262d] transition-colors flex-shrink-0"
         aria-label="Close search"
       >
-        <kbd class="px-1.5 py-0.5 text-[10px] bg-[#21262d] border border-[#30363d] rounded text-[#8b949e]">ESC</kbd>
+        <kbd class="px-2 py-1 text-[10px] bg-[#21262d] border border-[#30363d] rounded text-[#8b949e] font-mono">ESC</kbd>
       </button>
     </div>
 
+    <!-- Live Status / Category Filter Bar -->
+    <div id="search-status-bar" class="px-4 py-2 bg-[#090d13] border-b border-[#21262d] flex items-center justify-between text-[11px] font-mono text-[#8b949e]">
+      <span id="search-stats-text">Ketik kata kunci untuk mencari di 73 modul & 14,000+ kode/command.</span>
+      <span class="text-[#00b4d8] hidden sm:inline-block">Deep Full-Text & Code Search</span>
+    </div>
+
     <!-- Results Container -->
-    <div id="search-results" class="max-h-96 overflow-y-auto p-2 space-y-1 divide-y divide-[#21262d]">
+    <div id="search-results" class="overflow-y-auto p-3 space-y-2 flex-1 divide-y divide-[#21262d]/60">
       <div id="search-empty-state" class="py-12 text-center text-[#8b949e] text-xs">
-        <svg class="w-8 h-8 mx-auto text-[#484f58] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <p>Ketik kata kunci untuk mencari di 73 modul dokumentasi cybersecurity.</p>
-        <div class="mt-3 flex flex-wrap justify-center gap-1.5 font-mono">
-          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">05_smb</span>
-          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">kerberoasting</span>
-          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">linux privesc</span>
-          <span class="px-2 py-0.5 rounded bg-[#21262d] border border-[#30363d] text-[10px] text-[#8b949e]">buffer overflow</span>
+        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#21262d]/50 border border-[#30363d] flex items-center justify-center text-[#00b4d8]">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <p class="font-medium text-[#f0f6fc] text-sm mb-1">Cari Command, Tools, dan Sintaks Pentest</p>
+        <p class="text-[#8b949e] text-xs max-w-md mx-auto">Ketik nama tool atau perintah apa saja untuk menemukan kode tersebut ada di mana saja secara instan.</p>
+        
+        <div class="mt-4 flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+          <span class="text-[11px] font-mono text-[#6e7681] w-full mb-1">Contoh pencarian populer (klik untuk coba):</span>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="impacket">impacket</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="sudo nmap">sudo nmap</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="enum4linux">enum4linux</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="secretsdump">secretsdump</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="no_root_squash">no_root_squash</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="kerberoasting">kerberoasting</button>
         </div>
       </div>
     </div>
 
     <!-- Footer Shortcuts -->
-    <div class="px-4 py-2 bg-[#0d1117] border-t border-[#30363d] flex items-center justify-between text-[11px] text-[#8b949e] font-mono">
+    <div class="px-4 py-2.5 bg-[#0d1117] border-t border-[#30363d] flex items-center justify-between text-[11px] text-[#8b949e] font-mono">
       <div class="flex items-center gap-3">
-        <span><kbd class="px-1.5 py-0.2 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↑</kbd> <kbd class="px-1.5 py-0.2 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↓</kbd> Navigasi</span>
-        <span><kbd class="px-1.5 py-0.2 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↵</kbd> Buka</span>
+        <span><kbd class="px-1.5 py-0.5 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↑</kbd> <kbd class="px-1.5 py-0.5 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↓</kbd> Navigasi</span>
+        <span><kbd class="px-1.5 py-0.5 bg-[#21262d] border border-[#30363d] rounded text-[10px]">↵</kbd> Buka</span>
+        <span><kbd class="px-1.5 py-0.5 bg-[#21262d] border border-[#30363d] rounded text-[10px]">ESC</kbd> Tutup</span>
       </div>
-      <a href="/search" class="text-[#00b4d8] hover:underline">Halaman Pencarian Lengkap →</a>
+      <a href="/search" class="text-[#00b4d8] hover:underline flex items-center gap-1 font-semibold">
+        Pencarian Lengkap →
+      </a>
     </div>
   </div>
 </div>
 
 <script>
-  import pagesData from '../data/pages.json';
-  import { createSearchIndex } from '../utils/search-index';
-  import { setupKeyboardNav } from '../hooks/useKeyboardNav';
+  import pagesFallback from '../data/pages.json';
+  import { loadSearchIndex, performSearch, highlightText, type SearchDoc, type SearchResult } from '../utils/search-engine';
 
   const modal = document.getElementById('search-modal');
   const openBtn = document.getElementById('open-search-btn');
   const closeBtn = document.getElementById('close-search-btn');
   const input = document.getElementById('search-input') as HTMLInputElement | null;
   const resultsContainer = document.getElementById('search-results');
+  const statsText = document.getElementById('search-stats-text');
+  const spinner = document.getElementById('search-spinner');
 
-  const fuse = createSearchIndex(pagesData as any);
+  let allDocs: SearchDoc[] = (pagesFallback as any).map((p: any) => ({
+    ...p,
+    snippets: []
+  }));
+
+  let indexLoaded = false;
   let selectedIndex = 0;
-  let currentResults: any[] = [];
+  let currentResults: SearchResult[] = [];
   let debounceTimer: any = null;
+
+  // Background preload search index
+  async function ensureData() {
+    if (indexLoaded) return;
+    spinner?.classList.remove('hidden');
+    try {
+      const data = await loadSearchIndex();
+      if (data && data.length > 0) {
+        allDocs = data;
+        indexLoaded = true;
+      }
+    } catch (e) {
+      console.warn('Fallback to standard pages data');
+    } finally {
+      spinner?.classList.add('hidden');
+    }
+  }
+
+  // Preload on mouse hover or touch on search button
+  openBtn?.addEventListener('mouseenter', ensureData, { once: true });
+  openBtn?.addEventListener('touchstart', ensureData, { once: true });
 
   function openModal() {
     modal?.classList.remove('hidden');
     input?.focus();
+    ensureData();
   }
 
   function closeModal() {
@@ -91,58 +136,200 @@ import pages from '../data/pages.json';
     if (!resultsContainer) return;
     resultsContainer.innerHTML = `
       <div id="search-empty-state" class="py-12 text-center text-[#8b949e] text-xs">
-        <p>Ketik kata kunci untuk mencari di antara ${pagesData.length} modul dokumentasi cybersecurity.</p>
+        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-[#21262d]/50 border border-[#30363d] flex items-center justify-center text-[#00b4d8]">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <p class="font-medium text-[#f0f6fc] text-sm mb-1">Cari Command, Tools, dan Sintaks Pentest</p>
+        <p class="text-[#8b949e] text-xs max-w-md mx-auto">Ketik nama tool atau perintah apa saja untuk menemukan kode tersebut ada di mana saja secara instan.</p>
+        
+        <div class="mt-4 flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+          <span class="text-[11px] font-mono text-[#6e7681] w-full mb-1">Contoh pencarian populer:</span>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="impacket">impacket</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="sudo nmap">sudo nmap</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="enum4linux">enum4linux</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="secretsdump">secretsdump</button>
+          <button type="button" class="quick-chip px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#00b4d8]/20 hover:border-[#00b4d8]/50 border border-[#30363d] text-xs font-mono text-[#00b4d8] transition-colors" data-query="no_root_squash">no_root_squash</button>
+        </div>
       </div>
     `;
+    if (statsText) {
+      statsText.textContent = `Ketik kata kunci untuk mencari di ${allDocs.length} modul & ribuan kode/command.`;
+    }
     currentResults = [];
+    bindQuickChips();
   }
 
-  function renderResults(results: any[]) {
+  function bindQuickChips() {
+    const chips = resultsContainer?.querySelectorAll('.quick-chip');
+    chips?.forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        const q = (e.currentTarget as HTMLElement).getAttribute('data-query');
+        if (q && input) {
+          input.value = q;
+          doSearch(q);
+        }
+      });
+    });
+  }
+
+  function renderResults(results: SearchResult[], query: string) {
     if (!resultsContainer) return;
     currentResults = results;
     selectedIndex = 0;
 
     if (results.length === 0) {
       resultsContainer.innerHTML = `
-        <div class="py-8 text-center text-[#8b949e] text-xs font-mono">
-          Tidak ditemukan modul yang cocok.
+        <div class="py-12 text-center text-[#8b949e] font-mono text-xs">
+          <p class="text-sm font-semibold text-[#f0f6fc] mb-1">Tidak ada hasil yang cocok dengan "${escapeHtmlText(query)}"</p>
+          <p class="text-[#6e7681]">Coba kata kunci lain atau periksa ejaan perintah/tool.</p>
         </div>
       `;
+      if (statsText) statsText.textContent = '0 modul ditemukan.';
       return;
     }
 
+    let totalCodeCount = 0;
+    results.forEach(r => totalCodeCount += r.totalCodeMatches);
+
+    if (statsText) {
+      statsText.innerHTML = `Ditemukan <strong class="text-[#f0f6fc]">${results.length} modul</strong> & <strong class="text-[#00b4d8]">${totalCodeCount} baris kode/command</strong> untuk "${escapeHtmlText(query)}"`;
+    }
+
     resultsContainer.innerHTML = results.slice(0, 10).map((item, index) => {
+      const titleHighlighted = highlightText(item.title, query);
+      const topSnippet = item.matchedSnippets && item.matchedSnippets.length > 0 ? item.matchedSnippets[0] : null;
+
+      const destinationUrl = topSnippet && topSnippet.headingSlug 
+        ? `/docs/${item.slug}#${topSnippet.headingSlug}`
+        : `/docs/${item.slug}`;
+
       return `
-        <a 
-          href="/docs/${item.slug}" 
-          class="search-result-item block p-3 rounded-lg transition-colors ${index === 0 ? 'bg-[#21262d] border border-[#00b4d8]/50' : 'hover:bg-[#21262d]/60'} group"
+        <div 
+          class="search-result-item block p-3.5 rounded-xl transition-all cursor-pointer ${index === 0 ? 'bg-[#21262d] border border-[#00b4d8]/60 shadow-lg' : 'hover:bg-[#21262d]/70 border border-transparent'} group"
           data-index="${index}"
+          data-href="${destinationUrl}"
         >
-          <div class="flex items-center justify-between gap-2 mb-1">
-            <div class="flex items-center gap-2">
-              <span class="font-mono text-xs px-1.5 py-0.5 rounded bg-[#0d1117] text-[#e84a5f] border border-[#30363d] font-bold">
+          <!-- Top Row: ID, Title, Category Badge -->
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="font-mono text-xs px-2 py-0.5 rounded bg-[#0d1117] text-[#e84a5f] border border-[#30363d] font-bold flex-shrink-0">
                 ${item.id}
               </span>
-              <span class="text-sm font-semibold text-[#f0f6fc] group-hover:text-[#00b4d8] transition-colors">
-                ${item.title}
+              <span class="text-sm font-bold text-[#f0f6fc] group-hover:text-[#00b4d8] transition-colors truncate">
+                ${titleHighlighted}
               </span>
             </div>
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-mono text-[#c9d1d9]" style="background-color: ${item.categoryColor}18; border: 1px solid ${item.categoryColor}55;">
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full font-mono text-[#c9d1d9] flex-shrink-0" style="background-color: ${item.categoryColor}18; border: 1px solid ${item.categoryColor}55;">
               ${item.category}
             </span>
           </div>
-          <p class="text-xs text-[#8b949e] line-clamp-2 pl-7 font-sans">
-            ${item.content}
-          </p>
-          <div class="flex items-center gap-3 mt-1 pl-7 text-[10px] text-[#6e7681] font-mono">
-            <span>In: ${item.refs_in.length}</span>
-            <span>Out: ${item.refs_out.length}</span>
-            ${item.tags && item.tags.length > 0 ? `<span class="text-[#00b4d8]">Tools: ${item.tags.slice(0, 3).join(', ')}</span>` : ''}
+
+          <!-- Section Heading Context if Matched -->
+          ${topSnippet ? `
+            <div class="flex items-center justify-between text-[11px] font-mono text-[#8b949e] mb-1.5 pl-1">
+              <span class="truncate text-[#00b4d8] flex items-center gap-1">
+                <span>📍</span>
+                <span class="font-semibold">${highlightText(topSnippet.heading || 'Kode / Command Terkait', query)}</span>
+              </span>
+              ${item.totalCodeMatches > 1 ? `
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-[#0d1117] text-[#58a6ff] border border-[#30363d]">
+                  +${item.totalCodeMatches - 1} snippet lainnya
+                </span>
+              ` : ''}
+            </div>
+
+            <!-- Sleek Terminal Code Box -->
+            <div class="relative mt-1.5 rounded-lg bg-[#0d1117] border border-[#30363d] p-3 text-xs font-mono text-[#58a6ff] overflow-x-auto">
+              <button 
+                type="button" 
+                class="copy-snippet-btn absolute right-2 top-2 px-2 py-0.5 rounded bg-[#21262d] hover:bg-[#30363d] text-[#c9d1d9] hover:text-white border border-[#30363d] text-[10px] font-mono transition-all flex items-center gap-1 z-10"
+                data-code="${escapeAttribute(topSnippet.fullCode)}"
+                title="Salin kode ke clipboard"
+              >
+                <span>📋</span>
+                <span class="btn-text">Copy</span>
+              </button>
+              <pre class="m-0 text-[11.5px] leading-relaxed select-text font-mono text-[#79c0ff] whitespace-pre-wrap"><code class="block">${highlightText(topSnippet.codePreview, query)}</code></pre>
+            </div>
+          ` : `
+            <p class="text-xs text-[#8b949e] line-clamp-2 pl-1 font-sans mt-1">
+              ${highlightText(item.excerpt, query)}
+            </p>
+          `}
+
+          <!-- Footer Metadata -->
+          <div class="flex items-center justify-between text-[10px] text-[#6e7681] font-mono mt-2 pt-2 border-t border-[#30363d]/40 pl-1">
+            <span class="text-[#8b949e]">File: ${item.filename}</span>
+            <span class="text-[#00b4d8] group-hover:translate-x-1 transition-transform flex items-center gap-1 font-semibold">
+              Buka Modul & Section →
+            </span>
           </div>
-        </a>
+        </div>
       `;
     }).join('');
+
+    bindResultEvents();
   }
+
+  function escapeHtmlText(str: string) {
+    return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function escapeAttribute(str: string) {
+    return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function bindResultEvents() {
+    // Click card to navigate
+    const items = resultsContainer?.querySelectorAll('.search-result-item');
+    items?.forEach(item => {
+      item.addEventListener('click', (e) => {
+        // If clicked on copy button, do not navigate
+        if ((e.target as HTMLElement).closest('.copy-snippet-btn')) return;
+        const href = (item as HTMLElement).getAttribute('data-href');
+        if (href) window.location.href = href;
+      });
+    });
+
+    // Copy buttons
+    const copyButtons = resultsContainer?.querySelectorAll('.copy-snippet-btn');
+    copyButtons?.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const codeToCopy = (btn as HTMLElement).getAttribute('data-code') || '';
+        navigator.clipboard.writeText(codeToCopy).then(() => {
+          const textSpan = btn.querySelector('.btn-text');
+          if (textSpan) textSpan.textContent = '✓ Copied!';
+          btn.classList.add('bg-[#238636]', 'text-white');
+          setTimeout(() => {
+            if (textSpan) textSpan.textContent = 'Copy';
+            btn.classList.remove('bg-[#238636]', 'text-white');
+          }, 2000);
+        });
+      });
+    });
+  }
+
+  function doSearch(val: string) {
+    const q = val.trim();
+    if (!q) {
+      renderEmptyState();
+      return;
+    }
+    const results = performSearch(allDocs, q, 'all');
+    renderResults(results, q);
+  }
+
+  // 150ms instant debounce
+  input?.addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const val = (e.target as HTMLInputElement).value;
+      doSearch(val);
+    }, 150);
+  });
 
   openBtn?.addEventListener('click', openModal);
   closeBtn?.addEventListener('click', closeModal);
@@ -151,43 +338,53 @@ import pages from '../data/pages.json';
     if (e.target === modal) closeModal();
   });
 
-  // 300ms Debounce implementation
-  input?.addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      const val = (e.target as HTMLInputElement).value.trim();
-      if (!val) {
-        renderEmptyState();
-        return;
-      }
-      const results = fuse.search(val).map(r => r.item);
-      renderResults(results);
-    }, 300);
-  });
-
-  // Connect useKeyboardNav hook
-  setupKeyboardNav({
-    onOpenSearch: () => {
+  // Global Keyboard Shortcuts (Ctrl+K, Slash, Arrows, Enter, ESC)
+  document.addEventListener('keydown', (e) => {
+    // Ctrl + K or Cmd + K
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
       if (modal?.classList.contains('hidden')) openModal();
       else closeModal();
-    },
-    onCloseSearch: () => closeModal(),
-    onNavigateNext: () => {
-      if (currentResults.length > 0) {
-        selectedIndex = (selectedIndex + 1) % Math.min(currentResults.length, 10);
-        updateSelection();
+      return;
+    }
+
+    // Slash "/" when not typing in an input
+    if (e.key === '/' && modal?.classList.contains('hidden')) {
+      const activeTag = document.activeElement?.tagName.toLowerCase();
+      if (activeTag !== 'input' && activeTag !== 'textarea') {
+        e.preventDefault();
+        openModal();
+        return;
       }
-    },
-    onNavigatePrev: () => {
-      if (currentResults.length > 0) {
-        selectedIndex = (selectedIndex - 1 + Math.min(currentResults.length, 10)) % Math.min(currentResults.length, 10);
-        updateSelection();
-      }
-    },
-    onSelectCurrent: () => {
-      const target = currentResults[selectedIndex];
-      if (target) {
-        window.location.href = `/docs/${target.slug}`;
+    }
+
+    // When modal is open
+    if (!modal?.classList.contains('hidden')) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeModal();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (currentResults.length > 0) {
+          selectedIndex = (selectedIndex + 1) % Math.min(currentResults.length, 10);
+          updateSelection();
+        }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (currentResults.length > 0) {
+          selectedIndex = (selectedIndex - 1 + Math.min(currentResults.length, 10)) % Math.min(currentResults.length, 10);
+          updateSelection();
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const targetItem = currentResults[selectedIndex];
+        if (targetItem) {
+          const topSnippet = targetItem.matchedSnippets && targetItem.matchedSnippets[0];
+          const dest = topSnippet && topSnippet.headingSlug 
+            ? `/docs/${targetItem.slug}#${topSnippet.headingSlug}`
+            : `/docs/${targetItem.slug}`;
+          window.location.href = dest;
+        }
       }
     }
   });
@@ -196,12 +393,16 @@ import pages from '../data/pages.json';
     const items = resultsContainer?.querySelectorAll('.search-result-item');
     items?.forEach((el, idx) => {
       if (idx === selectedIndex) {
-        el.classList.add('bg-[#21262d]', 'border', 'border-[#00b4d8]/50');
-        el.classList.remove('hover:bg-[#21262d]/60');
+        el.classList.add('bg-[#21262d]', 'border-[#00b4d8]/60', 'shadow-lg');
+        el.classList.remove('border-transparent');
         el.scrollIntoView({ block: 'nearest' });
       } else {
-        el.classList.remove('bg-[#21262d]', 'border', 'border-[#00b4d8]/50');
+        el.classList.remove('bg-[#21262d]', 'border-[#00b4d8]/60', 'shadow-lg');
+        el.classList.add('border-transparent');
       }
     });
   }
+
+  // Initial state
+  renderEmptyState();
 </script>
