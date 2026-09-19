@@ -234,8 +234,8 @@
         "color": "#3B8BD4",
         "slug": "redis-and-mongodb",
         "refsInCount": 6,
-        "refsOutCount": 9,
-        "degree": 15
+        "refsOutCount": 10,
+        "degree": 16
       }
     },
     {
@@ -485,9 +485,9 @@
         "categoryLabel": "3. Web Exploitation",
         "color": "#F59E0B",
         "slug": "jwt",
-        "refsInCount": 9,
+        "refsInCount": 10,
         "refsOutCount": 7,
-        "degree": 16
+        "degree": 17
       }
     },
     {
@@ -2142,6 +2142,13 @@
         "id": "14d->25",
         "source": "14d",
         "target": "25"
+      }
+    },
+    {
+      "data": {
+        "id": "14d->28",
+        "source": "14d",
+        "target": "28"
       }
     },
     {

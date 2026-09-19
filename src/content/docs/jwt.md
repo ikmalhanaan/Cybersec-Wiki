@@ -5,7 +5,7 @@ category: "3. Web Exploitation"
 categoryId: "web"
 filename: "28_jwt_workflow.md"
 refs_out: ["19","22","25","27","29","30","34"]
-refs_in: ["23","27","29","30","33","34","53","57","61"]
+refs_in: ["14d","23","27","29","30","33","34","53","57","61"]
 ---
 
 ← [File 27: IDOR](/docs/idor-access-control)

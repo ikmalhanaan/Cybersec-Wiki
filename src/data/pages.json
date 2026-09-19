@@ -916,7 +916,7 @@
     "category": "2. Network Services",
     "categoryId": "network",
     "categoryColor": "#3B8BD4",
-    "content": "📦 BAGIAN 1: REDIS & NOSQL FUNDAMENTALS 1.1 Apa itu Redis? Redis adalah in-memory key-value store — database yang menyimpan data di RAM untuk akses super cepat. --- 14d Redis & MongoDB — Complete Attack Workflow > Cara baca: Setiap langkah punya OUTPUT BERHASIL ✅ dan OUTPUT GAGAL ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah. --...",
+    "content": "📦 BAGIAN 1: REDIS & NOSQL FUNDAMENTALS 1.1 Apa itu Redis? Redis adalah in-memory key-value store — database yang menyimpan data di RAM untuk akses super cepat. Informasi Teknis Redis: Properti Nilai --- --- Port default 6379 TCP Auth default TIDAK ADA (fatal!) Data types Strings, Hashes, Lists, Sets, Sorted Sets Persistence RDB (snapshot) & AOF (a...",
     "refs_out": [
       "06",
       "07",
@@ -924,6 +924,7 @@
       "14c",
       "15",
       "25",
+      "28",
       "35",
       "44",
       "47"
@@ -940,6 +941,7 @@
     "filename": "14d_Redis & MongoDB.md",
     "tags": [
       "burp",
+      "burpsuite",
       "crackmapexec",
       "ffuf",
       "gobuster",
@@ -1679,6 +1681,7 @@
       "34"
     ],
     "refs_in": [
+      "14d",
       "23",
       "27",
       "29",
