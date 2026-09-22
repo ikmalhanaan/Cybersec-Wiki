@@ -133,7 +133,6 @@
     "refs_in": [
       "02",
       "04",
-      "05",
       "09",
       "10",
       "12",
@@ -203,7 +202,6 @@
     ],
     "refs_in": [
       "03",
-      "05",
       "06",
       "09",
       "10"
@@ -249,8 +247,6 @@
     "categoryColor": "#3B8BD4",
     "content": "05. SMB & Samba Exploitation Workflow — Master Field Guide --- 🧠 BAGIAN 1: SMB FUNDAMENTALS 1.1 Apa itu SMB? (Analogi Lemari Arsip Kantor) Server Message Block (SMB) adalah protokol jaringan client-server yang digunakan untuk berbagi file ( file sharing ), printer, serial port, dan komunikasi antar-proses ( named pipes ) di dalam jaringan lokal. -...",
     "refs_out": [
-      "03",
-      "04",
       "06",
       "07",
       "08",
@@ -259,7 +255,6 @@
       "14a",
       "14b",
       "35",
-      "37",
       "42",
       "43",
       "45"
@@ -300,8 +295,8 @@
       "63",
       "64"
     ],
-    "filepath": "2. Network And Service/05_smb_samba_workflow.md",
-    "filename": "05_smb_samba_workflow.md",
+    "filepath": "2. Network And Service/05_smb_samba-workflow.md",
+    "filename": "05_smb_samba-workflow.md",
     "tags": [
       "bloodhound",
       "crackmapexec",
@@ -2039,7 +2034,6 @@
       "46"
     ],
     "refs_in": [
-      "05",
       "09",
       "10",
       "14b",

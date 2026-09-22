@@ -1,0 +1,1800 @@
+[
+  {
+    "id": "obs-net-open-port-unknown",
+    "title": "Port Terbuka / Layanan Tidak Dikenal (Open Port / Unknown Service)",
+    "domain": "Network Discovery",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Output Nmap: '8080/tcp open  http-proxy?' atau '31337/tcp open  unknown'",
+      "Port listening yang tidak terdaftar di /etc/services",
+      "Koneksi netcat terhubung (SYN-ACK) namun tidak merespons banner langsung"
+    ],
+    "context": "Fase awal pemindaian port jaringan menggunakan Nmap, Rustscan, atau Masscan terhadap target lab atau infrastruktur.",
+    "why_it_matters": "Setiap port terbuka adalah interface komunikasi listening service. Port tidak dikenal sering kali merupakan custom application, backdoor CTF, remote admin interface, internal API, atau database development yang lupa ditutup. Port terbuka BUKAN vulnerability; ini adalah titik awal enumerasi protokol.",
+    "questions_to_ask": [
+      "Apakah protokol transport TCP atau UDP?",
+      "Bagaimana layanan merespons saat dikirim byte acak atau newline (\\r\\n)?",
+      "Apakah ini protokol berbasis teks (HTTP, SMTP, FTP) atau biner (RPC, TLS, custom protocol)?",
+      "Apakah layanan meminta otentikasi atau langsung memberikan shell/prompt?"
+    ],
+    "inspection_points": [
+      {
+        "id": "port-probe-interaction",
+        "name": "1. Interaksi Probe Mentah (Raw Socket Probe)",
+        "why_check": "Mendapatkan respon pertama dari soket tanpa asumsi protokol.",
+        "what_to_look_for": [
+          "Apakah layanan mengirim teks selamat datang (banner)?",
+          "Apakah layanan merespons HTTP request mentah: 'GET / HTTP/1.0\\r\\n\\r\\n'?",
+          "Apakah layanan menutup koneksi seketika (RST/FIN)?"
+        ],
+        "normal_baseline": "Layanan standar mengembalikan banner atau HTTP error 400 Bad Request.",
+        "interesting_clues": [
+          "Merespons HTTP saat diminta probe plaintext",
+          "Mengembalikan prompt shell (misal: $, #, atau login prompt)",
+          "Menolak handshake SSL/TLS (indikasi plaintext service)"
+        ],
+        "evidence_to_capture": [
+          "Output koneksi netcat (nc -nv <IP> <PORT>)",
+          "Tangkapan hexdump bytes awal yang diterima"
+        ]
+      },
+      {
+        "id": "port-protocol-probing",
+        "name": "2. Probing Protokol (HTTP/SSL/Raw Binary Probe)",
+        "why_check": "Port non-standar sering menjalankan layanan web tersembunyi, debugging console, atau custom RPC.",
+        "what_to_look_for": [
+          "curl -ik http://TARGET:PORT/ dan curl -ik https://TARGET:PORT/",
+          "nc -nv TARGET PORT lalu kirim karakter sembarang / enter untuk trigger error banner",
+          "nmap -sV --version-intensity 9 -p PORT TARGET",
+          "openssl s_client -connect TARGET:PORT -showcerts untuk cek SSL certificate"
+        ],
+        "normal_baseline": "Port merespons protokol standar dengan banner versi yang jelas atau segera menutup koneksi (RST).",
+        "interesting_clues": [
+          "Merespons dengan header HTTP pada port non-standar (contoh: 8080, 8443, 8888, 9090)",
+          "Sertifikat SSL mencantumkan CN (Common Name) / subdomain internal organisasi",
+          "Banner menampilkan prompt interaktif (misal: Redis, Python CLI, Debugger)"
+        ],
+        "evidence_to_capture": [
+          "Output curl -ik mentah (request & response)",
+          "Detail SSL certificate (Issuer, Subject, Subject Alternative Names)",
+          "Raw probe reply dari netcat"
+        ]
+      },
+      {
+        "id": "port-firewall-nat-behavior",
+        "name": "3. Status State Port (Filtered vs Open vs WAF)",
+        "why_check": "Menentukan apakah port dilindungi stateful firewall, port knocking, atau access control list.",
+        "what_to_look_for": [
+          "nmap -sS vs nmap -sT vs nmap -sA (ACK scan untuk membedakan filtered vs unfiltered)",
+          "Bandingkan waktu respons (RTT): delay panjang sering kali menandakan tarpit atau packet drop firewall",
+          "Cek apakah port berubah status saat diakses dari IP atau subnet berbeda"
+        ],
+        "normal_baseline": "Port open merespons SYN-ACK segera (< 50ms di LAN, < 200ms di Internet).",
+        "interesting_clues": [
+          "Port berubah dari filtered menjadi open setelah request tertentu (port knocking)",
+          "Port hanya terbuka pada alamat IPv6 sementara IPv4 difilter"
+        ],
+        "evidence_to_capture": [
+          "Tabel nmap scanning comparison (-sS vs -sA)",
+          "Packet trace wireshark / tcpdump (SYN/ACK sequence)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-net-raw-http-on-high-port",
+        "inspection_point_id": "port-probe-interaction",
+        "signal_description": "Port non-standar (misal: 8089 atau 9001) merespons request HTTP.",
+        "output_snippet": "$ curl -i http://target:8089/\nHTTP/1.1 200 OK\nServer: Werkzeug/2.0.2 Python/3.9.7\n\n<h1>Debug Console</h1>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Port tinggi menjalankan web service backend atau debug console yang tidak diproteksi reverse proxy.",
+        "hypothesis_id": "hyp-net-exposed-debug",
+        "evidence_to_capture": [
+          "Curl header dan body respon dari port tersebut",
+          "Informasi server banner yang tertera"
+        ]
+      },
+      {
+        "id": "sig-port-web-service-nonstandard",
+        "inspection_point_id": "port-protocol-probing",
+        "signal_description": "Port non-standar (misal: 8888) merespons dengan HTTP server header dan form login atau REST API.",
+        "output_snippet": "$ curl -ik http://192.168.1.50:8888/\nHTTP/1.1 200 OK\nServer: Werkzeug/2.0.1 Python/3.9.5\nContent-Type: text/html\n\n<title>Flask Debugger Console</title>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Layanan web berbasis Python Werkzeug / Flask debugger terbuka pada port non-standar, berpotensi memiliki console PIN RCE.",
+        "hypothesis_id": "hyp-unknown-port-rce",
+        "evidence_to_capture": [
+          "Full HTTP request dan response headers",
+          "Title dan body halaman web yang bocor"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Koneksi langsung memuntahkan shell prompt tanpa otentikasi (bind shell backdoor)",
+      "Port membuka koneksi namun hening tanpa output sama sekali (tarpit atau honeypot)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-net-exposed-debug",
+        "name": "Exposed Internal / Debug Web Interface",
+        "description": "Layanan web internal atau console pengembangan terekspos langsung ke jaringan luar tanpa proteksi otentikasi.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-net-raw-http-on-high-port"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Akses port melalui browser atau curl dengan path / dan /robots.txt.",
+            "expected_output": "Mengetahui fungsi antarmuka tanpa mengirim input destruktif.",
+            "interesting_output": "Terdapat form login, Swagger API docs, atau Werkzeug console aktif.",
+            "unexpected_output": "Koneksi di-drop oleh firewall setelah 1 request.",
+            "interpretation": "Mengonfirmasi konteks fungsional layanan web.",
+            "evidence_to_record": [
+              "Screenshot antarmuka web atau curl dump"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-unknown-port-rce",
+        "name": "Remote Access / RCE via Exposed Debugger on Non-Standard Port",
+        "description": "Layanan web pada port non-standar mengaktifkan fitur debug atau interaktif yang memungkinkan eksekusi kode.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-port-web-service-nonstandard"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kunjungi endpoint di browser, periksa apakah endpoint console (/console) terlindungi PIN atau langsung interaktif.",
+            "expected_output": "Endpoint console meminta PIN otentikasi.",
+            "interesting_output": "Console interaktif terbuka tanpa PIN, atau PIN default diterima.",
+            "unexpected_output": "404 Not Found atau 403 Forbidden.",
+            "interpretation": "Console interaktif aktif → RCE langsung dapat dibuktikan dengan perintah aman os.getuid().",
+            "evidence_to_record": [
+              "Screenshot console interface",
+              "Bukti pembatasan PIN"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Port memfilter koneksi (filtered state) atau menutup koneksi segera setelah handshake TCP.",
+      "Layanan meminta sertifikat client TLS (mTLS) yang tidak dimiliki tester.",
+      "Pengujian 5 jenis probe dasar (HTTP, SSL, Telnet, SSH, DNS) tidak menghasilkan satupun respon data."
+    ],
+    "common_mistakes": [
+      "Hanya memindai 1.000 port standar dan melewatkan port tinggi (selalu scan port -p- pada CTF/lab).",
+      "Mengira port terbuka berarti sistem dapat dieksploitasi (port listening adalah fungsi dasar jaringan).",
+      "Langsung meluncurkan exploit script otomatis ke port tidak dikenal sebelum memahami protokolnya."
+    ],
+    "ctf_notes": "Dalam CTF, port acak tinggi seperti 1337, 31337, atau 9999 hampir selalu merupakan custom binary challenge (pwn) atau Python socket service buatan author.",
+    "pentest_notes": "Dalam pentest resmi, port non-standar sering kali merupakan service monitoring (Prometheus 9090, Grafana 3000), internal dashboard, atau database remote yang salah dikonfigurasi.",
+    "unknown_guide": {
+      "what_is_this": "Soket komunikasi jaringan TCP atau UDP yang aktif menerima koneksi pada nomor port tertentu.",
+      "why_does_it_exist": "Sistem operasi memetakan aplikasi ke nomor port agar lalu lintas data jaringan sampai ke proses yang tepat.",
+      "what_parts_matter": "Nomor port, protokol transport, respon banner awal, dan software yang menjalankannya.",
+      "what_normal_looks_like": "Layanan merespons dengan protokol yang teratur sesuai spesifikasinya.",
+      "what_to_record_immediately": [
+        "Nomor port dan protokol (TCP/UDP)",
+        "Perintah nmap dan outputnya",
+        "Respon mentah saat dihubungkan dengan netcat"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Port terbuka namun tidak memberikan data respon awal.",
+      "why_not_secure": "Port mungkin merupakan protokol biner khusus yang menunggu perintah spesifik (seperti RPC atau Redis).",
+      "next_pivot_observations": [
+        "obs-net-service-banner",
+        "obs-net-database",
+        "obs-net-rpc"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "03",
+        "slug": "nmap-master",
+        "title": "03. Nmap Master Workflow",
+        "section_title": "2. Port Scanning Techniques",
+        "anchor": "2-port-scanning-techniques",
+        "rationale": "Pelajari teknik pemindaian komprehensif, timing template, dan probing layanan tidak dikenal."
+      }
+    ],
+    "related_observations": [
+      "obs-net-service-banner",
+      "obs-net-ssh",
+      "obs-net-ftp"
+    ],
+    "provenance": [
+      "Nmap Network Scanning (Gordon Lyon)",
+      "MITRE ATT&CK T1046 (Network Service Discovery)",
+      "OWASP WSTG-INFO-02 (Fingerprint Web Server)"
+    ]
+  },
+  {
+    "id": "obs-net-service-banner",
+    "title": "Banner Layanan & Informasi Versi Terdeteksi (Service Banner & Version Disclosure)",
+    "domain": "Service Enumeration",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Output Nmap: 22/tcp open ssh OpenSSH 7.4p1 Debian 10+deb9u7",
+      "Output curl -I: Server: Apache/2.4.29 (Ubuntu)",
+      "Banner teks saat koneksi Netcat: '220 ProFTPD 1.3.5 Server (ProFTPD Default Installation)'"
+    ],
+    "context": "Terlihat saat melakukan nmap service scan (-sV) atau koneksi raw socket ke port target.",
+    "why_it_matters": "Banner layanan membocorkan nama produk, nomor versi spesifik, dan sistem operasi underlying (Debian, Ubuntu, CentOS, Windows). Prinsip penting: VERSION != VULNERABLE. Menemukan versi lama bukan jaminan sistem rentan, karena distro Linux sering mem-backport patch keamanan tanpa menaikkan nomor versi banner.",
+    "questions_to_ask": [
+      "Apakah versi ini memiliki CVE publik yang telah terbukti (seperti ProFTPD 1.3.5 mod_copy)?",
+      "Apakah ada tanda-tanda backporting patch distro (misal: +deb9u7)?",
+      "Apakah fitur atau modul yang rentan pada CVE tersebut benar-benar diaktifkan pada target?",
+      "Apakah ada layanan pendukung lain yang lebih mudah diserang sebelum mencoba exploit versi?"
+    ],
+    "inspection_points": [
+      {
+        "id": "banner-cve-search",
+        "name": "1. Pencarian Korelasi CVE & Exploit Database",
+        "why_check": "Memeriksa riwayat kerentanan perangkat lunak pada versi tersebut.",
+        "what_to_look_for": [
+          "searchsploit 'ProFTPD 1.3.5'",
+          "Pengecekan NVD CVE database",
+          "Kondisi prasyarat exploit (apakah butuh otentikasi atau konfigurasi khusus)"
+        ],
+        "normal_baseline": "Layanan menggunakan versi yang didukung aktif atau patch backported.",
+        "interesting_clues": [
+          "Terdapat exploit RCE unauthenticated publik untuk versi spesifik tersebut",
+          "Versi software dirilis lebih dari 7 tahun yang lalu tanpa tanda pembaruan"
+        ],
+        "evidence_to_capture": [
+          "Banner versi mentah",
+          "Daftar CVE relevan beserta ID-nya"
+        ]
+      },
+      {
+        "id": "banner-cve-correlation",
+        "name": "2. Korelasi Banner dengan Vulnerability Database (CVE/NVD)",
+        "why_check": "Menentukan apakah versi software yang dilaporkan memiliki CVE publik atau exploit yang stabil.",
+        "what_to_look_for": [
+          "searchsploit \"Software Name Version\"",
+          "Periksa NVD (National Vulnerability Database) untuk vendor & product exact match",
+          "Pastikan mengecek apakah distro target melakukan backporting patch (contoh: Debian/Ubuntu)",
+          "Verifikasi apakah konfigurasi default yang rentan memang diaktifkan pada target"
+        ],
+        "normal_baseline": "Versi software adalah versi LTS terbaru atau memiliki patch backport dari vendor OS.",
+        "interesting_clues": [
+          "Versi software sangat usang dan memiliki exploit RCE publik (misal: vsftpd 2.3.4, Apache 2.4.49, OpenSSH 7.2p2)",
+          "Software merupakan build custom atau versi beta/developer"
+        ],
+        "evidence_to_capture": [
+          "String versi banner mentah yang diekstrak",
+          "Daftar EDB-ID / CVE yang relevan dari searchsploit",
+          "Informasi distribusi OS pengirim (misal: Ubuntu 18.04.1)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-banner-known-cve",
+        "inspection_point_id": "banner-cve-search",
+        "signal_description": "Banner teridentifikasi sebagai versi yang memiliki kerentanan Remote Code Execution terkenal (misal: vsftpd 2.3.4 atau ProFTPD 1.3.5).",
+        "output_snippet": "220 ProFTPD 1.3.5 Server (ProFTPD Default Installation)",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Layanan berpotensi rentan terhadap eksploitasi modul tertentu (misal: mod_copy file copy vulnerability).",
+        "hypothesis_id": "hyp-banner-version-exploit",
+        "evidence_to_capture": [
+          "Banner teks mentah",
+          "CVE referensi (CVE-2015-3306)"
+        ]
+      },
+      {
+        "id": "sig-banner-known-cve-match",
+        "inspection_point_id": "banner-cve-correlation",
+        "signal_description": "Banner menampilkan versi exact software yang memiliki CVE Remote Code Execution publik.",
+        "output_snippet": "$ nc -vn 192.168.1.15 21\n(UNKNOWN) [192.168.1.15] 21 (ftp) open\n220 ProFTPD 1.3.5 Server (ProFTPD Default Installation)",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "ProFTPD 1.3.5 rentan terhadap mod_copy arbitrary file copy (CVE-2015-3306), memungkinkan upload webshell jika web server berada pada host yang sama.",
+        "hypothesis_id": "hyp-banner-cve-exploit",
+        "evidence_to_capture": [
+          "Banner teks lengkap dari netcat",
+          "CVE referensi"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Layanan mengembalikan banner kustom palsu yang sengaja disamarkan oleh administrator"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-banner-version-exploit",
+        "name": "Service Exploitation via Known Public Vulnerability",
+        "description": "Mengeksploitasi bug memori atau kelemahan logika modul pada versi perangkat lunak yang teridentifikasi.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-banner-known-cve"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim perintah probe aman spesifik protokol untuk memverifikasi apakah modul rentan terpasang (misal: kirim perintah CPFR/CPTO pada ProFTPD tanpa merusak file).",
+            "expected_output": "Server menolak perintah jika modul dimatikan (500 Unknown command).",
+            "interesting_output": "Server merespons '350 File or directory exists, ready for destination name' (modul aktif!).",
+            "unexpected_output": "Koneksi terputus.",
+            "interpretation": "Mengonfirmasi bahwa modul rentan benar-benar aktif di server.",
+            "evidence_to_record": [
+              "Log komunikasi socket telnet/nc"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-banner-cve-exploit",
+        "name": "Service Exploitation via Version-Specific CVE",
+        "description": "Mengeksploitasi kerentanan publik yang spesifik terhadap versi banner software yang teridentifikasi.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-banner-known-cve-match"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim perintah non-destruktif untuk memvalidasi fitur modul yang rentan (contoh: SITE CPFR /etc/passwd).",
+            "expected_output": "500 Unknown command atau 550 Permission denied.",
+            "interesting_output": "350 File or directory exists, ready for destination name (mod_copy aktif).",
+            "unexpected_output": "Koneksi terputus tiba-tiba (WAF/IPS trigger).",
+            "interpretation": "Perintah mod_copy diterima → kerentanan dapat dieksploitasi secara valid.",
+            "evidence_to_record": [
+              "Respons dari perintah SITE CPFR"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Banner menunjukkan versi modern yang telah dipatch.",
+      "Perintah probe modul rentan mengembalikan status 'Unknown command' atau 'Disabled'.",
+      "Distribusi Linux menerapkan backported security fix."
+    ],
+    "common_mistakes": [
+      "Langsung menembakkan exploit bersenjata berat dari Metasploit yang dapat menyebabkan denial of service (crash) pada server.",
+      "Mengasumsikan versi sama dengan rentan tanpa memverifikasi modul pendukungnya."
+    ],
+    "ctf_notes": "Di CTF, jika ada layanan lawas dengan banner sangat spesifik (misal: OpenNetAdmin 18.1.1 atau Nostromo 1.9.6), sering kali ada exploit public 1-click di Searchsploit.",
+    "pentest_notes": "Dalam pentest resmi, jangan pernah menjalankan exploit binary denial-of-service. Cukup dokumentasikan versi dan tautkan ke referensi vendor.",
+    "unknown_guide": {
+      "what_is_this": "Teks perkenalan yang dikirim oleh server saat sebuah client pertama kali terhubung ke port-nya.",
+      "why_does_it_exist": "Membantu client dan server menegosiasikan protokol komunikasi yang kompatibel.",
+      "what_parts_matter": "Nama software pembuat server dan nomor versinya.",
+      "what_normal_looks_like": "Mengembalikan banner versi standar sistem operasi.",
+      "what_to_record_immediately": [
+        "Teks banner persis karakter demi karakter",
+        "Nomor port asal banner"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Versi software mutakhir dan tidak memiliki kerentanan publik.",
+      "why_not_secure": "Software yang up-to-date tetap dapat memiliki kelemahan konfigurasi, seperti password default atau otorisasi lemah.",
+      "next_pivot_observations": [
+        "obs-net-ftp",
+        "obs-net-ssh",
+        "obs-net-smb"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "04",
+        "slug": "service-identification-decision-tree",
+        "title": "04. Service Identification Decision Tree",
+        "section_title": "Service Banner Analysis",
+        "anchor": "service-banner-analysis",
+        "rationale": "Pohon keputusan penanganan banner, verifikasi exploit, dan backport patch check."
+      }
+    ],
+    "related_observations": [
+      "obs-net-open-port-unknown",
+      "obs-web-technology-fingerprint"
+    ],
+    "provenance": [
+      "Nmap Service Detection Database",
+      "MITRE ATT&CK T1046"
+    ]
+  },
+  {
+    "id": "obs-net-ftp",
+    "title": "Layanan File Transfer Protocol Terdeteksi (FTP Service & Anonymous Login)",
+    "domain": "Network Services",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 21/tcp terbuka dengan layanan FTP (vsftpd, ProFTPD, Pure-FTPd, Microsoft ftpd)",
+      "Banner: '220 (vsFTPd 3.0.3)'",
+      "Pesan status koneksi: '331 Please specify the password', '230 Login successful'"
+    ],
+    "context": "Ditemukan selama pemindaian port pada server file, web server cPanel, atau sistem lab CTF.",
+    "why_it_matters": "FTP adalah protokol transfer file tradisional. Miskonfigurasi yang sangat sering terjadi adalah mengaktifkan 'Anonymous Access' (login dengan user 'anonymous' dan password sembarang/email). Melalui akses anonim, tester dapat mengunduh dokumen sensitif, membaca source code web root jika FTP di-mount ke /var/www/html, atau mengunggah webshell jika folder FTP memiliki izin tulis.",
+    "questions_to_ask": [
+      "Apakah login 'anonymous' diizinkan (kode respon 230)?",
+      "File apa saja yang ada di dalam direktori FTP (apakah ada file tersembunyi dengan perintah `ls -la`)?",
+      "Apakah ada direktori yang memiliki izin tulis (writable directory)?",
+      "Apakah direktori FTP terhubung ke document root web server (HTTP)?",
+      "Apakah transmisi data terenkripsi (FTPS) atau plaintext?"
+    ],
+    "inspection_points": [
+      {
+        "id": "ftp-anonymous-check",
+        "name": "1. Verifikasi Anonymous Login",
+        "why_check": "Memeriksa apakah server mengizinkan akses tanpa kredensial otentikasi.",
+        "what_to_look_for": [
+          "ftp <IP> -> user: anonymous, pass: anonymous@example.com",
+          "Nmap script: `nmap --script ftp-anon -p 21 <IP>`"
+        ],
+        "normal_baseline": "Server menolak login anonim (530 Login incorrect).",
+        "interesting_clues": [
+          "230 Login successful (Anonymous access enabled)",
+          "Listing direktori memuat file konfigurasi atau backup database"
+        ],
+        "evidence_to_capture": [
+          "Log terminal koneksi FTP menunjukkan pesan 230 Login successful",
+          "Daftar file hasil perintah ls -la"
+        ]
+      },
+      {
+        "id": "ftp-write-permission",
+        "name": "2. Pengujian Izin Tulis (Writable Upload Test)",
+        "why_check": "Melihat apakah pengguna dapat meletakkan file baru di server.",
+        "what_to_look_for": [
+          "Perintah FTP: `put test_safe.txt`",
+          "Mode PASV vs PORT"
+        ],
+        "normal_baseline": "Server menolak upload dengan pesan 550 Access denied.",
+        "interesting_clues": [
+          "226 Transfer complete (File berhasil diunggah)",
+          "Direktori FTP sama dengan direktori web publik"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan layar perintah put yang berhasil",
+          "URL akses HTTP dari file yang baru diunggah"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-ftp-anon-writable",
+        "inspection_point_id": "ftp-write-permission",
+        "signal_description": "Anonymous FTP berhasil mengunggah file dan file tersebut dapat diakses via web server HTTP.",
+        "output_snippet": "ftp> put test.txt\n226 File receive OK.\n$ curl http://target/test.txt\nOK_TEST_VERIFIED",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Direktori FTP berstatus writable dan terekspos langsung ke web server, membuka jalan Remote Code Execution via upload webshell PHP.",
+        "hypothesis_id": "hyp-ftp-web-rce",
+        "evidence_to_capture": [
+          "Log upload FTP",
+          "Respon curl HTTP 200 OK"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server menolak mode pasif dan hanya mengizinkan active mode (PORT)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-ftp-web-rce",
+        "name": "Remote Code Execution via Anonymous Writable FTP Web Root",
+        "description": "Mengunggah file skrip eksekutabel ke direktori FTP yang dipetakan ke root web server.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-ftp-anon-writable"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Unggah file non-destruktif `safe_check.php` berisi `<?php phpinfo(); ?>` via FTP, lalu akses via browser.",
+            "expected_output": "Halaman phpinfo dirender jika web server mengeksekusi script.",
+            "interesting_output": "Eksekusi kode backend terkonfirmasi.",
+            "unexpected_output": "File didownload sebagai teks murni.",
+            "interpretation": "Membuktikan dampak RCE penuh melalui FTP.",
+            "evidence_to_record": [
+              "Screenshot halaman phpinfo"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server menolak login anonim dan mewajibkan kredensial kuat.",
+      "Login anonim diizinkan namun direktori kosong dan seluruh upaya penulisan (put) ditolak dengan 550 Permission Denied."
+    ],
+    "common_mistakes": [
+      "Hanya mengetik `ls` dan mengabaikan file tersembunyi (selalu gunakan `ls -la` di FTP).",
+      "Lupa mengganti mode binary (`bin`) saat mengunduh atau mengunggah file gambar/zip/script via FTP."
+    ],
+    "ctf_notes": "Di CTF, anonymous FTP sering kali memuat file `.kdbx` (Keepass database), backup `.zip` terenkripsi, atau SSH private key user yang lupa dihapus.",
+    "pentest_notes": "Anonymous FTP Read adalah temuan Medium; jika Writable ke web root, severity meningkat menjadi Critical.",
+    "unknown_guide": {
+      "what_is_this": "Layanan standar jaringan untuk mengirim dan mengambil file antar komputer.",
+      "why_does_it_exist": "Memudahkan transfer file besar atau update konten web dari komputer lokal ke server.",
+      "what_parts_matter": "Apakah boleh masuk tanpa password (anonymous), file apa yang ada di dalamnya, dan apakah boleh upload file.",
+      "what_normal_looks_like": "Hanya menerima user resmi dengan password kuat dan melarang akses anonim.",
+      "what_to_record_immediately": [
+        "Banner software FTP",
+        "Status login anonymous",
+        "Daftar file yang ditemukan"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "FTP tertutup untuk anonim dan tidak ada celah versi publik.",
+      "why_not_secure": "Password FTP mungkin sama dengan password yang digunakan di web login atau SSH.",
+      "next_pivot_observations": [
+        "obs-net-ssh",
+        "obs-net-smb",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "07",
+        "slug": "ftp",
+        "title": "07. FTP Workflow",
+        "section_title": "1.1 Anonymous FTP Check",
+        "anchor": "11-anonymous-ftp-check",
+        "rationale": "Metodologi pengujian anonymous FTP, command injection pada script FTP, dan credential extraction."
+      }
+    ],
+    "related_observations": [
+      "obs-net-service-banner",
+      "obs-net-smb"
+    ],
+    "provenance": [
+      "RFC 959 (File Transfer Protocol)",
+      "MITRE ATT&CK T1078 (Valid Accounts)"
+    ]
+  },
+  {
+    "id": "obs-net-ssh",
+    "title": "Layanan Secure Shell Terdeteksi (SSH Service & Banner/Auth Prompt)",
+    "domain": "Network Services",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 22/tcp terbuka dengan layanan SSH (OpenSSH, Dropbear, libssh)",
+      "Banner teks: 'SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5'",
+      "Prompt otentikasi meminta password atau public key"
+    ],
+    "context": "Ditemukan pada hampir seluruh server Linux/Unix modern untuk administrasi remote.",
+    "why_it_matters": "OpenSSH adalah salah satu perangkat lunak paling aman di dunia jika dikonfigurasi dengan benar. Port 22 terbuka BUKAN kerentanan. Serangan langsung ke SSH (seperti brute force password) umumnya merupakan opsi terakhir karena lambat dan mudah terdeteksi fail2ban. Fokus utama pengujian SSH adalah memeriksa metode otentikasi yang diizinkan (password vs publickey) dan menguji kredensial yang ditemukan dari sumber lain.",
+    "questions_to_ask": [
+      "Metode otentikasi apa yang diizinkan (apakah 'password' diizinkan atau hanya 'publickey')?",
+      "Apakah banner menunjukkan versi libssh lama (libssh auth bypass CVE-2018-10933)?",
+      "Apakah ada kredensial atau private key SSH yang telah ditemukan dari tahap enumerasi web sebelumnya?",
+      "Apakah ada mekanisme pembatasan percobaan (fail2ban / rate limiting)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "ssh-auth-methods",
+        "name": "1. Audit Metode Otentikasi yang Diizinkan",
+        "why_check": "Mengetahui apakah server menerima password interaktif atau hanya public key.",
+        "what_to_look_for": [
+          "ssh -v <IP> 2>&1 | grep 'Authentications that can continue'",
+          "Nilai: 'publickey,password' vs 'publickey'"
+        ],
+        "normal_baseline": "Hanya mengizinkan otentikasi berbasis publickey kriptografis (password authentication disabled).",
+        "interesting_clues": [
+          "Metode 'password' diizinkan (memungkinkan pengujian kredensial yang ditemukan)",
+          "Root login diizinkan langsung via SSH"
+        ],
+        "evidence_to_capture": [
+          "Output baris Authentications that can continue dari ssh -v"
+        ]
+      },
+      {
+        "id": "ssh-key-based-access",
+        "name": "3. Authorized Keys & Private Key Exposure",
+        "why_check": "Private key yang bocor atau authorized_keys yang salah konfigurasi dapat memberikan akses tanpa password.",
+        "what_to_look_for": [
+          "Cari ~/.ssh/ pada sistem setelah mendapat akses: ls -la ~/.ssh/",
+          "Cek authorized_keys: apakah ada kunci dari host/user yang tidak dikenal?",
+          "Scan direktori web, backup, git repo untuk private key (-----BEGIN RSA PRIVATE KEY-----)",
+          "Cek .bash_history untuk penggunaan ssh-keygen atau scp dengan key"
+        ],
+        "normal_baseline": "Hanya public key pengguna yang sah dalam authorized_keys. Private key tidak ada di share atau web directory.",
+        "interesting_clues": [
+          "Private key ditemukan di /var/www/, /backup/, atau git repository",
+          "authorized_keys berisi kunci yang tidak dikenal dengan from= restriction lemah",
+          "id_rsa tanpa passphrase ditemukan pada direktori home user"
+        ],
+        "evidence_to_capture": [
+          "Private key yang ditemukan (content untuk validasi, bukan untuk penyalahgunaan)",
+          "Daftar authorized_keys dari server",
+          "Path lengkap di mana key ditemukan"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-ssh-pass-allowed",
+        "inspection_point_id": "ssh-auth-methods",
+        "signal_description": "Server SSH mengizinkan otentikasi interaktif berbasis password.",
+        "output_snippet": "debug1: Authentications that can continue: publickey,password",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Kredensial username & password yang ditemukan dari kebocoran database atau file konfigurasi dapat dicoba langsung ke SSH.",
+        "hypothesis_id": "hyp-ssh-valid-cred-login",
+        "evidence_to_capture": [
+          "Snippet log verbose SSH client"
+        ]
+      },
+      {
+        "id": "sig-ssh-password-auth",
+        "inspection_point_id": "ssh-auth-methods",
+        "signal_description": "SSH server mengizinkan password authentication — brute-force feasible.",
+        "output_snippet": "$ ssh -v user@192.168.1.20 2>&1 | grep Auth\ndebug1: Authentications that can continue: publickey,password,keyboard-interactive",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Password auth aktif → gunakan Hydra atau Medusa untuk brute-force dengan wordlist umum.",
+        "hypothesis_id": "hyp-ssh-bruteforce",
+        "evidence_to_capture": [
+          "Output ssh -v authentication methods",
+          "nmap script output"
+        ]
+      },
+      {
+        "id": "sig-ssh-private-key-exposed",
+        "inspection_point_id": "ssh-key-based-access",
+        "signal_description": "File private key SSH (id_rsa tanpa passphrase) ditemukan di lokasi yang dapat diakses.",
+        "output_snippet": "$ cat /var/www/html/.git/id_rsa\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA...",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Private key tanpa passphrase dapat langsung digunakan untuk autentikasi ke server sebagai user terkait.",
+        "hypothesis_id": "hyp-ssh-key-auth",
+        "evidence_to_capture": [
+          "Lokasi file key",
+          "Output ssh -i id_rsa user@TARGET (verifikasi koneksi)"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan shell prompt tanpa meminta password sama sekali (misal: honeypot atau custom SSH challenge)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-ssh-valid-cred-login",
+        "name": "Remote Shell Access via Reused Credentials",
+        "description": "Menggunakan password yang diperoleh dari aplikasi web atau history lokal untuk login SSH interaktif.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-ssh-pass-allowed"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Coba login SSH menggunakan satu pasang kredensial yang ditemukan: `ssh user@<IP>`.",
+            "expected_output": "Mendapatkan interactive shell jika password valid.",
+            "interesting_output": "Prompt shell `$` terbuka.",
+            "unexpected_output": "Permission denied (publickey,password).",
+            "interpretation": "Mengonfirmasi akses awal sistem Linux.",
+            "evidence_to_record": [
+              "Output `whoami` dan `hostname` di shell SSH"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-ssh-bruteforce",
+        "name": "SSH Credential Brute-Force (Password Authentication Enabled)",
+        "description": "Password authentication aktif tanpa account lockout memungkinkan brute-force credential.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-ssh-password-auth"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi rate limiting: kirim 5 login gagal cepat, apakah koneksi diputus atau ada delay?",
+            "expected_output": "Koneksi diputus setelah 3 percobaan gagal atau ada 30s delay.",
+            "interesting_output": "Semua percobaan diterima tanpa throttling.",
+            "unexpected_output": "IP langsung di-ban setelah 1 percobaan gagal (fail2ban aktif).",
+            "interpretation": "Tanpa rate limiting → brute-force dengan list kecil password umum feasible.",
+            "evidence_to_record": [
+              "Response time sequence untuk 5 login gagal",
+              "Apakah ada banner fail2ban"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-ssh-key-auth",
+        "name": "Unauthorized SSH Access via Exposed Private Key",
+        "description": "Private key yang ditemukan dapat digunakan langsung untuk autentikasi SSH tanpa password.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-ssh-private-key-exposed"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "chmod 600 id_rsa; ssh -i id_rsa [expected-user]@TARGET -o StrictHostKeyChecking=no",
+            "expected_output": "Permission denied (publickey) — key tidak match dengan authorized_keys.",
+            "interesting_output": "Shell prompt terbuka tanpa password prompt.",
+            "unexpected_output": "Key terenkripsi dengan passphrase — perlu crack passphrase dulu.",
+            "interpretation": "Shell terbuka → full unauthorized access terkonfirmasi, severity Critical.",
+            "evidence_to_record": [
+              "Output ssh command",
+              "Screenshot shell dengan `id` dan `hostname`"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server hanya menerima 'publickey' dan tester tidak memiliki private key yang cocok.",
+      "IP tester diblokir oleh fail2ban setelah 3 kali percobaan salah.",
+      "Tidak ada kredensial valid yang tersedia."
+    ],
+    "common_mistakes": [
+      "Menjalankan hydra brute force masif ke SSH tanpa izin (sangat lambat, berisiko mengunci akun dan memicu alert SIEM).",
+      "Lupa mengatur izin file private key ke 600 (`chmod 600 id_rsa`), menyebabkan SSH client menolak kunci."
+    ],
+    "ctf_notes": "Di CTF, SSH hampir tidak pernah di-brute force secara membabi buta. Jika SSH terbuka, carilah kredensial atau id_rsa di web exploitation terlebih dahulu.",
+    "pentest_notes": "Mengizinkan Password Authentication dan Root Login pada SSH adalah temuan Medium/Low pada laporan hardening server.",
+    "unknown_guide": {
+      "what_is_this": "Protokol terenkripsi untuk mengendalikan terminal komputer Linux dari jarak jauh.",
+      "why_does_it_exist": "Standar industri yang aman untuk administrasi server menggantikan Telnet kuno.",
+      "what_parts_matter": "Apakah menerima login password atau hanya kunci SSH khusus.",
+      "what_normal_looks_like": "Hanya menerima kunci privat dan menolak login akun root langsung.",
+      "what_to_record_immediately": [
+        "Banner OpenSSH lengkap",
+        "Metode otentikasi yang diizinkan"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "SSH hanya menerima kunci publik dan tidak ada celah versi.",
+      "why_not_secure": "Aplikasi web atau database di server yang sama mungkin rentan dan dapat memberikan low-privilege shell.",
+      "next_pivot_observations": [
+        "obs-web-login-page",
+        "obs-net-database",
+        "obs-net-smb"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "06",
+        "slug": "ssh",
+        "title": "06. SSH Workflow",
+        "section_title": "1.1 SSH Banner Grabbing",
+        "anchor": "11-ssh-banner-grabbing",
+        "rationale": "Pelajari audit SSH, pengelolaan private key id_rsa, dan tunneling via SSH."
+      }
+    ],
+    "related_observations": [
+      "obs-net-service-banner",
+      "obs-priv-credential-history"
+    ],
+    "provenance": [
+      "RFC 4253 (The Secure Shell Transport Layer Protocol)",
+      "OpenSSH Security Guidelines"
+    ]
+  },
+  {
+    "id": "obs-net-smb",
+    "title": "Layanan SMB / Samba Terdeteksi (SMB Share & Null Session)",
+    "domain": "Network Services",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 445/tcp (microsoft-ds) atau 139/tcp (netbios-ssn) terbuka",
+      "Layanan teridentifikasi sebagai Samba (Linux) atau Windows Server CIFS",
+      "Share network terlihat via smbclient, crackmapexec, atau enum4linux"
+    ],
+    "context": "Ditemukan pada jaringan lokal korporat, mesin Active Directory, atau file server Linux.",
+    "why_it_matters": "Server Message Block (SMB) digunakan untuk berbagi file, printer, dan named pipes. Kesalahan konfigurasi umum memungkinkan akses anonim (Null Session / Guest Access) ke share yang berisi file backup, konfigurasi sensitif, atau script startup. Adanya port 445 BUKAN bukti kerentanan EternalBlue; ini adalah protokol file sharing standar.",
+    "questions_to_ask": [
+      "Versi SMB apa yang didukung (SMBv1, SMBv2, SMBv3)? Apakah SMB signing aktif?",
+      "Apakah sesi tanpa otentikasi (Null Session: user '', pass '') diizinkan?",
+      "Apakah akun guest aktif dan dapat melihat daftar share (Share Listing)?",
+      "Apakah ada share yang memiliki izin tulis (Writable Share)?",
+      "Apakah share berisi file teks konfigurasi, script, atau backup kredensial?"
+    ],
+    "inspection_points": [
+      {
+        "id": "smb-anonymous-auth",
+        "name": "1. Verifikasi Null Session & Guest Access",
+        "why_check": "Melihat apakah informasi sistem dapat diperoleh tanpa kredensial valid.",
+        "what_to_look_for": [
+          "smbclient -L //target/ -N (Null Session listing)",
+          "crackmapexec smb <IP> -u '' -p '' atau -u 'guest' -p ''"
+        ],
+        "normal_baseline": "Server menolak koneksi anonim (STATUS_ACCESS_DENIED atau STATUS_LOGON_FAILURE).",
+        "interesting_clues": [
+          "Null session berhasil menampilkan daftar share folder (Share Listing allowed)",
+          "IPC$ share dapat diakses untuk enumerasi user SID dan password policy"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan layar smbclient -L output lengkap",
+          "Status code NTLM respon server"
+        ]
+      },
+      {
+        "id": "smb-null-session",
+        "name": "2. Null Session & Anonymous Access",
+        "why_check": "Null session memungkinkan enumerasi user, grup, share, dan kebijakan password tanpa kredensial.",
+        "what_to_look_for": [
+          "smbclient -N -L //TARGET → apakah berhasil list share?",
+          "enum4linux -a TARGET → periksa output \"Users via RPC\", \"Share Enumeration\"",
+          "crackmapexec smb TARGET -u \"\" -p \"\" → apakah STATUS_ACCESS_DENIED atau OK?",
+          "rpcclient -U \"\" TARGET → apakah prompt rpcclient terbuka?"
+        ],
+        "normal_baseline": "Semua akses anonim ditolak: STATUS_ACCESS_DENIED atau STATUS_LOGON_FAILURE.",
+        "interesting_clues": [
+          "Share IPC$ bisa diakses anonim",
+          "rpcclient berhasil terbuka tanpa password",
+          "Daftar user domain dapat di-enumerate tanpa autentikasi",
+          "Share non-standar (Data, Backup, IT) visible di listing"
+        ],
+        "evidence_to_capture": [
+          "Output smbclient -N -L lengkap",
+          "Output enum4linux -a (simpan ke file)",
+          "Output rpcclient enumdomusers, enumdomgroups"
+        ]
+      },
+      {
+        "id": "smb-share-permissions",
+        "name": "3. Izin Akses Share & Konten Sensitif",
+        "why_check": "Share yang dapat dibaca / ditulis mungkin mengandung credential, script, atau memungkinkan penulisan file berbahaya.",
+        "what_to_look_for": [
+          "Untuk setiap share: smbclient //TARGET/SHARE -N → navigasi dan list file",
+          "Cari: *.txt, *.conf, *.xml, *.ps1, *.bat, *.ini yang mengandung password",
+          "Uji write permission: smbclient → put test.txt → apakah berhasil?",
+          "Periksa share SYSVOL/NETLOGON untuk GPP Passwords (Groups.xml)"
+        ],
+        "normal_baseline": "Share hanya berisi file non-sensitif, akses write ditolak, tidak ada credential dalam plaintext.",
+        "interesting_clues": [
+          "File .xml dalam SYSVOL berisi cpassword (GPP Password)",
+          "Share Backup/ berisi database dump atau konfigurasi aplikasi",
+          "Write access ke NETLOGON atau share umum — memungkinkan planting malicious script"
+        ],
+        "evidence_to_capture": [
+          "List file lengkap dari setiap share yang bisa diakses",
+          "Konten file sensitif yang ditemukan (screen + download)",
+          "Bukti write test: file test.txt berhasil di-upload"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-smb-readable-share",
+        "inspection_point_id": "smb-anonymous-auth",
+        "signal_description": "Share non-default dapat dibaca tanpa password dan memuat file arsip backup.",
+        "output_snippet": "$ smbclient //target/backups -N\nsmb: \\> ls\n  site_backup_2023.zip            A 45129841  Fri May 12 10:20:11 2023",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi file sharing mengizinkan akses anonim ke data arsip yang berpotensi memuat source code dan kredensial.",
+        "hypothesis_id": "hyp-smb-data-leak",
+        "evidence_to_capture": [
+          "Log koneksi smbclient ke share backups",
+          "Daftar file yang terdapat dalam share"
+        ]
+      },
+      {
+        "id": "sig-smb-null-session-success",
+        "inspection_point_id": "smb-null-session",
+        "signal_description": "Null session berhasil — enum4linux berhasil dump daftar user dan share tanpa kredensial.",
+        "output_snippet": "$ enum4linux -a 192.168.1.10\n[+] Enumerating users using SID S-1-5-21-...\nuser:[Administrator] rid:[0x1f4]\nuser:[jsmith] rid:[0x44f]\nuser:[svc_backup] rid:[0x451]",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Daftar username valid untuk password spraying, AS-REP roasting, dan credential stuffing.",
+        "hypothesis_id": "hyp-smb-user-enum-spray",
+        "evidence_to_capture": [
+          "Full enum4linux output (save to file)",
+          "List username untuk wordlist"
+        ]
+      },
+      {
+        "id": "sig-smb-gpp-password",
+        "inspection_point_id": "smb-share-permissions",
+        "signal_description": "File Groups.xml di SYSVOL berisi cpassword (GPP encrypted password).",
+        "output_snippet": "$ find /SYSVOL -name \"Groups.xml\"\n/SYSVOL/domain/Policies/{GUID}/Machine/Preferences/Groups/Groups.xml\n\n<Properties cpassword=\"edBSHOwhZLTjt/QS9FeIcJ7bNjA8B2lGAA==\" userName=\"localadmin\"/>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "cpassword dapat di-decrypt menggunakan gpp-decrypt atau CrackMapExec karena AES key hardcoded di MSDN.",
+        "hypothesis_id": "hyp-smb-gpp-cred",
+        "evidence_to_capture": [
+          "Konten Groups.xml",
+          "Output gpp-decrypt",
+          "Bukti penggunaan credential yang di-decrypt"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server menolak seluruh koneksi dengan pesan STATUS_ACCOUNT_LOCKED_OUT"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-smb-data-leak",
+        "name": "Sensitive File Exposure via Anonymous SMB Share",
+        "description": "Pengguna tanpa otentikasi dapat mengunduh dokumen internal, konfigurasi database, atau kredensial.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-smb-readable-share"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Unduh salah satu file teks non-destruktif dari share dan periksa isinya.",
+            "expected_output": "Mendapatkan akses pembacaan file lokal.",
+            "interesting_output": "File memuat password database atau kunci API.",
+            "unexpected_output": "File corrupt atau terkunci oleh proses lain.",
+            "interpretation": "Mengonfirmasi data leak pada level share.",
+            "evidence_to_record": [
+              "Tangkapan layar isi file yang diunduh (sensor data pribadi)"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-smb-user-enum-spray",
+        "name": "Password Spraying dari Enumerasi User via Null Session",
+        "description": "Daftar user yang didapat dari null session SMB dapat digunakan untuk password spraying dengan password umum.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-smb-null-session-success"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi daftar user valid: crackmapexec smb TARGET -u users.txt -p \"password\" --continue-on-success",
+            "expected_output": "Semua login gagal: STATUS_LOGON_FAILURE",
+            "interesting_output": "Satu atau lebih user berhasil login: [+] TARGET\\username:password",
+            "unexpected_output": "STATUS_ACCOUNT_LOCKED_OUT — terlalu banyak percobaan gagal",
+            "interpretation": "Jika ada yang berhasil → credential valid, lanjut ke lateral movement.",
+            "evidence_to_record": [
+              "Full CrackMapExec output",
+              "Credential yang berhasil"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-smb-gpp-cred",
+        "name": "Credential Retrieval via GPP Password (MS14-025)",
+        "description": "cpassword dalam Groups.xml di SYSVOL dapat di-decrypt karena Microsoft mempublikasikan AES key di dokumentasi.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-smb-gpp-password"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Download Groups.xml lalu jalankan: gpp-decrypt \"CPASSWORD_VALUE\"",
+            "expected_output": "Error atau gibberish jika bukan GPP password yang valid.",
+            "interesting_output": "Plaintext password muncul: e.g., \"P@ssw0rd123!\"",
+            "unexpected_output": "Tool tidak tersedia — gunakan manual AES-256-CBC decrypt dengan key hardcoded.",
+            "interpretation": "Plaintext credential → gunakan untuk lateral movement atau privilege escalation.",
+            "evidence_to_record": [
+              "cpassword nilai asli",
+              "Plaintext hasil decrypt",
+              "Bukti penggunaan credential"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server mengembalikan STATUS_ACCESS_DENIED pada seluruh share dan sesi anonim dinonaktifkan.",
+      "SMB signing diwajibkan (signing: True) pada seluruh target host."
+    ],
+    "common_mistakes": [
+      "Langsung mencoba exploit MS17-010 (EternalBlue) tanpa memverifikasi versi OS target.",
+      "Lupa memeriksa izin tulis yang dapat dimanfaatkan untuk capture NetNTLM hash."
+    ],
+    "ctf_notes": "Di CTF, share anonim hampir selalu berisi file backup atau script crontab.",
+    "pentest_notes": "SMB Signing Disabled pada workstation adalah finding High/Medium yang menjadi dasar serangan NTLM Relaying.",
+    "unknown_guide": {
+      "what_is_this": "Protokol file sharing jaringan berbasis Windows (juga diimplementasikan oleh Samba di Linux) pada port 445.",
+      "why_does_it_exist": "Memungkinkan pertukaran file, printer, dan komunikasi RPC antar komputer dalam jaringan lokal.",
+      "what_parts_matter": "Status izin Null Session, daftar nama share, dan status SMB Signing.",
+      "what_normal_looks_like": "Layanan hanya mengizinkan user dengan kredensial domain valid dan mewajibkan SMB message signing.",
+      "what_to_record_immediately": [
+        "Status SMB signing (True/False)",
+        "Daftar share dan permission-nya"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "SMB terproteksi penuh: Null session ditolak dan SMB signing diwajibkan.",
+      "why_not_secure": "Proteksi SMB yang ketat tidak mencegah target rentan pada layanan web HTTP atau database di port lain.",
+      "next_pivot_observations": [
+        "obs-net-ssh",
+        "obs-net-database",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "05",
+        "slug": "smb-samba",
+        "title": "05. SMB & Samba Workflow",
+        "section_title": "1.1 Null Session Testing",
+        "anchor": "11-null-session-testing",
+        "rationale": "Pelajari sintaks smbclient, crackmapexec, enum4linux, dan exploitasi writable share."
+      }
+    ],
+    "related_observations": [
+      "obs-ad-dc-port-group",
+      "obs-net-rpc"
+    ],
+    "provenance": [
+      "MITRE ATT&CK T1021.002",
+      "Microsoft Security Guidelines: SMB Signing"
+    ]
+  },
+  {
+    "id": "obs-net-rpc",
+    "title": "Layanan Remote Procedure Call Terdeteksi (MSRPC / Port 135/445)",
+    "domain": "Network Services",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 135/tcp (epmap - RPC Endpoint Mapper) terbuka",
+      "Interaksi rpcclient: `rpcclient -U '' -N <IP>` berhasil masuk",
+      "Perintah rpcdump.py menampilkan ratusan antarmuka UUID RPC"
+    ],
+    "context": "Ditemukan pada seluruh sistem Windows dan Linux Samba.",
+    "why_it_matters": "Microsoft RPC memungkinkan program komputer memanggil fungsi di komputer lain seolah-olah dipanggil secara lokal. MSRPC dengan sesi anonim (Null Session) mengizinkan enumerasi mendalam terhadap user domain (querydispinfo), grup (enumdomgroups), daftar domain password policy (getdompwinfo), dan pemetaan SID (lookupnames), memberikan peta sasaran sebelum melancarkan serangan otentikasi.",
+    "questions_to_ask": [
+      "Apakah sesi anonim rpcclient (-U '' -N) diizinkan?",
+      "Apakah perintah `enumdomusers` atau `querydispinfo` mengembalikan daftar akun?",
+      "Berapa panjang minimum password dan batasan lockout (getdompwinfo)?",
+      "Apakah ada endpoint RPC berbahaya seperti MS-EFSR (PetitPotam) yang aktif?"
+    ],
+    "inspection_points": [
+      {
+        "id": "rpc-null-enum",
+        "name": "1. Enumerasi RPC Null Session (rpcclient)",
+        "why_check": "Mendapatkan informasi struktur direktori user dan kebijakan keamanan tanpa kredensial.",
+        "what_to_look_for": [
+          "rpcclient -U '' -N <IP>",
+          "enumdomusers, getdompwinfo, lsaquery"
+        ],
+        "normal_baseline": "Server mengembalikan NT_STATUS_ACCESS_DENIED.",
+        "interesting_clues": [
+          "Daftar nama pengguna (RID cycling) berhasil diekstrak",
+          "Password policy menunjukkan Account Lockout Threshold: None"
+        ],
+        "evidence_to_capture": [
+          "Output rpcclient enumdomusers lengkap",
+          "Output rpcclient getdompwinfo"
+        ]
+      },
+      {
+        "id": "rpc-user-rid-cycle",
+        "name": "2. RID Cycling & SID Lookup via RPC",
+        "why_check": "Mengidentifikasi akun pengguna dan grup domain melalui enumerasi RID sekuensial tanpa kredensial.",
+        "what_to_look_for": [
+          "rpcclient -U \"\" -N TARGET -c \"lookupsids S-1-5-21-...\"",
+          "crackmapexec smb TARGET -u \"\" -p \"\" --rid-brute 500-1100",
+          "Periksa pemetaan RID: 500 (Administrator), 501 (Guest), 512 (Domain Admins)",
+          "rpcclient -U \"\" -N TARGET -c \"querydispinfo\""
+        ],
+        "normal_baseline": "Akses RPC anonim ditolak (STATUS_ACCESS_DENIED) pada server yang diamankan.",
+        "interesting_clues": [
+          "Anonymous bind diizinkan dan mengembalikan nama-nama user korporat",
+          "Ditemukan akun user dengan deskripsi berisi password sementara atau catatan admin"
+        ],
+        "evidence_to_capture": [
+          "Daftar akun hasil RID cycling beserta nomor RID masing-masing",
+          "Output querydispinfo / enumdomusers"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-rpc-anon-users",
+        "inspection_point_id": "rpc-null-enum",
+        "signal_description": "Perintah rpcclient enumdomusers mengembalikan seluruh daftar user domain.",
+        "output_snippet": "rpcclient $> enumdomusers\nuser:[administrator] rid:[0x1f4]\nuser:[guest] rid:[0x1f5]\nuser:[jdoe] rid:[0x451]",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Server membocorkan seluruh nama akun domain yang siap dijadikan target password spraying atau AS-REP Roasting.",
+        "hypothesis_id": "hyp-rpc-user-harvest",
+        "evidence_to_capture": [
+          "Tangkapan output rpcclient enumdomusers"
+        ]
+      },
+      {
+        "id": "sig-rpc-rid-users-found",
+        "inspection_point_id": "rpc-user-rid-cycle",
+        "signal_description": "RID cycling berhasil membongkar daftar nama pengguna dan grup sensitif.",
+        "output_snippet": "$ crackmapexec smb 192.168.1.10 -u \"\" -p \"\" --rid-brute\nSMB  192.168.1.10:445  DC01  498: DOMAIN\\Enterprise Admins (SidTypeGroup)\nSMB  192.168.1.10:445  DC01  500: DOMAIN\\Administrator (SidTypeUser)",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Seluruh struktur akun berhasil dipetakan, siap digunakan untuk serangan AS-REP Roasting dan Password Spraying.",
+        "hypothesis_id": "hyp-rpc-user-spray",
+        "evidence_to_capture": [
+          "Daftar username yang disimpan ke file wordlist"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Koneksi RPC di-reset oleh firewall setelah 2 query"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-rpc-user-harvest",
+        "name": "Domain User Harvesting via Anonymous MSRPC",
+        "description": "Mengumpulkan seluruh identitas pengguna sistem Windows tanpa otentikasi sah.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-rpc-anon-users"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan perintah `queryuser 0x451` pada salah satu RID yang ditemukan untuk memverifikasi detail profil akun.",
+            "expected_output": "Mendapatkan informasi deskripsi, path home, dan tanggal login terakhir user.",
+            "interesting_output": "Deskripsi user memuat password awal.",
+            "unexpected_output": "Access denied.",
+            "interpretation": "Mengonfirmasi kedalaman kebocoran data pengguna.",
+            "evidence_to_record": [
+              "Output queryuser di rpcclient"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-rpc-user-spray",
+        "name": "Account Targeting via RPC Anonymous Enumeration",
+        "description": "Daftar user dari RPC digunakan sebagai basis data target untuk serangan otentikasi bertahap.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-rpc-rid-users-found"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Ambil daftar username hasil RID brute, lakukan single password spray dengan kata sandi musim/tahun (misal: Autumn2026!).",
+            "expected_output": "Semua login gagal: STATUS_LOGON_FAILURE.",
+            "interesting_output": "1 atau lebih user berhasil login.",
+            "unexpected_output": "STATUS_ACCOUNT_LOCKED_OUT.",
+            "interpretation": "Jika berhasil, credential diperoleh secara legal dan valid.",
+            "evidence_to_record": [
+              "Log spray tool tanpa menampilkan plaintext jika sensitif"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server konsisten menolak koneksi anonim dengan pesan NT_STATUS_ACCESS_DENIED.",
+      "Port 135/445 difilter oleh firewall host."
+    ],
+    "common_mistakes": [
+      "Hanya mencoba `enumdomusers` dan tidak mencoba `querydispinfo` (sering kali satu perintah diblokir namun perintah lain lolos)."
+    ],
+    "ctf_notes": "Di CTF, jika rpcclient terbuka anonim, selalu jalankan `querydispinfo` untuk mendapatkan daftar user beserta deskripsinya.",
+    "pentest_notes": "Anonymous RPC access adalah temuan Medium/High pada audit Active Directory karena memfasilitasi serangan password spraying yang sangat terarah.",
+    "unknown_guide": {
+      "what_is_this": "Mekanisme internal Windows agar aplikasi dapat memanggil fungsi pada komputer lain di jaringan.",
+      "why_does_it_exist": "Protokol inti operasional Windows untuk manajemen domain, pertukaran data, dan sinkronisasi.",
+      "what_parts_matter": "Apakah mengizinkan sesi anonim tanpa password untuk melihat daftar user.",
+      "what_normal_looks_like": "Menolak seluruh panggilan RPC yang tidak memiliki tiket Kerberos atau kredensial NTLM valid.",
+      "what_to_record_immediately": [
+        "Output nmap port 135",
+        "Respon rpcclient -U '' -N"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "MSRPC menolak sesi anonim dengan ACCESS_DENIED.",
+      "why_not_secure": "Target mungkin masih rentan terhadap enumerasi melalui SNMP (port 161) atau web aplikasi.",
+      "next_pivot_observations": [
+        "obs-net-snmp",
+        "obs-net-smb",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "PARTIALLY_COVERED",
+      "gap_details": "Materi MSRPC disatukan dalam service identification dan Active Directory workflow."
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "04",
+        "slug": "service-identification-decision-tree",
+        "title": "04. Service Identification Decision Tree",
+        "section_title": "Service Banner Analysis",
+        "anchor": "service-banner-analysis",
+        "rationale": "Pelajari penanganan port MSRPC dan identifikasi endpoint RPC."
+      },
+      {
+        "workflow_id": "35",
+        "slug": "ad-initial-enumeration",
+        "title": "35. AD Initial Enumeration Workflow",
+        "section_title": "1.1 Domain Controller Discovery",
+        "anchor": "11-domain-controller-discovery",
+        "rationale": "Enumerasi RPC pada lingkungan Domain Controller."
+      }
+    ],
+    "related_observations": [
+      "obs-net-smb",
+      "obs-ad-dc-port-group"
+    ],
+    "provenance": [
+      "Microsoft MS-RPC Protocol Specification",
+      "MITRE ATT&CK T1087.002"
+    ]
+  },
+  {
+    "id": "obs-net-snmp",
+    "title": "Layanan SNMP Terdeteksi (SNMP Community Strings & OID Walking)",
+    "domain": "Network Services",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 161/udp terbuka dengan layanan SNMP (Simple Network Management Protocol)",
+      "Output onesixtyone: '192.168.1.100 [public] Linux target 5.4.0-42-generic'",
+      "SNMPwalk berhasil mencetak ratusan Object Identifier (OID)"
+    ],
+    "context": "Ditemukan pada router jaringan, switch, printer, atau server Linux/Windows yang memantau performa sistem.",
+    "why_it_matters": "SNMP v1 dan v2c menggunakan konsep 'Community String' yang berfungsi seperti password plaintext tanpa enkripsi. Miskonfigurasi klasik adalah membiarkan community string default 'public' (baca) atau 'private' (tulis) aktif. Melalui SNMP walk, penyerang dapat mengekstrak daftar seluruh proses yang sedang berjalan (beserta password di argumen perintah), antarmuka jaringan internal, dan daftar software terpasang.",
+    "questions_to_ask": [
+      "Versi SNMP apa yang aktif (v1, v2c yang tidak terenkripsi vs v3 yang aman)?",
+      "Apakah community string default ('public' atau 'private') diterima?",
+      "Daftar proses apa yang sedang berjalan di target (hrSWRunName)?",
+      "Apakah ada community string dengan hak akses WRITE yang memungkinkan modifikasi konfigurasi perangkat?"
+    ],
+    "inspection_points": [
+      {
+        "id": "snmp-community-bruteforce",
+        "name": "1. Verifikasi Community String Default",
+        "why_check": "Mengecek apakah akses monitoring terbuka menggunakan kata sandi standar.",
+        "what_to_look_for": [
+          "onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp-strings.txt <IP>",
+          "snmpwalk -v2c -c public <IP>"
+        ],
+        "normal_baseline": "Server menolak query atau menggunakan SNMPv3 dengan otentikasi SHA/AES.",
+        "interesting_clues": [
+          "Community string 'public' diterima dan mengembalikan sysDescr",
+          "Community string 'private' atau 'manager' diterima (potensi write access)"
+        ],
+        "evidence_to_capture": [
+          "Log output onesixtyone yang memvalidasi string 'public'",
+          "Baris sysDescr awal"
+        ]
+      },
+      {
+        "id": "snmp-process-tree",
+        "name": "2. Enumerasi Proses & Kredensial via OID Walk",
+        "why_check": "Mengekstrak daftar proses aktif sistem yang memuat argumen sensitif.",
+        "what_to_look_for": [
+          "snmpwalk -v2c -c public <IP> 1.3.6.1.2.1.25.4.2.1.2 (hrSWRunName)",
+          "snmpwalk -v2c -c public <IP> 1.3.6.1.2.1.25.4.2.1.4 (hrSWRunParameters)"
+        ],
+        "normal_baseline": "Data proses dibatasi atau tidak di-share ke public MIB.",
+        "interesting_clues": [
+          "Proses memuat parameter script: `/usr/bin/python3 backup.py --password SuperSecretPass`",
+          "Ditemukan antarmuka jaringan kedua (IP internal kedua untuk pivoting)"
+        ],
+        "evidence_to_capture": [
+          "Output snmpwalk pada cabang OID hrSWRunParameters",
+          "Kredensial atau IP internal yang terungkap"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-snmp-process-cred",
+        "inspection_point_id": "snmp-process-tree",
+        "signal_description": "SNMPwalk pada parameter proses aktif membocorkan password database di argumen perintah.",
+        "output_snippet": "iso.3.6.1.2.1.25.4.2.1.4.1082 = STRING: \"--user=root --password=MysqlSecretPass2023! /var/backups/db.sql\"",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Community string public memungkinkan pembacaan memori proses yang membocorkan kredensial administratif.",
+        "hypothesis_id": "hyp-snmp-cred-leak",
+        "evidence_to_capture": [
+          "Tangkapan layar baris OID hrSWRunParameters",
+          "Nama community string yang dipakai"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Query SNMP timeout karena paket UDP di-drop oleh firewall"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-snmp-cred-leak",
+        "name": "Credential Access via SNMP Process Enumeration",
+        "description": "Mengekstrak password plaintext dari argumen baris perintah proses yang terpantau di OID MIB.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-snmp-process-cred"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji kredensial yang ditemukan terhadap port MySQL (3306) atau login SSH.",
+            "expected_output": "Mengetahui validitas kredensial.",
+            "interesting_output": "Berhasil terhubung ke database.",
+            "unexpected_output": "Access denied.",
+            "interpretation": "Membuktikan dampak langsung kebocoran data SNMP.",
+            "evidence_to_record": [
+              "Log koneksi database"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Query SNMP ditolak atau tidak ada community string yang cocok dari wordlist.",
+      "Layanan menggunakan SNMPv3 dengan USM user authentication terenkripsi."
+    ],
+    "common_mistakes": [
+      "Hanya memindai TCP dan lupa memindai UDP (SNMP berjalan di port 161 UDP: `nmap -sU -p 161 <IP>`).",
+      "Hanya mengecek sysDescr dan tidak melakukan full walk pada OID 1.3.6.1.4.1 atau 1.3.6.1.2.1."
+    ],
+    "ctf_notes": "Di CTF, SNMP public string sering kali membocorkan port rahasia yang sedang listening di localhost atau password user di hrSWRunParameters.",
+    "pentest_notes": "Default SNMP Community String 'public' adalah temuan Medium; jika 'private' (read-write) terbuka pada router Cisco, severity meningkat menjadi Critical.",
+    "unknown_guide": {
+      "what_is_this": "Protokol monitoring jaringan berbasis UDP untuk memantau penggunaan CPU, memori, dan status perangkat.",
+      "why_does_it_exist": "Membantu administrator IT memantau kesehatan ribuan perangkat jaringan secara terpusat.",
+      "what_parts_matter": "Nama password rahasia (Community String), versi SNMP (v1/v2c vs v3), dan informasi proses yang terekspos.",
+      "what_normal_looks_like": "Menggunakan SNMPv3 dengan enkripsi penuh dan memblokir community string 'public'.",
+      "what_to_record_immediately": [
+        "Community string yang valid",
+        "Informasi sistem sysDescr"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "SNMP tidak merespons string default atau port UDP ditutup.",
+      "why_not_secure": "Server mungkin dimonitor menggunakan agent lain (seperti Zabbix atau Prometheus) di port TCP.",
+      "next_pivot_observations": [
+        "obs-net-database",
+        "obs-net-smtp",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "10",
+        "slug": "snmp",
+        "title": "10. SNMP Workflow",
+        "section_title": "1.1 SNMP Community Bruteforce",
+        "anchor": "11-snmp-community-bruteforce",
+        "rationale": "Pelajari teknik onesixtyone, snmpwalk OID tree, dan ekstraksi kredensial dari MIB proses."
+      }
+    ],
+    "related_observations": [
+      "obs-net-open-port-unknown",
+      "obs-priv-credential-history"
+    ],
+    "provenance": [
+      "RFC 1157 (SNMPv1)",
+      "MITRE ATT&CK T1046"
+    ]
+  },
+  {
+    "id": "obs-net-smtp",
+    "title": "Layanan Pengiriman Email Terdeteksi (SMTP Service & User VRFY/EXPN)",
+    "domain": "Network Services",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 25/tcp, 465/tcp (SMTPS), atau 587/tcp (Submission) terbuka",
+      "Banner: '220 mail.corp.local ESMTP Postfix (Ubuntu)'",
+      "Dukungan perintah ESMTP: 250-VRFY, 250-EXPN, 250-STARTTLS"
+    ],
+    "context": "Ditemukan pada mail server organisasi atau relay server internal.",
+    "why_it_matters": "Simple Mail Transfer Protocol (SMTP) digunakan untuk merutekan dan mengirim email. Fitur lama SMTP menyertakan perintah seperti `VRFY` (Verify user) dan `EXPN` (Expand mailing list). Jika diaktifkan, penyerang dapat memverifikasi keberadaan akun user lokal tanpa otentikasi, memfasilitasi serangan password spraying dan phishing.",
+    "questions_to_ask": [
+      "Apakah perintah VRFY atau EXPN didukung oleh server?",
+      "Apakah perintah `RCPT TO:<user@domain>` membedakan respon user valid vs invalid?",
+      "Apakah server merupakan Open Relay (mengizinkan pengiriman email ke domain luar tanpa otentikasi)?",
+      "Apakah server mendukung STARTTLS untuk enkripsi transit?"
+    ],
+    "inspection_points": [
+      {
+        "id": "smtp-vrfy-enumeration",
+        "name": "1. Uji Perintah VRFY / EXPN / RCPT TO",
+        "why_check": "Melihat apakah SMTP membocorkan daftar akun pengguna sistem.",
+        "what_to_look_for": [
+          "nc -nv <IP> 25 -> VRFY root vs VRFY non_existent_user",
+          "smtp-user-enum -M VRFY -U users.txt -t <IP>"
+        ],
+        "normal_baseline": "Server menolak perintah (252 Cannot VRFY user / 502 Command not implemented).",
+        "interesting_clues": [
+          "Respon: '250 2.1.5 root <root@target.local>' (User valid dikonfirmasi)",
+          "Respon: '550 5.1.1 User unknown' (User invalid)"
+        ],
+        "evidence_to_capture": [
+          "Log sesi interaksi netcat perintah VRFY untuk user valid dan invalid"
+        ]
+      },
+      {
+        "id": "smtp-open-relay-vrfy",
+        "name": "2. Verifikasi User (VRFY/EXPN) & Open Relay Test",
+        "why_check": "Perintah VRFY/EXPN membocorkan user lokal. Open relay memungkinkan pengiriman email phishing tanpa autentikasi.",
+        "what_to_look_for": [
+          "nc -nv TARGET 25 lalu kirim: VRFY root, VRFY admin, VRFY nonexistuser",
+          "nmap --script smtp-open-relay,smtp-enum-users -p 25 TARGET",
+          "Kirim sequence test: MAIL FROM:<test@external.com> lalu RCPT TO:<victim@otherdomain.com>",
+          "Periksa kode respons: 250 (Diterima / Valid) vs 550 (Relaying denied / User not found)"
+        ],
+        "normal_baseline": "VRFY dinonaktifkan (252 Cannot VRFY user) dan Open Relay ditolak (550 5.7.1 Relaying denied).",
+        "interesting_clues": [
+          "VRFY mengembalikan kode 250 dengan nama lengkap pengguna",
+          "RCPT TO domain eksternal diterima dengan status 250 OK (Open Relay aktif)"
+        ],
+        "evidence_to_capture": [
+          "Transkrip dialog SMTP mentah (EHLO, VRFY, MAIL FROM, RCPT TO)",
+          "Output nmap script smtp-open-relay"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-smtp-user-confirmed",
+        "inspection_point_id": "smtp-vrfy-enumeration",
+        "signal_description": "Perintah VRFY mengonfirmasi keberadaan akun lokal Linux.",
+        "output_snippet": "VRFY admin\n250 2.1.5 <admin@mail.corp.local>\nVRFY dummy_user_99\n550 5.1.1 <dummy_user_99@mail.corp.local>: Recipient address rejected",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Layanan SMTP membocorkan status validitas akun pengguna sistem.",
+        "hypothesis_id": "hyp-smtp-enum-attack",
+        "evidence_to_capture": [
+          "Log interaksi SMTP mentah"
+        ]
+      },
+      {
+        "id": "sig-smtp-open-relay-active",
+        "inspection_point_id": "smtp-open-relay-vrfy",
+        "signal_description": "Server SMTP mengizinkan pengiriman email ke domain eksternal tanpa autentikasi (Open Relay).",
+        "output_snippet": "MAIL FROM:<attacker@evil.com>\n250 2.1.0 Ok\nRCPT TO:<target@partner.com>\n250 2.1.5 Ok",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Server dapat disalahgunakan untuk spoofing email resmi organisasi atau relay phishing campaign.",
+        "hypothesis_id": "hyp-smtp-relay-abuse",
+        "evidence_to_capture": [
+          "Dialog SMTP lengkap dengan respons 250 2.1.5 Ok"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan 421 Too many errors dan memutuskan koneksi"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-smtp-enum-attack",
+        "name": "User Account Harvesting via SMTP VRFY",
+        "description": "Menyusun daftar username valid sistem operasi target untuk penyerangan kredensial di layanan SSH/Web.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-smtp-user-confirmed"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji 3 username umum (root, mail, admin) via script `smtp-user-enum`.",
+            "expected_output": "Mendapatkan konfirmasi akun sistem.",
+            "interesting_output": "Menemukan nama user manusia (misal: jsmith).",
+            "unexpected_output": "Perintah dinonaktifkan.",
+            "interpretation": "Memperkaya daftar target username valid.",
+            "evidence_to_record": [
+              "Output smtp-user-enum"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-smtp-relay-abuse",
+        "name": "Email Spoofing & Phishing via Open Mail Relay",
+        "description": "Server bertindak sebagai open relay yang memungkinkan pengiriman email berpura-pura menjadi domain terpercaya.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-smtp-open-relay-active"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim email uji ke mailbox tester internal sendiri menggunakan alamat pengirim simulasi.",
+            "expected_output": "Email diblokir oleh filter spam eksternal atau relay ditolak.",
+            "interesting_output": "Email uji berhasil masuk ke inbox mailbox tester.",
+            "unexpected_output": "Server meminta STARTTLS atau AUTH sebelum melanjutkan.",
+            "interpretation": "Jika email diterima → open relay terbukti berdampak tinggi pada reputasi domain.",
+            "evidence_to_record": [
+              "Header email uji yang diterima membuktikan relay IP"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server menonaktifkan perintah VRFY dan mengembalikan respon seragam 252 pada semua input.",
+      "Koneksi dibatasi oleh rate limit ketat."
+    ],
+    "common_mistakes": [
+      "Mengirim email spam nyata saat menguji Open Relay (selalu gunakan domain uji coba terkontrol)."
+    ],
+    "ctf_notes": "Di CTF, SMTP VRFY sering digunakan untuk memetakan nama akun yang nantinya memiliki cron job rentan di Linux.",
+    "pentest_notes": "SMTP VRFY diaktifkan dicatat sebagai Low Severity; Open Mail Relay dicatat sebagai High Severity.",
+    "unknown_guide": {
+      "what_is_this": "Protokol jaringan untuk pengiriman dan penerimaan surat elektronik (email).",
+      "why_does_it_exist": "Menghubungkan server email di seluruh dunia agar pesan dapat sampai ke inbox penerima.",
+      "what_parts_matter": "Apakah membocorkan nama akun pengguna dan apakah mengizinkan pengiriman email tanpa login (Open Relay).",
+      "what_normal_looks_like": "Menolak perintah verifikasi user anonim dan mewajibkan otentikasi TLS sebelum mengirim email.",
+      "what_to_record_immediately": [
+        "Banner SMTP",
+        "Respon perintah VRFY"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "SMTP terproteksi dari enumerasi akun dan bukan Open Relay.",
+      "why_not_secure": "Target mungkin masih rentan pada protokol database atau web service.",
+      "next_pivot_observations": [
+        "obs-net-database",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "08",
+        "slug": "smtp",
+        "title": "08. SMTP Workflow",
+        "section_title": "1.2 SMTP User Enumeration (VRFY & EXPN)",
+        "anchor": "12-smtp-user-enumeration-vrfy-expn",
+        "rationale": "Pelajari tool smtp-user-enum, pengujian Open Relay, dan spoofing email internal."
+      }
+    ],
+    "related_observations": [
+      "obs-net-service-banner",
+      "obs-web-login-page"
+    ],
+    "provenance": [
+      "RFC 5321 (Simple Mail Transfer Protocol)",
+      "MITRE ATT&CK T1586.002"
+    ]
+  },
+  {
+    "id": "obs-net-database",
+    "title": "Layanan Database Terekspos (Exposed Database: MySQL, MSSQL, Redis, Postgres)",
+    "domain": "Database Services",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 3306/tcp (MySQL/MariaDB), 1433/tcp (Microsoft SQL Server)",
+      "Port 5432/tcp (PostgreSQL), 6379/tcp (Redis), 27017/tcp (MongoDB)",
+      "Respons banner binary database handshake"
+    ],
+    "context": "Ditemukan selama pemindaian port pada dedicated database server atau web application stack.",
+    "why_it_matters": "Layanan database menyimpan seluruh data aset inti organisasi. Secara default, database seharusnya hanya mendengarkan pada interface lokal (localhost 127.0.0.1) atau dibatasi oleh firewall. Jika terekspos ke publik, penyerang dapat mencoba kredensial default (root tanpa password pada MySQL/Redis), serangan brute force, atau mengeksploitasi fungsi bawaan (xp_cmdshell di MSSQL, COPY TO PROGRAM di PostgreSQL, rogue server di Redis) untuk mencapai Remote Code Execution.",
+    "questions_to_ask": [
+      "Database engine apa yang berjalan (MySQL, MSSQL, PostgreSQL, Redis, MongoDB)?",
+      "Apakah database dapat diakses tanpa otentikasi sama sekali (misal: Redis unauthenticated atau MongoDB no auth)?",
+      "Apakah kredensial default bawaan (root:root, sa:Password123, postgres:postgres) diterima?",
+      "Apakah akun database memiliki izin eksekusi perintah sistem operasi (xp_cmdshell / UDF)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "db-unauth-access",
+        "name": "1. Verifikasi Akses Tanpa Otentikasi (Unauthenticated Access)",
+        "why_check": "Mengecek apakah database menerima query langsung tanpa otentikasi kredensial.",
+        "what_to_look_for": [
+          "redis-cli -h <IP> ping -> PONG",
+          "mongo <IP>:27017/test -> connected",
+          "mysql -h <IP> -u root (tanpa password)"
+        ],
+        "normal_baseline": "Server menolak koneksi (Access denied / NOAUTH Authentication required).",
+        "interesting_clues": [
+          "Redis merespons PONG dan mengizinkan perintah INFO",
+          "MongoDB langsung membuka console shell tanpa otentikasi"
+        ],
+        "evidence_to_capture": [
+          "Log output redis-cli INFO atau mongo show dbs",
+          "Daftar nama database yang terlihat"
+        ]
+      },
+      {
+        "id": "db-default-credentials",
+        "name": "2. Pengujian Akun Default & Unauthenticated Access",
+        "why_check": "Database sering kali diinstal dengan akun bawaan tanpa kata sandi atau password default pabrik.",
+        "what_to_look_for": [
+          "MySQL (3306): mysql -h TARGET -u root (tanpa password)",
+          "Postgres (5432): psql -h TARGET -U postgres (password: postgres)",
+          "Redis (6379): redis-cli -h TARGET ping (apakah PONG tanpa AUTH?)",
+          "MongoDB (27017): mongosh --host TARGET (apakah prompt database terbuka?)",
+          "MSSQL (1433): crackmapexec mssql TARGET -u sa -p \"\" atau sa:sa"
+        ],
+        "normal_baseline": "Semua koneksi remote ditolak, meminta otentikasi password kuat, atau hanya bind ke 127.0.0.1.",
+        "interesting_clues": [
+          "Redis merespons +PONG langsung tanpa perintah AUTH",
+          "MongoDB menampilkan database admin/config tanpa otentikasi",
+          "MySQL mengizinkan koneksi user root dari sembarang host (%)"
+        ],
+        "evidence_to_capture": [
+          "Screenshot / teks dialog CLI database yang berhasil login",
+          "Daftar nama database (SHOW DATABASES / l)",
+          "Versi database dan privileges pengguna saat ini"
+        ]
+      },
+      {
+        "id": "db-rce-primitives",
+        "name": "3. Fitur Eksekusi Kode (RCE Primitives)",
+        "why_check": "Jika memiliki akses database berhak tinggi, evaluasi apakah fungsionalitas sistem operasi dapat diakses.",
+        "what_to_look_for": [
+          "MSSQL: Periksa apakah xp_cmdshell dapat diaktifkan via sp_configure",
+          "PostgreSQL: Cek hak pembuatan fungsi eksternal atau COPY PROGRAM",
+          "MySQL: Cek @@secure_file_priv untuk kemungkinan INTO OUTFILE webshell",
+          "Redis: Cek hak perintah CONFIG SET dir / CONFIG SET dbfilename (SSH key overwrite / cron injection)"
+        ],
+        "normal_baseline": "Eksekusi fungsi sistem operasi dinonaktifkan atau dibatasi oleh izin OS level rendah.",
+        "interesting_clues": [
+          "xp_cmdshell berhasil di-enable pada user SA",
+          "secure_file_priv bernilai kosong (\"\") memungkinkan penulisan file ke sembarang direktori web"
+        ],
+        "evidence_to_capture": [
+          "Output pengecekan konfigurasi (SELECT @@secure_file_priv / sp_configure)",
+          "Output eksekusi perintah aman (whoami / id)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-db-redis-unauth",
+        "inspection_point_id": "db-unauth-access",
+        "signal_description": "Layanan Redis port 6379 menerima koneksi anonim dan merespons PONG.",
+        "output_snippet": "$ redis-cli -h 192.168.1.50\n192.168.1.50:6379> ping\nPONG\n192.168.1.50:6379> INFO\n# Server\nredis_version:6.0.9",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Redis dikonfigurasi tanpa password (Unauthenticated Remote Redis), memungkinkan penulisan file SSH authorized_keys atau cron job untuk RCE.",
+        "hypothesis_id": "hyp-db-redis-rce",
+        "evidence_to_capture": [
+          "Output perintah INFO di redis-cli",
+          "Versi Redis"
+        ]
+      },
+      {
+        "id": "sig-db-redis-unauth-rce",
+        "inspection_point_id": "db-default-credentials",
+        "signal_description": "Redis server terbuka ke publik tanpa otentikasi dan menerima perintah tulis file sistem.",
+        "output_snippet": "$ redis-cli -h 192.168.1.30\n192.168.1.30:6379> ping\nPONG\n192.168.1.30:6379> CONFIG GET dir\n1) \"dir\"\n2) \"/var/lib/redis\"",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Redis tanpa password dapat dieksploitasi untuk Remote Code Execution dengan menulis SSH authorized_keys ke /root/.ssh/ atau cron job ke /etc/cron.d/.",
+        "hypothesis_id": "hyp-redis-unauth-rce",
+        "evidence_to_capture": [
+          "Output redis-cli ping & config get dir",
+          "Versi Redis dari INFO server"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Database menolak IP tester dengan pesan 'Host is not allowed to connect to this MySQL server'"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-db-redis-rce",
+        "name": "Remote Code Execution via Unauthenticated Redis File Write",
+        "description": "Menulis kunci SSH (authorized_keys) atau crontab ke filesystem server melalui perintah CONFIG SET dir dan SAVE.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-db-redis-unauth"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan perintah safe discovery di redis-cli: `CONFIG GET dir` untuk memeriksa izin baca konfigurasi.",
+            "expected_output": "Menampilkan direktori kerja server Redis (misal: /var/lib/redis).",
+            "interesting_output": "Direktori kerja dapat dibaca tanpa proteksi.",
+            "unexpected_output": "Error: (error) ERR unknown command 'CONFIG'.",
+            "interpretation": "Membuktikan kapabilitas modifikasi path penyimpanan.",
+            "evidence_to_record": [
+              "Output CONFIG GET dir"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-redis-unauth-rce",
+        "name": "Full Host Takeover via Unauthenticated Redis File Write",
+        "description": "Menulis file SSH public key atau reverse shell cron job melalui perintah Redis CONFIG SET.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-db-redis-unauth-rce"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi izin tulis direktori non-kritis: CONFIG SET dir /tmp lalu CONFIG SET dbfilename test.rdb lalu SAVE.",
+            "expected_output": "ERR (error permission denied) jika Redis berjalan dengan restricted privileges.",
+            "interesting_output": "OK (file berhasil ditulis ke /tmp).",
+            "unexpected_output": "Koneksi ditutup atau dinonaktifkan oleh protected-mode.",
+            "interpretation": "Jika OK → izin tulis terkonfirmasi tanpa merusak konfigurasi sistem utama.",
+            "evidence_to_record": [
+              "Respons OK dari perintah SAVE di /tmp"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Database menolak seluruh koneksi remote (Host not allowed).",
+      "Database mewajibkan password kompleks dan membatasi percobaan login.",
+      "Fitur penulisan file dinonaktifkan."
+    ],
+    "common_mistakes": [
+      "Mengubah konfigurasi Redis di server produksi tanpa izin (dapat merusak data client).",
+      "Lupa memeriksa apakah port MSSQL 1433 mengizinkan eksekusi `xp_cmdshell`."
+    ],
+    "ctf_notes": "Di CTF, port 6379 Redis unauthenticated adalah jalur RCE favorit dengan menulis SSH public key ke `/root/.ssh/authorized_keys`.",
+    "pentest_notes": "Exposed Database ke internet publik adalah temuan High Severity; jika unauthenticated atau memiliki default creds, severity menjadi Critical.",
+    "unknown_guide": {
+      "what_is_this": "Server penyimpanan data terstruktur yang digunakan oleh aplikasi backend.",
+      "why_does_it_exist": "Menyimpan data pengguna, transaksi keuangan, dan konfigurasi secara permanen.",
+      "what_parts_matter": "Port layanan (3306, 1433, 5432, 6379), ada tidaknya password default, dan izin akses remote.",
+      "what_normal_looks_like": "Hanya mendengarkan di IP lokal (127.0.0.1) dan menolak koneksi dari jaringan luar.",
+      "what_to_record_immediately": [
+        "Nama database engine",
+        "Nomor port",
+        "Apakah menerima login tanpa password"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Database dilindungi dengan password kuat dan menolak koneksi anonim.",
+      "why_not_secure": "Aplikasi web di port 80/443 mungkin memiliki celah SQL Injection yang dapat mengekstrak database dari dalam.",
+      "next_pivot_observations": [
+        "obs-web-url-query-param",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "14a",
+        "slug": "mysql",
+        "title": "14a. MySQL Workflow",
+        "section_title": "1.1 MySQL Remote Enumeration",
+        "anchor": "11-mysql-remote-enumeration",
+        "rationale": "Pelajari sintaks koneksi remote, privilege escalation via UDF, dan file reading (LOAD DATA INFILE)."
+      },
+      {
+        "workflow_id": "14d",
+        "slug": "redis-and-mongodb",
+        "title": "14d. Redis & MongoDB Workflow",
+        "section_title": "1.1 Redis Exploitation Techniques",
+        "anchor": "11-redis-exploitation-techniques",
+        "rationale": "Metodologi eksploitasi unauthenticated Redis: SSH key overwrite, cron job injection, dan rogue server."
+      }
+    ],
+    "related_observations": [
+      "obs-net-service-banner",
+      "obs-priv-credential-history"
+    ],
+    "provenance": [
+      "MITRE ATT&CK T1078.001",
+      "OWASP Top 10 A05:2021 Security Misconfiguration"
+    ]
+  }
+]

@@ -5,7 +5,7 @@ category: "4. Active Directory"
 categoryId: "ad"
 filename: "37_kerberoasting_asreproasting_workflow.md"
 refs_out: ["05","06","11","12","14a","14b","36","38","42","43","45","46"]
-refs_in: ["05","09","10","14b","35","36","39","42","43","46","53","54","63","65"]
+refs_in: ["09","10","14b","35","36","39","42","43","46","53","54","63","65"]
 ---
 
 # 🔥 Workflow 37 — Kerberoasting & AS-REP Roasting

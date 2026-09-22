@@ -1,0 +1,564 @@
+[
+  {
+    "id": "obs-ad-dc-port-group",
+    "title": "Klaster Port Domain Controller Terdeteksi (Active Directory DC Port Cluster)",
+    "domain": "Identity & Active Directory",
+    "category": "Active Directory",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Port 88/tcp (Kerberos)",
+      "Port 389/tcp atau 636/tcp (LDAP / LDAPS)",
+      "Port 445/tcp (SMB)",
+      "Port 3268/tcp (Global Catalog)",
+      "Port 53/tcp/udp (DNS) dan 135/tcp (MSRPC)"
+    ],
+    "context": "Ditemukan saat pemindaian port pada jaringan internal enterprise berbasis Windows Domain.",
+    "why_it_matters": "Kombinasi port-port ini adalah sidik jari pasti dari Microsoft Domain Controller (DC) — pusat identitas seluruh Active Directory. Menemukan DC berarti seluruh metodologi Active Directory (Kerberoasting, AS-REP Roasting, BloodHound, DCSync, dsb.) menjadi relevan. DC adalah pusat infrastruktur korporat normal, bukan kelemahan sistem.",
+    "questions_to_ask": [
+      "Apa nama Domain FQDN (Fully Qualified Domain Name) dan NetBIOS Name target?",
+      "Apakah anonim LDAP binding diizinkan untuk memetakan daftar akun user?",
+      "Apakah DNS server mengizinkan zone transfer (AXFR)?",
+      "Apakah ada akun yang dapat di-AS-REP roast tanpa kredensial?"
+    ],
+    "inspection_points": [
+      {
+        "id": "ad-domain-fingerprint",
+        "name": "1. Identifikasi Nama Domain & Hostname",
+        "why_check": "Mendapatkan nama realm Kerberos dan FQDN untuk konfigurasi DNS client/tester.",
+        "what_to_look_for": [
+          "crackmapexec smb <IP> atau nxc smb <IP>",
+          "Domain: CORP.LOCAL, Hostname: DC01"
+        ],
+        "normal_baseline": "Server mengembalikan informasi domain name, OS build version, dan NetBIOS name.",
+        "interesting_clues": [
+          "Nama domain mengindikasikan struktur forest multi-domain",
+          "Versi OS teridentifikasi sebagai Windows Server lama (misal: 2008 R2 atau 2012)"
+        ],
+        "evidence_to_capture": [
+          "Output crackmapexec smb yang memuat Domain, OS, dan Hostname"
+        ]
+      },
+      {
+        "id": "ad-ldap-anonymous",
+        "name": "2. Pengujian Anonymous LDAP Query",
+        "why_check": "Mengecek apakah direktori user dapat diekstrak tanpa kredensial.",
+        "what_to_look_for": [
+          "ldapsearch -x -H ldap://<IP> -b 'DC=corp,DC=local'",
+          "Daftar sAMAccountName user objek"
+        ],
+        "normal_baseline": "Server menolak query anonim (LDAP result code 1: Operations Error / Inappropriate Authentication).",
+        "interesting_clues": [
+          "LDAP mengembalikan ribuan objek user, grup, dan deskripsi komputer secara anonim",
+          "Deskripsi user memuat password plaintext ('pass: Summer2023!')"
+        ],
+        "evidence_to_capture": [
+          "Output ldapsearch anonim yang berhasil mengekstrak base naming contexts"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-ad-anon-ldap-dump",
+        "inspection_point_id": "ad-ldap-anonymous",
+        "signal_description": "Anonymous LDAP bind berhasil mengekstrak daftar sAMAccountName.",
+        "output_snippet": "$ ldapsearch -x -H ldap://192.168.1.10 -b \"DC=corp,DC=local\" \"(objectClass=user)\" sAMAccountName\nsAMAccountName: jsmith\nsAMAccountName: jdoe\nsAMAccountName: administrator",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Domain Controller mengizinkan pembacaan atribut direktori tanpa otentikasi, memfasilitasi serangan password spraying dan kerberoasting.",
+        "hypothesis_id": "hyp-ad-user-recon",
+        "evidence_to_capture": [
+          "Log output ldapsearch yang memuat daftar sAMAccountName"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Koneksi ke port 88 ditolak dengan pesan Clock Skew > 5 minutes (jam mesin tester tidak sinkron dengan DC)",
+      "Port 88 terbuka namun Kerberos kinit gagal"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-ad-user-recon",
+        "name": "Active Directory User Enumeration via Anonymous LDAP",
+        "description": "Mengekstrak daftar nama pengguna domain yang valid untuk serangan AS-REP Roasting dan Password Spraying.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-ad-anon-ldap-dump"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan GetNPUsers.py (Impacket) dengan daftar user yang ditemukan tanpa password.",
+            "expected_output": "Mengetahui apakah ada akun dengan opsi 'Do not require Kerberos preauthentication'.",
+            "interesting_output": "Mendapatkan TGT hash ($krb5asrep$) yang dapat di-crack secara offline.",
+            "unexpected_output": "Server mengembalikan Kerberos error KDC_ERR_C_PRINCIPAL_UNKNOWN.",
+            "interpretation": "Mengonfirmasi kerentanan AS-REP Roasting aktif pada salah satu akun.",
+            "evidence_to_record": [
+              "TGT hash mentah yang diperoleh"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Anonymous LDAP binding ditolak dan seluruh layanan memerlukan kredensial domain valid.",
+      "Koneksi Kerberos gagal karena clock skew yang tidak dapat disinkronkan via NTP.",
+      "Target bukan Domain Controller melainkan standalone server dengan beberapa port serupa."
+    ],
+    "common_mistakes": [
+      "Lupa mengarahkan `/etc/resolv.conf` tester ke IP Domain Controller (DNS resolution adalah kunci nomor 1 di AD).",
+      "Lupa menyinkronkan waktu sistem (`ntpdate <DC_IP>`), menyebabkan error Kerberos KRB_AP_ERR_SKEW.",
+      "Menjalankan brute force password masif yang mengunci seluruh akun karyawan di domain."
+    ],
+    "ctf_notes": "Dalam CTF berlatar Active Directory, sering kali ada satu akun service yang memiliki opsi DONT_REQ_PREAUTH (AS-REP Roasting) atau deskripsi user yang menyimpan password awal.",
+    "pentest_notes": "Dalam pentest enterprise, temuan Domain Controller membuka fase enumerasi BloodHound untuk memetakan attack path menuju Domain Admin.",
+    "unknown_guide": {
+      "what_is_this": "Server pusat yang menjalankan Active Directory Domain Services pada jaringan Windows.",
+      "why_does_it_exist": "Mengelola identitas terpusat (users, computers, groups, policies) untuk seluruh organisasi.",
+      "what_parts_matter": "Port 88 (Kerberos), 389 (LDAP), 445 (SMB), dan nama domain DNS.",
+      "what_normal_looks_like": "DC melayani otentikasi aman hanya kepada pengguna yang memiliki tiket atau kredensial valid.",
+      "what_to_record_immediately": [
+        "FQDN Domain (contoh: megacorp.local)",
+        "Nama host DC (contoh: DC01)",
+        "IP address dan sinkronisasi waktu NTP"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "DC merespons normal tanpa celah anonymous access.",
+      "why_not_secure": "DC yang aman tetap dapat diserang jika tester berhasil mendapatkan kredensial level rendah dari workstation atau aplikasi web internal.",
+      "next_pivot_observations": [
+        "obs-ad-asrep-roastable",
+        "obs-net-smb",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "35",
+        "slug": "ad-initial-enumeration",
+        "title": "35. AD Initial Enumeration Workflow",
+        "section_title": "1.1 Domain Controller Discovery",
+        "anchor": "11-domain-controller-discovery",
+        "rationale": "Metodologi discovery DC, pemetaan FQDN, konfigurasi DNS, dan enumerasi tanpa kredensial."
+      }
+    ],
+    "related_observations": [
+      "obs-ad-asrep-roastable",
+      "obs-ad-kerberoastable-spn",
+      "obs-net-smb"
+    ],
+    "provenance": [
+      "MITRE ATT&CK T1018 (Remote System Discovery)",
+      "MITRE ATT&CK T1087.002 (Account Discovery: Domain Account)",
+      "Microsoft Active Directory Security Documentation"
+    ]
+  },
+  {
+    "id": "obs-ad-asrep-roastable",
+    "title": "Akun DONT_REQ_PREAUTH Terdeteksi (AS-REP Roastable Account)",
+    "domain": "Identity & Active Directory",
+    "category": "Active Directory",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Output Impacket GetNPUsers.py: hash $krb5asrep$23$... berhasil diekstrak",
+      "Atribut userAccountControl memuat flag DONT_REQ_PREAUTH (0x10000 / 65536)",
+      "Respons Kerberos AS-REP dikembalikan oleh KDC tanpa memerlukan timestamp terenkripsi dari client"
+    ],
+    "context": "Dijalankan setelah menemukan daftar username domain (via LDAP anonim, SMB RID cycling, atau wordlist).",
+    "why_it_matters": "Ketika sebuah akun diatur tanpa Kerberos Pre-Authentication, sembarang orang dapat meminta tiket AS-REP atas nama akun tersebut ke Domain Controller. Bagian tiket dienkripsi dengan password hash akun itu sendiri, sehingga penyerang dapat melakukan offline password cracking menggunakan Hashcat atau John the Ripper tanpa memicu account lockout.",
+    "questions_to_ask": [
+      "Siapa nama akun yang memiliki flag DONT_REQ_PREAUTH?",
+      "Tipe enkripsi Kerberos apa yang digunakan (RC4 etype 23 yang sangat cepat di-crack vs AES128/256)?",
+      "Apakah akun tersebut merupakan anggota grup berhak akses tinggi (Domain Admins, Backup Operators)?",
+      "Apakah password akun tersebut dapat dipecahkan menggunakan wordlist rockyou.txt?"
+    ],
+    "inspection_points": [
+      {
+        "id": "asrep-ticket-extract",
+        "name": "1. Ekstraksi Tiket AS-REP (GetNPUsers)",
+        "why_check": "Mendapatkan string hash tiket Kerberos untuk dianalisis secara offline.",
+        "what_to_look_for": [
+          "GetNPUsers.py <domain>/ -usersfile users.txt -no-pass -format hashcat",
+          "String berformat $krb5asrep$23$username@DOMAIN:..."
+        ],
+        "normal_baseline": "KDC mengembalikan error KDC_ERR_PREAUTH_REQUIRED untuk seluruh akun.",
+        "interesting_clues": [
+          "Satu atau beberapa akun mengembalikan hash $krb5asrep$",
+          "Akun yang rentan memiliki nama mencurigakan seperti svc_backup, sqladmin, testuser"
+        ],
+        "evidence_to_capture": [
+          "Log eksekusi GetNPUsers.py",
+          "Hash Kerberos mentah yang diekstrak"
+        ]
+      },
+      {
+        "id": "asrep-identify-accounts",
+        "name": "2. Identifikasi & Validasi Akun Target",
+        "why_check": "Tidak semua akun yang berhasil di-enumerate memiliki flag DONT_REQ_PREAUTH — perlu memverifikasi secara selektif.",
+        "what_to_look_for": [
+          "GetNPUsers.py DOMAIN/ -no-pass -usersfile users.txt -format hashcat",
+          "GetNPUsers.py DOMAIN/validuser:pass -request -format john",
+          "Cek UserAccountControl via LDAP: (userAccountControl:1.2.840.113556.1.4.803:=4194304)",
+          "Identifikasi akun service atau legacy yang biasanya memiliki flag ini"
+        ],
+        "normal_baseline": "Semua akun memerlukan Kerberos pre-authentication. GetNPUsers mengembalikan: KDC_ERR_PREAUTH_REQUIRED.",
+        "interesting_clues": [
+          "GetNPUsers berhasil mendapatkan AS-REP hash ($krb5asrep$)",
+          "Lebih dari satu akun memiliki flag DONT_REQ_PREAUTH",
+          "Akun service atau legacy seperti svc_backup, svc_sql memiliki flag ini"
+        ],
+        "evidence_to_capture": [
+          "Full AS-REP hash ($krb5asrep$23$user@domain:...) untuk offline cracking",
+          "List akun yang berhasil di-roast",
+          "Timestamp request untuk dokumentasi scope"
+        ]
+      },
+      {
+        "id": "asrep-crack-offline",
+        "name": "3. Offline Cracking Hash AS-REP",
+        "why_check": "Hash AS-REP dapat di-crack secara offline tanpa interaksi lebih lanjut ke DC.",
+        "what_to_look_for": [
+          "hashcat -m 18200 hash.txt rockyou.txt --force",
+          "john --wordlist=/usr/share/wordlists/rockyou.txt hash.txt",
+          "Estimasi waktu crack berdasarkan kompleksitas hash",
+          "Gunakan rule-based attack jika wordlist dasar gagal"
+        ],
+        "normal_baseline": "Hash tidak dapat di-crack dalam waktu reasonable dengan wordlist umum — password cukup kuat.",
+        "interesting_clues": [
+          "Hash berhasil di-crack dalam hitungan detik/menit → password lemah",
+          "Plaintext password mengikuti pola organisasi (Company2023!, Season+Year)"
+        ],
+        "evidence_to_capture": [
+          "Plaintext password hasil cracking",
+          "Hashcat/John status output",
+          "Waktu yang dibutuhkan untuk crack"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-asrep-hash-captured",
+        "inspection_point_id": "asrep-ticket-extract",
+        "signal_description": "Tiket AS-REP berhasil diekstrak tanpa password untuk akun domain.",
+        "output_snippet": "$ GetNPUsers.py corp.local/ -usersfile users.txt -no-pass\n$krb5asrep$23$svc_backup@CORP.LOCAL:34f8a...$6a8b...",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Akun memiliki miskonfigurasi DONT_REQ_PREAUTH aktif, membuka jalan serangan offline hash cracking.",
+        "hypothesis_id": "hyp-asrep-crack-access",
+        "evidence_to_capture": [
+          "Tangkapan hash $krb5asrep$ lengkap",
+          "Nama akun terkait"
+        ]
+      },
+      {
+        "id": "sig-asrep-hash-obtained",
+        "inspection_point_id": "asrep-identify-accounts",
+        "signal_description": "GetNPUsers berhasil mengekstrak AS-REP hash dari satu atau lebih akun domain.",
+        "output_snippet": "$ GetNPUsers.py CORP/ -no-pass -usersfile users.txt -format hashcat\n$krb5asrep$23$jsmith@CORP:2a5f7b...[hash]...8c3d",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Hash dapat di-crack offline — jika berhasil, attacker mendapat credential valid untuk lateral movement.",
+        "hypothesis_id": "hyp-asrep-cracked-lateral",
+        "evidence_to_capture": [
+          "Full AS-REP hash string",
+          "Username yang terkena"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "KDC mengembalikan error KDC_ERR_ETYPE_NOSUPP (tipe enkripsi tidak didukung tester)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-asrep-crack-access",
+        "name": "Initial Domain Access via AS-REP Roasting",
+        "description": "Memecahkan hash Kerberos offline untuk mendapatkan password plaintext akun domain valid.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-asrep-hash-captured"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan hashcat offline: `hashcat -m 18200 asrep.hash rockyou.txt`.",
+            "expected_output": "Mengetahui apakah password akun merupakan kata kamus standar.",
+            "interesting_output": "Password berhasil di-crack (misal: 'Backup2023!').",
+            "unexpected_output": "Hash tidak terpecahkan setelah kamus habis.",
+            "interpretation": "Mendapatkan kredensial domain valid tanpa menyentuh target secara aktif.",
+            "evidence_to_record": [
+              "Output hashcat status: Cracked"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-asrep-cracked-lateral",
+        "name": "Lateral Movement Post AS-REP Roasting",
+        "description": "Credential dari AS-REP roasting digunakan untuk autentikasi ke mesin lain dalam domain.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-asrep-hash-obtained"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Crack hash: hashcat -m 18200 hash.txt rockyou.txt. Jika berhasil, verifikasi credential: crackmapexec smb DC_IP -u username -p \"password\"",
+            "expected_output": "Hash tidak ter-crack atau credential tidak valid.",
+            "interesting_output": "Credential valid: [+] CORP\\jsmith:Password123 (Pwn3d!)",
+            "unexpected_output": "STATUS_ACCOUNT_LOCKED_OUT — account dikunci.",
+            "interpretation": "Credential valid → gunakan untuk SMB access, WinRM, atau pass-the-hash.",
+            "evidence_to_record": [
+              "Plaintext credential",
+              "Bukti autentikasi berhasil ke mesin target"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Seluruh akun domain mewajibkan Kerberos Pre-Authentication.",
+      "Kamus hashcat selesai dijalankan tanpa hasil crack.",
+      "Akun tidak lagi aktif atau dinonaktifkan oleh admin."
+    ],
+    "common_mistakes": [
+      "Mencoba cracking dengan mode hashcat yang salah (AS-REP roasting adalah mode 18200, bukan 13100).",
+      "Lupa menyertakan domain realm saat menjalankan Impacket.",
+      "Mengira AS-REP roasting memerlukan kredensial domain awal (AS-REP roasting dapat dilakukan unauthenticated asalkan punya daftar username)."
+    ],
+    "ctf_notes": "Di CTF Active Directory, AS-REP Roasting sering kali menjadi langkah Initial Access nomor 1 dari luar jaringan.",
+    "pentest_notes": "Miskonfigurasi DONT_REQ_PREAUTH adalah temuan High Severity di audit Active Directory karena bypass proteksi lockout.",
+    "unknown_guide": {
+      "what_is_this": "Fitur kompatibilitas kuno Windows di mana client tidak perlu membuktikan password-nya sebelum meminta tiket login Kerberos.",
+      "why_does_it_exist": "Dulu digunakan untuk mendukung aplikasi Unix legacy yang tidak mendukung pre-authentication Kerberos.",
+      "what_parts_matter": "Nama akun dan format hash tiket yang dikembalikan KDC.",
+      "what_normal_looks_like": "Seluruh akun modern mewajibkan Pre-Authentication (error KDC_ERR_PREAUTH_REQUIRED).",
+      "what_to_record_immediately": [
+        "Nama akun yang rentan",
+        "String hash $krb5asrep$ mentah"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Seluruh akun domain memiliki Pre-Authentication aktif.",
+      "why_not_secure": "Jika tester mendapatkan 1 pasang kredensial domain valid dari tempat lain, tester dapat melakukan Kerberoasting pada akun service SPN.",
+      "next_pivot_observations": [
+        "obs-ad-kerberoastable-spn",
+        "obs-net-smb"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "37",
+        "slug": "kerberoasting-asreproasting",
+        "title": "37. Kerberoasting & AS-REP Roasting Workflow",
+        "section_title": "2.1 AS-REP Roasting Workflow",
+        "anchor": "21-asreproasting-workflow",
+        "rationale": "Pelajari sintaks GetNPUsers, opsi hashcat -m 18200, dan mitigasi DONT_REQ_PREAUTH."
+      }
+    ],
+    "related_observations": [
+      "obs-ad-dc-port-group",
+      "obs-ad-kerberoastable-spn"
+    ],
+    "provenance": [
+      "MITRE ATT&CK T1558.004 (Steal or Forge Kerberos Tickets: AS-REP Roasting)",
+      "IETF RFC 4120"
+    ]
+  },
+  {
+    "id": "obs-ad-kerberoastable-spn",
+    "title": "Service Principal Name Terdaftar (Kerberoastable Service SPN)",
+    "domain": "Identity & Active Directory",
+    "category": "Active Directory",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Objek akun user domain memiliki atribut ServicePrincipalName (SPN)",
+      "Format SPN: MSSQLSvc/db01.corp.local:1433, HTTP/web.corp.local, CIFS/storage",
+      "Output GetUserSPNs.py menampilkan daftar akun service pengguna biasa (bukan akun komputer/machine)"
+    ],
+    "context": "Fase enumerasi Active Directory setelah memiliki satu set kredensial domain valid (bahkan kredensial user biasa).",
+    "why_it_matters": "Setiap akun pengguna yang terhubung ke Service Principal Name (SPN) memungkinkan sembarang user domain meminta Service Ticket (TGS-REQ). Tiket TGS ini dienkripsi menggunakan NTLM hash dari akun service tersebut. Tiket ini dapat disimpan ke disk dan di-crack offline (Kerberoasting) tanpa memicu alarm lockout di Domain Controller.",
+    "questions_to_ask": [
+      "Apakah SPN terdaftar pada akun pengguna biasa (UserAccount) atau akun mesin (ComputerAccount)?",
+      "Tipe enkripsi apa yang digunakan tiket (RC4-HMAC vs AES-256)?",
+      "Apakah akun service memiliki hak istimewa tinggi di domain (misal: Local Admin di banyak host)?",
+      "Apakah password akun service dapat dipecahkan dengan wordlist kamus?"
+    ],
+    "inspection_points": [
+      {
+        "id": "kerberoast-spn-query",
+        "name": "1. Query SPN Pengguna (GetUserSPNs)",
+        "why_check": "Menyaring akun komputer (yang memiliki password acak 128 karakter yang mustahil di-crack) dan hanya menargetkan akun manusia.",
+        "what_to_look_for": [
+          "GetUserSPNs.py <domain>/<user>:<pass> -request",
+          "Daftar SPN dengan sAMAccountName berakhiran non-$"
+        ],
+        "normal_baseline": "Hanya akun komputer terkelola (gMSA) yang memiliki SPN, atau akun service menggunakan AES enkripsi kuat.",
+        "interesting_clues": [
+          "Akun pengguna biasa memiliki SPN untuk SQL Server atau web portal",
+          "Tiket TGS dikembalikan dengan enkripsi RC4 ($krb5tgs$23$)"
+        ],
+        "evidence_to_capture": [
+          "Output tabel GetUserSPNs.py",
+          "Hash tiket $krb5tgs$ mentah"
+        ]
+      },
+      {
+        "id": "spn-encryption-type",
+        "name": "2. Analisis Enkripsi Tiket TGS (RC4 vs AES)",
+        "why_check": "Tiket dengan enkripsi RC4 (etype 23) jauh lebih cepat dan mudah di-crack secara offline dibanding AES-128/AES-256.",
+        "what_to_look_for": [
+          "GetUserSPNs.py DOMAIN/user:pass -request (periksa format hash yang dihasilkan)",
+          "Lihat header hash: $krb5tgs$23$ menandakan RC4-HMAC (sangat rentan)",
+          "Header $krb5tgs$17$ atau $krb5tgs$18$ menandakan AES128/AES256 (jauh lebih lambat di-crack)",
+          "Filter akun service ber-SPN dengan enkripsi lemah via LDAP filter"
+        ],
+        "normal_baseline": "Lingkungan modern memberlakukan AES-256 untuk Kerberos ticket encryption.",
+        "interesting_clues": [
+          "Semua atau sebagian besar hash TGS menggunakan etype 23 (RC4-HMAC)",
+          "Akun service ber-SPN memiliki hak administratif (Domain Admins, Server Operators)",
+          "Service account password tidak pernah dirotasi (pwdLastSet sangat lama)"
+        ],
+        "evidence_to_capture": [
+          "Hash TGS lengkap ($krb5tgs$23$*...)",
+          "Output GetUserSPNs.py yang mencantumkan nama akun, SPN, dan encryption type",
+          "Nilai atribut pwdLastSet dari service account"
+        ]
+      },
+      {
+        "id": "spn-offline-cracking",
+        "name": "3. Offline Cracking TGS & Validasi Akses",
+        "why_check": "Cracking dilakukan 100% offline tanpa menimbulkan network noise atau account lockout di Domain Controller.",
+        "what_to_look_for": [
+          "hashcat -m 13100 tgs_hashes.txt rockyou.txt -r rules/best64.rule",
+          "john --format=krb5tgs --wordlist=rockyou.txt tgs_hashes.txt",
+          "Gunakan custom mask/rule jika password diprediksi memiliki pola korporat",
+          "Batas waktu pengujian sebelum memutuskan password berentropi tinggi"
+        ],
+        "normal_baseline": "Password akun service memiliki panjang > 25 karakter acak dan tidak ter-crack.",
+        "interesting_clues": [
+          "Hash berhasil di-crack dalam < 10 menit menggunakan wordlist standar",
+          "Password merupakan default vendor atau variasi nama instansi"
+        ],
+        "evidence_to_capture": [
+          "Plaintext password hasil cracking",
+          "Status log hashcat / john",
+          "Verifikasi login: crackmapexec smb IP_DC -u svc_user -p plaintext"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-kerberoast-tgs-captured",
+        "inspection_point_id": "kerberoast-spn-query",
+        "signal_description": "Tiket TGS berhasil di-request dan diekstrak dalam format hashcat ($krb5tgs$23$).",
+        "output_snippet": "$ GetUserSPNs.py corp.local/jdoe:Password123 -request\n$krb5tgs$23$*sql_svc*CORP.LOCAL*MSSQLSvc/db.corp.local:1433*$78a...$99b...",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Akun service sql_svc rentan terhadap serangan offline Kerberoasting.",
+        "hypothesis_id": "hyp-kerberoast-privesc",
+        "evidence_to_capture": [
+          "Hash $krb5tgs$23$ lengkap",
+          "Nama SPN dan akun target"
+        ]
+      },
+      {
+        "id": "sig-spn-rc4-tgs-dump",
+        "inspection_point_id": "spn-encryption-type",
+        "signal_description": "Berhasil me-request TGS ticket berformat RC4-HMAC ($krb5tgs$23$) dari akun service administratif.",
+        "output_snippet": "$ GetUserSPNs.py CORP.LOCAL/lowuser:Password123 -request\nServicePrincipalName  Name      MemberOf\nMSSQLSvc/db01.corp    sql_svc   CN=Domain Admins,CN=Users,DC=corp\n$krb5tgs$23$*sql_svc$CORP.LOCAL*...",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Akun Domain Admin memiliki SPN dengan enkripsi RC4, memungkinkan cracking offline untuk mengambil alih hak domain administrator.",
+        "hypothesis_id": "hyp-kerberoast-privesc",
+        "evidence_to_capture": [
+          "Output GetUserSPNs.py lengkap",
+          "Dump hash TGS $krb5tgs$23$"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "KDC mengembalikan KRB_ERR_RESPONSE_TOO_BIG (memerlukan TCP transport)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-kerberoast-privesc",
+        "name": "Privilege Escalation via Kerberoasting",
+        "description": "Memecahkan hash password akun service untuk mendapatkan hak akses administratif ke database atau server terkait.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-kerberoast-tgs-captured"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan hashcat mode 13100 offline: `hashcat -m 13100 tgs.hash rockyou.txt`.",
+            "expected_output": "Mengetahui apakah password service adalah kata kamus.",
+            "interesting_output": "Password plaintext ditemukan (misal: 'SqlAdmin2022').",
+            "unexpected_output": "Exhausted tanpa hasil.",
+            "interpretation": "Mendapatkan kredensial akun service berhak tinggi.",
+            "evidence_to_record": [
+              "Output hashcat cracked password"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Tidak ada akun pengguna biasa yang memiliki SPN terdaftar di domain.",
+      "Domain hanya menggunakan Group Managed Service Accounts (gMSA) yang mengganti password acak 128 karakter otomatis.",
+      "Kamus hashcat habis tanpa menemukan password."
+    ],
+    "common_mistakes": [
+      "Mencoba me-roast akun komputer (nama berakhiran $), yang mustahil di-crack karena password di-generate otomatis oleh Windows.",
+      "Menggunakan mode hashcat 18200 (18200 adalah AS-REP Roasting, Kerberoasting adalah 13100).",
+      "Lupa meminta tiket dengan flag `-request` pada GetUserSPNs.py."
+    ],
+    "ctf_notes": "Di CTF AD, Kerberoasting adalah jembatan paling umum dari low-priv domain user menuju service account yang memiliki akses ke sistem database atau flag.",
+    "pentest_notes": "Kerberoasting adalah temuan audit Active Directory berprioritas High karena setiap user domain dapat mengekstrak hash tanpa batas waktu.",
+    "unknown_guide": {
+      "what_is_this": "Pengidentifikasi unik untuk layanan yang berjalan di Active Directory agar Kerberos tahu akun mana yang menjalankan service tersebut.",
+      "why_does_it_exist": "Memungkinkan otentikasi single-sign-on (SSO) antar komputer dan layanan jaringan dalam domain.",
+      "what_parts_matter": "Apakah akun pemilik SPN adalah akun manusia biasa yang mungkin memiliki password lemah.",
+      "what_normal_looks_like": "Layanan dijalankan oleh akun mesin atau gMSA terkelola.",
+      "what_to_record_immediately": [
+        "Daftar SPN dan sAMAccountName pemiliknya",
+        "Hash tiket TGS jika berhasil diekstrak"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Tidak ditemukan akun pengguna biasa dengan SPN aktif.",
+      "why_not_secure": "Tester masih dapat memeriksa miskonfigurasi Active Directory Certificate Services (AD CS) atau ACL abuse via BloodHound.",
+      "next_pivot_observations": [
+        "obs-ad-asrep-roastable",
+        "obs-net-smb"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "37",
+        "slug": "kerberoasting-asreproasting",
+        "title": "37. Kerberoasting & AS-REP Roasting Workflow",
+        "section_title": "1.1 Kerberoasting Reconnaissance",
+        "anchor": "11-kerberoasting-reconnaissance",
+        "rationale": "Panduan query SPN, ekstraksi tiket TGS via Impacket & Rubeus, dan cracking hashcat -m 13100."
+      }
+    ],
+    "related_observations": [
+      "obs-ad-dc-port-group",
+      "obs-ad-asrep-roastable"
+    ],
+    "provenance": [
+      "MITRE ATT&CK T1558.003 (Steal or Forge Kerberos Tickets: Kerberoasting)",
+      "Microsoft Kerberos Protocol Specifications"
+    ]
+  }
+]

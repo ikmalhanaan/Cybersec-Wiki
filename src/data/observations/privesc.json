@@ -1,0 +1,784 @@
+[
+  {
+    "id": "obs-priv-suid-binary",
+    "title": "Biner SUID / SGID Terdeteksi (SUID Binary Found on Linux)",
+    "domain": "Privilege Escalation",
+    "category": "Privilege Escalation",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Izin file Linux dengan bit 's': -rwsr-xr-x (SUID root) atau -rwxr-sr-x (SGID)",
+      "Ditemukan via perintah: find / -perm -4000 -type f 2>/dev/null",
+      "Biner berjalan dengan hak akses pemilik file (biasanya root) terlepas dari siapa yang menjalankannya"
+    ],
+    "context": "Fase pasca-eksploitasi (Post-Exploitation) setelah mendapatkan low-privilege shell pada target Linux.",
+    "why_it_matters": "Setuid (SUID) adalah mekanisme Unix yang sah agar program tertentu (seperti passwd atau ping) dapat menjalankan instruksi berhak akses tinggi. Namun jika biner tersebut memiliki fitur membaca file arbitrer, mengeksekusi shell, atau memuat shared library tanpa path absolut, low-privilege user dapat memanfaatkannya untuk menjadi root. Biner SUID adalah fitur standar OS, bukan celah keamanan sampai diidentifikasi adanya miskonfigurasi.",
+    "questions_to_ask": [
+      "Siapa pemilik biner (owner root vs user lain)?",
+      "Apakah ini biner standar OS (seperti /usr/bin/passwd) atau biner kustom buatan administrator?",
+      "Apakah biner ini terdaftar di GTFOBins (koleksi biner Unix yang dapat disalahgunakan)?",
+      "Apakah biner memanggil library eksternal atau perintah shell tanpa path absolut?"
+    ],
+    "inspection_points": [
+      {
+        "id": "suid-catalog-matching",
+        "name": "1. Pencocokan Katalog Standar vs GTFOBins",
+        "why_check": "Memisahkan biner SUID bawaan Linux normal dari biner yang berbahaya.",
+        "what_to_look_for": [
+          "Biner standar aman: /usr/bin/passwd, /usr/bin/chfn, /usr/bin/sudo, /usr/bin/newgrp",
+          "Biner bahaya (GTFOBins): find, vim, nmap, bash, cp, pkexec, python, env, awk"
+        ],
+        "normal_baseline": "Hanya biner esensial OS yang memiliki bit SUID.",
+        "interesting_clues": [
+          "Biner seperti /usr/bin/find atau /usr/bin/env memiliki bit SUID",
+          "Biner kompilasi kustom di /opt, /var/tmp, atau /home/user"
+        ],
+        "evidence_to_capture": [
+          "Output ls -la lengkap menunjukkan izin -rwsr-xr-x dan kepemilikan root",
+          "Path lengkap biner"
+        ]
+      },
+      {
+        "id": "suid-binary-internals",
+        "name": "2. Analisis Dependensi & Shared Library (strings / ldd)",
+        "why_check": "Mencari pemanggilan library hilang (.so) atau eksekusi perintah system() yang dapat dibajak via PATH.",
+        "what_to_look_for": [
+          "strings <binary> | grep -E '(\\/|system|exec)'",
+          "ldd <binary> (melihat library missing)"
+        ],
+        "normal_baseline": "Biner memanggil fungsi dengan path absolut (/bin/ls) dan menggunakan library sistem standar.",
+        "interesting_clues": [
+          "Biner memanggil perintah tanpa path (misal: system('service apache2 restart'))",
+          "Biner mencari file konfigurasi di direktori yang dapat ditulis oleh tester"
+        ],
+        "evidence_to_capture": [
+          "Snippet output strings yang memuat perintah rentan",
+          "Nilai environment variable PATH saat ini"
+        ]
+      },
+      {
+        "id": "suid-gtfobins-check",
+        "name": "3. GTFOBins Lookup & Shell Escape Technique",
+        "why_check": "Banyak binary standar Linux memiliki metode shell escape terdokumentasi saat dijalankan sebagai SUID.",
+        "what_to_look_for": [
+          "Periksa setiap binary SUID di https://gtfobins.github.io/",
+          "Untuk custom binary: strings [binary] | grep -E \"system|popen|exec|sh|bash\"",
+          "ltrace / strace [binary] untuk melihat system call",
+          "Cek apakah binary memanggil program lain tanpa absolute path (PATH hijacking)"
+        ],
+        "normal_baseline": "Binary standar (passwd, ping, sudo) dengan SUID adalah normal. Binary custom tanpa dokumentasi jelas adalah anomali.",
+        "interesting_clues": [
+          "Binary ada di GTFOBins dengan metode SUID",
+          "Binary custom memanggil /bin/sh atau bash dalam code",
+          "Binary memanggil program lain dengan relative path (PATH hijacking potential)",
+          "Binary versi lama dengan CVE yang diketahui (screen-4.5.0, pkexec)"
+        ],
+        "evidence_to_capture": [
+          "GTFOBins URL dan payload untuk binary yang ditemukan",
+          "Output strings untuk custom SUID binary",
+          "Output id setelah berhasil exploit (dalam lab)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-suid-gtfobins-match",
+        "inspection_point_id": "suid-catalog-matching",
+        "signal_description": "Biner SUID merupakan utilitas yang terdokumentasi dapat spawn shell di GTFOBins (misal: /usr/bin/find).",
+        "output_snippet": "-rwsr-xr-x 1 root root 328000 Jan 15 2023 /usr/bin/find",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Biner find memiliki flag bawaan (-exec) yang ketika dijalankan dengan SUID root akan mengeksekusi shell dengan UID 0 (root).",
+        "hypothesis_id": "hyp-suid-gtfobins-root",
+        "evidence_to_capture": [
+          "ls -la /usr/bin/find",
+          "Eksekusi uji non-destruktif: /usr/bin/find . -exec id \\; -quit"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Biner crash saat dipanggil dengan error Segmentation Fault (indikasi potensi buffer overflow di biner SUID)",
+      "Biner menolak berjalan dengan pesan 'Must not be run with elevated privileges'"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-suid-gtfobins-root",
+        "name": "Privilege Escalation via SUID Utility Abuse (GTFOBins)",
+        "description": "Menyalahgunakan fungsi bawaan biner SUID untuk mempertahankan hak akses root dan mengeksekusi interactive shell.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-suid-gtfobins-match"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan perintah pengujian identitas: `/usr/bin/find . -exec /usr/bin/id \\; -quit`.",
+            "expected_output": "Menampilkan euid=0(root) yang mengonfirmasi eskalasi hak akses aktif.",
+            "interesting_output": "Biner langsung membuka sub-shell root.",
+            "unexpected_output": "Permission denied.",
+            "interpretation": "Mengonfirmasi eskalasi hak akses berhasil tanpa merusak sistem.",
+            "evidence_to_record": [
+              "Tangkapan layar terminal output id menunjukkan euid=0(root)"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-suid-path-hijack",
+        "name": "SUID Binary PATH Hijacking",
+        "description": "Custom SUID binary memanggil program lain dengan relative path — attacker dapat memanipulasi PATH untuk menjalankan kode berbahaya sebagai root.",
+        "status": "CANDIDATE",
+        "supporting_signals": [],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan: strings /path/to/suid-binary | grep -v \"/\" | grep -E \"^[a-z]\" untuk menemukan program yang dipanggil tanpa absolute path.",
+            "expected_output": "Semua program dipanggil dengan absolute path (/usr/bin/cat, /bin/sh).",
+            "interesting_output": "Program dipanggil tanpa path: \"service\", \"curl\", \"python\".",
+            "unexpected_output": "Binary stripped — gunakan ltrace/strace untuk analisis runtime.",
+            "interpretation": "Relative path call → buat binary palsu dengan nama sama di /tmp, tambahkan /tmp ke PATH, jalankan SUID binary.",
+            "evidence_to_record": [
+              "Output strings",
+              "Nama program yang dipanggil tanpa path",
+              "PoC command untuk PATH hijacking"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Seluruh biner SUID yang ditemukan merupakan biner standar bawaan distribusi Linux tanpa fungsi escape.",
+      "Partisi filesystem di-mount dengan opsi 'nosuid' (sehingga bit SUID diabaikan oleh kernel).",
+      "Sistem dilindungi oleh SELinux atau AppArmor profile yang memblokir eksekusi sub-shell."
+    ],
+    "common_mistakes": [
+      "Menjalankan script exploit compiler langsung tanpa memeriksa apakah gcc terpasang di target.",
+      "Mengira semua biner SUID rentan (sebagian besar biner SUID Linux modern telah diaudit ketat).",
+      "Lupa memeriksa opsi mount filesystem (`mount | grep nosuid`)."
+    ],
+    "ctf_notes": "Dalam CTF, author sering kali membuat biner kustom di `/opt/backup_tool` yang mengeksekusi perintah shell tanpa path absolut, siap dieksploitasi dengan manipulasi variabel PATH.",
+    "pentest_notes": "Dalam pentest resmi, selalu verifikasi dampak dengan perintah `id` atau `whoami`. Hindari mengubah file `/etc/passwd` atau `/etc/shadow` secara permanen untuk meminimalkan risiko integritas sistem client.",
+    "unknown_guide": {
+      "what_is_this": "File program Linux khusus yang memiliki bit izin 's' (Set User ID).",
+      "why_does_it_exist": "Diperlukan agar pengguna biasa dapat menjalankan tugas administratif tertentu (misal: merubah password sendiri yang butuh write ke /etc/shadow).",
+      "what_parts_matter": "Nama biner, pemiliknya (root vs user lain), dan apakah biner menyediakan fungsi eksekusi perintah atau pembacaan file.",
+      "what_normal_looks_like": "Biner sistem standar (/usr/bin/passwd, /usr/bin/sudo) yang memiliki proteksi ketat.",
+      "what_to_record_immediately": [
+        "Daftar lengkap biner SUID dari find / -perm -4000",
+        "Izin dan timestamp biner yang mencurigakan",
+        "Keluaran perintah strings jika biner kustom"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Tidak ada biner SUID yang dapat disalahgunakan atau partisi di-mount dengan nosuid.",
+      "why_not_secure": "Privilege escalation di Linux masih dapat terjadi via Sudo rules (-l), Cron jobs, Kernel exploits, atau credential hunting di file log.",
+      "next_pivot_observations": [
+        "obs-priv-sudo-rules",
+        "obs-priv-writable-system",
+        "obs-priv-credential-history"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "47",
+        "slug": "sudo-suid-capabilities",
+        "title": "47. Sudo, SUID & Capabilities Workflow",
+        "section_title": "2.1 SUID Binary Enumeration",
+        "anchor": "21-suid-binary-enumeration",
+        "rationale": "Pelajari perintah pencarian SUID, tabel referensi GTFOBins, dan teknik eksploitasi path hijacking."
+      }
+    ],
+    "related_observations": [
+      "obs-priv-sudo-rules",
+      "obs-priv-writable-system",
+      "obs-priv-credential-history"
+    ],
+    "provenance": [
+      "GTFOBins (https://gtfobins.github.io/)",
+      "MITRE ATT&CK T1548.001 (Abuse Elevation Control Mechanism: Setuid and Setgid)",
+      "Unix File Permissions Standards (POSIX.1)"
+    ]
+  },
+  {
+    "id": "obs-priv-sudo-rules",
+    "title": "Entri Sudo Terkonfigurasi (Sudo -l Output & NOPASSWD)",
+    "domain": "Privilege Escalation",
+    "category": "Privilege Escalation",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Output perintah 'sudo -l': '(root) NOPASSWD: /usr/bin/vim', '(ALL : ALL) ALL'",
+      "Entri env_keep+=LD_PRELOAD atau env_keep+=LD_LIBRARY_PATH",
+      "Wildcard pada path perintah: (root) /bin/cat /var/log/*"
+    ],
+    "context": "Dijalankan segera setelah mendapatkan akses shell interaktif Linux.",
+    "why_it_matters": "File `/etc/sudoers` mengatur perintah apa saja yang boleh dijalankan oleh user tertentu sebagai root. Jika ada aturan `NOPASSWD` pada utilitas yang dapat membaca file, mengedit file, atau membuka shell (seperti vim, less, awk, tar, python), penyerang dapat mengeksekusi shell root seketika. Sudo adalah alat administrasi standar; hak akses yang berlebihan adalah miskonfigurasi.",
+    "questions_to_ask": [
+      "Perintah apa saja yang diizinkan untuk dijalankan sebagai root tanpa password?",
+      "Apakah ada flag env_keep yang mempertahankan environment variable pengguna?",
+      "Apakah perintah yang diizinkan merupakan script shell yang dapat diedit oleh user saat ini?",
+      "Apakah perintah memiliki wildcard (*) yang dapat dieksploitasi dengan argumen injeksi?"
+    ],
+    "inspection_points": [
+      {
+        "id": "sudo-list-rules",
+        "name": "1. Pembedahan Aturan Sudo -l",
+        "why_check": "Melihat izin eksekusi yang diberikan kepada akun aktif.",
+        "what_to_look_for": [
+          "sudo -l",
+          "Daftar binary di bawah `(root) NOPASSWD:`",
+          "Opsi `env_reset` vs `env_keep+=LD_PRELOAD`"
+        ],
+        "normal_baseline": "User biasa tidak memiliki entri sudo atau diwajibkan memasukkan password root.",
+        "interesting_clues": [
+          "Terdapat entri NOPASSWD pada biner GTFOBins (misal: vim, find, tee, less)",
+          "Opsi LD_PRELOAD diizinkan (memungkinkan pemuatan shared library arbitrer)"
+        ],
+        "evidence_to_capture": [
+          "Output mentah perintah sudo -l lengkap",
+          "User dan grup akun saat ini (id)"
+        ]
+      },
+      {
+        "id": "sudo-wildcard-env",
+        "name": "2. Wildcard, Environment Variables & Shell Escapes",
+        "why_check": "Aturan sudo dengan wildcard atau env_keep dapat disalahgunakan untuk melewati pembatasan.",
+        "what_to_look_for": [
+          "Cari NOPASSWD dan wildcard (*) dalam output sudo -l",
+          "Cek env_keep: apakah LD_PRELOAD atau PYTHONPATH diizinkan?",
+          "Untuk binary dengan argumen wildcard: uji path traversal (misal: /usr/bin/vim /etc/passwd)",
+          "Cari GTFOBins: apakah binary di-allow punya metode shell escape?"
+        ],
+        "normal_baseline": "Aturan sudo spesifik tanpa wildcard, tanpa NOPASSWD untuk binary berbahaya, tanpa env_keep.",
+        "interesting_clues": [
+          "ALL=(ALL) NOPASSWD: ALL — user bisa jadi root langsung",
+          "env_keep+=LD_PRELOAD — library injection saat menjalankan sudo",
+          "(root) NOPASSWD: /usr/bin/vim — vim bisa spawn shell",
+          "Wildcard path: (root) /usr/bin/python* /home/user/*.py"
+        ],
+        "evidence_to_capture": [
+          "Output sudo -l verbatim",
+          "GTFOBins URL yang relevan untuk binary yang ditemukan",
+          "Proof-of-concept command untuk shell escape (dalam lab environment)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-sudo-nopasswd-gtfo",
+        "inspection_point_id": "sudo-list-rules",
+        "signal_description": "User diizinkan menjalankan /usr/bin/vim sebagai root tanpa password.",
+        "output_snippet": "User www-data may run the following commands on target:\n    (ALL) NOPASSWD: /usr/bin/vim",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Vim memiliki fungsi internal untuk spawn shell (:!sh) yang akan berjalan sebagai root.",
+        "hypothesis_id": "hyp-sudo-escape-root",
+        "evidence_to_capture": [
+          "Output sudo -l yang memuat entri vim"
+        ]
+      },
+      {
+        "id": "sig-sudo-ldpreload",
+        "inspection_point_id": "sudo-list-rules",
+        "signal_description": "Aturan sudo memuat opsi env_keep+=LD_PRELOAD.",
+        "output_snippet": "Matching Defaults entries for user on target:\n    env_reset, env_keep+=LD_PRELOAD",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Tester dapat menyuplai custom shared object (.so) yang otomatis dieksekusi saat binary sudo apapun dipanggil.",
+        "hypothesis_id": "hyp-sudo-ldpreload-hijack",
+        "evidence_to_capture": [
+          "Snippet baris Defaults dari sudo -l"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Sudo meminta password user saat ini yang belum diketahui tester"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-sudo-escape-root",
+        "name": "Root Shell Escape via Sudo GTFOBins",
+        "description": "Mengeksekusi interactive root shell melalui fitur command execution bawaan biner yang diizinkan di sudoers.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-sudo-nopasswd-gtfo"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan perintah non-destruktif: `sudo vim -c ':!id' -c ':q!'`.",
+            "expected_output": "Menampilkan `uid=0(root) gid=0(root)`.",
+            "interesting_output": "Mendapatkan konfirmasi eksekusi instruksi sebagai root.",
+            "unexpected_output": "Terminal freeze.",
+            "interpretation": "Mengonfirmasi eskalasi hak akses penuh via sudo.",
+            "evidence_to_record": [
+              "Tangkapan layar terminal output id"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-sudo-gtfobins-escape",
+        "name": "Privilege Escalation via GTFOBins Shell Escape dari Sudo Binary",
+        "description": "Binary yang diizinkan via sudo (vim, python, find, dll) memiliki metode shell escape yang terdokumentasi di GTFOBins.",
+        "status": "CANDIDATE",
+        "supporting_signals": [],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Cek https://gtfobins.github.io/ untuk binary yang ditemukan. Contoh: sudo vim -c \":!/bin/bash\"",
+            "expected_output": "Perintah tidak diizinkan atau binary tidak ada dalam GTFOBins.",
+            "interesting_output": "Shell prompt baru dengan euid=0 (root).",
+            "unexpected_output": "Binary crash atau error permission.",
+            "interpretation": "Shell dengan euid=0 → privesc via GTFOBins berhasil, severity Critical.",
+            "evidence_to_record": [
+              "Output `id` dan `whoami` setelah exploit",
+              "GTFOBins payload yang digunakan"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "User tidak terdaftar dalam file sudoers ('user is not in the sudoers file').",
+      "Sudo meminta password yang tidak dimiliki oleh tester.",
+      "Perintah yang diizinkan tidak memiliki vektor escape maupun penulisan file arbitrer."
+    ],
+    "common_mistakes": [
+      "Tidak memeriksa opsi Defaults di bagian atas output `sudo -l` (melewatkan LD_PRELOAD).",
+      "Menghapus atau merusak file sudoers saat mencoba mengeditnya (selalu gunakan `visudo`)."
+    ],
+    "ctf_notes": "Di CTF Linux, perintah `sudo -l` adalah perintah pertama yang WAJIB diketik saat landing di shell.",
+    "pentest_notes": "Miskonfigurasi Sudo NOPASSWD pada server produksi adalah temuan High/Critical karena melumpuhkan pembatasan akses pengguna.",
+    "unknown_guide": {
+      "what_is_this": "Utilitas Unix yang mengizinkan user yang didelegasikan untuk menjalankan program dengan izin superuser.",
+      "why_does_it_exist": "Menerapkan prinsip Least Privilege agar admin tidak perlu membagikan password root utama ke seluruh teknisi.",
+      "what_parts_matter": "Perintah apa yang diizinkan, apakah butuh password (NOPASSWD), dan environment variable apa yang dipertahankan.",
+      "what_normal_looks_like": "Hanya mengizinkan perintah spesifik non-interaktif dengan kewajiban input password pengguna.",
+      "what_to_record_immediately": [
+        "Output lengkap sudo -l",
+        "Output perintah id dan groups"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "User tidak memiliki izin sudo atau meminta password yang belum diketahui.",
+      "why_not_secure": "Masih ada jalur SUID, Capabilities, Cron jobs, dan password hunting di file konfigurasi lokal.",
+      "next_pivot_observations": [
+        "obs-priv-suid-binary",
+        "obs-priv-writable-system",
+        "obs-priv-credential-history"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "47",
+        "slug": "sudo-suid-capabilities",
+        "title": "47. Sudo, SUID & Capabilities Workflow",
+        "section_title": "1.1 Sudo Privilege Enumeration",
+        "anchor": "11-sudo-privilege-enumeration",
+        "rationale": "Pelajari teknik eksploitasi sudoers: NOPASSWD GTFOBins, LD_PRELOAD, wildcard injection, dan CVE sudo."
+      }
+    ],
+    "related_observations": [
+      "obs-priv-suid-binary",
+      "obs-priv-writable-system"
+    ],
+    "provenance": [
+      "Sudoers Manual (man 5 sudoers)",
+      "MITRE ATT&CK T1548.003 (Sudo and Sudo Caching)"
+    ]
+  },
+  {
+    "id": "obs-priv-writable-system",
+    "title": "File / Direktori Sistem Dapat Ditulis (Writable Cron / Service / Script)",
+    "domain": "Privilege Escalation",
+    "category": "Privilege Escalation",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "File script yang dijalankan root memiliki izin write untuk group/others (-rwxrwxrwx atau write by current user)",
+      "Direktori /etc/cron.* atau crontab root memanggil script yang berada di folder yang dapat ditulis (/tmp, /opt, /var/www)",
+      "File systemd service unit (.service) di /etc/systemd/system/ memiliki izin tulis"
+    ],
+    "context": "Ditemukan saat melakukan audit filesystem menggunakan linpeas.sh atau pencarian `find / -writable`.",
+    "why_it_matters": "Jika sebuah proses berhak akses root (seperti cron job atau service daemon) mengeksekusi file yang isinya dapat dimodifikasi oleh low-privilege user, penyerang cukup menyisipkan perintah reverse shell atau penambahan user root baru ke dalam file tersebut untuk dieksekusi oleh scheduler.",
+    "questions_to_ask": [
+      "Siapa yang menjalankan script tersebut dan seberapa sering (setiap menit via cron)?",
+      "Apakah low-privilege user memiliki izin tulis ke file itu sendiri atau ke direktori induknya?",
+      "Apakah path di dalam script menggunakan binary absolut atau bergantung pada variable PATH?",
+      "Apakah service dapat di-restart manual atau harus menunggu reboot sistem?"
+    ],
+    "inspection_points": [
+      {
+        "id": "writable-cron-audit",
+        "name": "1. Audit Crontab & System Timers",
+        "why_check": "Mencari scheduled tasks yang mengeksekusi script eksternal.",
+        "what_to_look_for": [
+          "cat /etc/crontab",
+          "ls -la /etc/cron.*",
+          "pspy64 (monitoring proses cron yang berjalan tanpa root permissions)"
+        ],
+        "normal_baseline": "Script cron hanya dapat diedit oleh root (-rwxr-xr-x root root).",
+        "interesting_clues": [
+          "Script /opt/backup.sh dijalankan oleh root setiap menit dan berstatus world-writable (777)",
+          "File crontab memanggil script di direktori home user"
+        ],
+        "evidence_to_capture": [
+          "Baris crontab yang memanggil script",
+          "Output ls -la file script yang menunjukkan izin tulis"
+        ]
+      },
+      {
+        "id": "priv-writable-services-cron",
+        "name": "2. Cron Jobs & Systemd Service Misconfigurations",
+        "why_check": "Script yang dijalankan berkala oleh root namun dapat dimodifikasi oleh user biasa adalah jalur privesc 100% reliabel.",
+        "what_to_look_for": [
+          "cat /etc/crontab dan ls -la /etc/cron.* /var/spool/cron/crontabs/",
+          "pspy64 (monitor proses background yang dijalankan root secara real-time)",
+          "systemctl list-timers --all",
+          "Cari script cron: apakah permissions-nya -rwxrwxrwx atau dimiliki grup user?"
+        ],
+        "normal_baseline": "Semua file cron dan systemd service dimiliki oleh root:root dengan permission 644/755.",
+        "interesting_clues": [
+          "File script di /etc/cron.d/ memiliki izin tulis (writable) oleh user biasa",
+          "Systemd service unit file memiliki permissions 777 atau writable oleh group tester",
+          "Cron job memanggil script di direktori home user atau /tmp"
+        ],
+        "evidence_to_capture": [
+          "Output ls -la path_ke_script_cron",
+          "Output crontab yang membuktikan script berjalan sebagai root (UID 0)",
+          "Pspy capture log proses eksekusi berkala"
+        ]
+      },
+      {
+        "id": "priv-writable-etc-passwd",
+        "name": "3. World-Writable /etc/passwd atau /etc/shadow",
+        "why_check": "Jika file /etc/passwd dapat ditulis, attacker dapat menambahkan user baru dengan UID 0 (root).",
+        "what_to_look_for": [
+          "ls -l /etc/passwd /etc/shadow",
+          "openssl passwd -1 -salt newpass password123 (generate password hash)",
+          "Format injeksi baris baru: newroot:HASH:0:0:root:/root:/bin/bash"
+        ],
+        "normal_baseline": "/etc/passwd permission -rw-r--r-- (hanya root yang bisa tulis), /etc/shadow 640/000.",
+        "interesting_clues": [
+          "/etc/passwd writable oleh user biasa (-rw-rw-rw- atau -rw-r--rw-)",
+          "/etc/shadow readable oleh user biasa"
+        ],
+        "evidence_to_capture": [
+          "Output ls -l /etc/passwd",
+          "Bukti penambahan baris akun baru"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-writable-cron-script",
+        "inspection_point_id": "writable-cron-audit",
+        "signal_description": "Script /opt/cleanup.sh yang dijalankan root crontab memiliki izin tulis untuk user www-data.",
+        "output_snippet": "-rwxrwxr-x 1 root www-data 204 Jan 10 09:12 /opt/cleanup.sh\n* * * * * root /opt/cleanup.sh",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "User www-data dapat mengedit isi script untuk menyisipkan payload yang akan dieksekusi oleh root dalam waktu maksimal 1 menit.",
+        "hypothesis_id": "hyp-writable-cron-root",
+        "evidence_to_capture": [
+          "ls -la /opt/cleanup.sh",
+          "Isi baris crontab"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Script tertulis namun file tidak pernah dieksekusi (cron service mati)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-writable-cron-root",
+        "name": "Privilege Escalation via Writable Cron Job Script",
+        "description": "Menyisipkan instruksi eskalasi hak akses ke dalam script yang dijadwalkan berjalan sebagai root.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-writable-cron-script"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Sisipkan perintah safe test non-destruktif ke akhir script: `echo 'VERIFIED_ROOT' > /tmp/cron_verified`.",
+            "expected_output": "Menunggu 60 detik hingga cron cycle berjalan.",
+            "interesting_output": "File /tmp/cron_verified tercipta dengan pemilik root (owner root).",
+            "unexpected_output": "File tidak pernah tercipta.",
+            "interpretation": "Membuktikan eksekusi perintah sebagai root berhasil terverifikasi.",
+            "evidence_to_record": [
+              "ls -la /tmp/cron_verified menunjukkan owner root"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-cron-script-privesc",
+        "name": "Root Privilege Escalation via Writable Cron Job Script",
+        "description": "Memodifikasi script yang dieksekusi berkala oleh root untuk menginjeksi perintah eskalasi hak akses.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-writable-cron-script"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Tambahkan baris aman ke akhir script: id > /tmp/proof_root.txt, tunggu siklus cron berjalan.",
+            "expected_output": "File /tmp/proof_root.txt tidak muncul atau cron tidak berjalan.",
+            "interesting_output": "File /tmp/proof_root.txt terbentuk dengan isi: uid=0(root) gid=0(root).",
+            "unexpected_output": "Cron error pada log syslog.",
+            "interpretation": "File terbentuk sebagai root → Privilege Escalation tervalidasi 100% tanpa payload berbahaya.",
+            "evidence_to_record": [
+              "Isi file /tmp/proof_root.txt",
+              "ls -la /tmp/proof_root.txt"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Seluruh script cron dimiliki oleh root dan berizin read-only untuk non-root.",
+      "Direktori induk script juga terlindungi dari pembuatan symlink atau penamaan ulang file.",
+      "Tidak ada aktivitas scheduled task yang terdeteksi oleh pspy."
+    ],
+    "common_mistakes": [
+      "Menimpa seluruh isi script backup tanpa membuat salinan cadangan terlebih dahulu (merusak sistem lab).",
+      "Lupa memeriksa izin direktori (jika direktori writable, file di dalamnya dapat dihapus dan dibuat ulang meskipun file aslinya read-only)."
+    ],
+    "ctf_notes": "Di CTF, gunakan tool `pspy` untuk memantau proses background yang berjalan secara periodik tanpa memerlukan akses root.",
+    "pentest_notes": "Writable maintenance scripts adalah temuan High Severity yang kerap ditemukan pada server lama yang dikelola secara manual.",
+    "unknown_guide": {
+      "what_is_this": "File script atau program yang dijadwalkan berjalan secara otomatis oleh sistem dengan hak akses administrator.",
+      "why_does_it_exist": "Digunakan untuk pemeliharaan otomatis seperti backup database, pembersihan log, atau rotasi file.",
+      "what_parts_matter": "Siapa yang mengeksekusi (root), seberapa sering berjalan, dan siapa yang boleh mengedit file tersebut.",
+      "what_normal_looks_like": "Hanya root yang boleh membaca dan mengedit file pemeliharaan sistem.",
+      "what_to_record_immediately": [
+        "Path file script",
+        "Output ls -la file dan folder induknya",
+        "Konfigurasi crontab"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Seluruh cron job dan service unit terproteksi dengan izin ketat.",
+      "why_not_secure": "Tester masih dapat memeriksa binary SUID, sudo rules, atau credential leak di log file.",
+      "next_pivot_observations": [
+        "obs-priv-suid-binary",
+        "obs-priv-sudo-rules",
+        "obs-priv-credential-history"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "44",
+        "slug": "linux-privesc",
+        "title": "44. Linux Privilege Escalation Workflow",
+        "section_title": "3.1 Writable Cron Scripts",
+        "anchor": "31-writable-cron-scripts",
+        "rationale": "Pelajari teknik audit cron jobs, wildcard injection di tar/rsync, dan pspy monitoring."
+      }
+    ],
+    "related_observations": [
+      "obs-priv-suid-binary",
+      "obs-priv-sudo-rules"
+    ],
+    "provenance": [
+      "MITRE ATT&CK T1053.003 (Scheduled Task/Job: Cron)",
+      "CWE-732 (Incorrect Permission Assignment)"
+    ]
+  },
+  {
+    "id": "obs-priv-credential-history",
+    "title": "Kredensial di Konfigurasi / Riwayat Terminal (Credential in Config / History)",
+    "domain": "Credential Access",
+    "category": "Privilege Escalation",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "File riwayat perintah: ~/.bash_history, ~/.zsh_history, PowerShell ConsoleHost_history.txt",
+      "String password pada file konfigurasi: wp-config.php, configuration.php, web.config, settings.json",
+      "Kunci privat SSH tanpa passphrase: id_rsa, id_ecdsa di ~/.ssh/"
+    ],
+    "context": "Fase pasca-eksploitasi lokal setelah mendarat di akun pengguna umum atau service account (www-data).",
+    "why_it_matters": "Administrator manusia sering kali mengetikkan password langsung di terminal (misal: `mysql -u root -pPassword123!` atau `sshpass -p ...`), meninggalkan file cadangan konfigurasi, atau menggunakan password yang sama (Password Reuse) untuk akun root. Menemukan teks kredensial BUKAN eksploitasi; kredensial tersebut harus divalidasi terhadap target layanan aktif.",
+    "questions_to_ask": [
+      "Layanan atau user apa yang terasosiasi dengan password yang ditemukan?",
+      "Apakah password tersebut dapat digunakan untuk beralih user (`su - root`) atau login SSH?",
+      "Apakah file private key SSH dilindungi oleh passphrase?",
+      "Apakah ada kredensial cloud (AWS_ACCESS_KEY_ID di ~/.aws/credentials)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "history-credential-grep",
+        "name": "1. Audit Riwayat Bash & Log File",
+        "why_check": "Mencari jejak perintah administrasi manual yang memuat password.",
+        "what_to_look_for": [
+          "cat ~/.bash_history | grep -E '(pass|pwd|mysql|ssh|sudo)'",
+          "cat /var/log/auth.log 2>/dev/null"
+        ],
+        "normal_baseline": "File history kosong atau diarahkan ke /dev/null.",
+        "interesting_clues": [
+          "Terdapat perintah mysql atau psql dengan parameter -p<password> eksplisit",
+          "Terdapat perintah curl dengan header Authorization Bearer atau Basic Auth"
+        ],
+        "evidence_to_capture": [
+          "Snippet baris history yang memuat kredensial (sensor di laporan)"
+        ]
+      },
+      {
+        "id": "cred-env-memory-hunting",
+        "name": "2. Environment Variables & Memory Leaks",
+        "why_check": "Variabel lingkungan sering kali menyimpan token API, secret key, atau database credentials proses aktif.",
+        "what_to_look_for": [
+          "env atau printenv (periksa AWS_KEY, DB_PASS, SECRET_KEY)",
+          "cat /proc/[PID]/environ | tr \"\\0\" \"\\n\" untuk proses yang berjalan sebagai user lain jika readable",
+          "Cek history file lain: ~/.mysql_history, ~/.zsh_history, ~/.nano_history"
+        ],
+        "normal_baseline": "Environment hanya berisi konfigurasi PATH, LANG, USER standar tanpa hardcoded secrets.",
+        "interesting_clues": [
+          "Variabel lingkungan memuat string PASSWORD, TOKEN, API_KEY",
+          "History MySQL memuat perintah INSERT INTO users VALUES (\"admin\", \"plaintext_pass\")"
+        ],
+        "evidence_to_capture": [
+          "Output printenv (redacted token sensitif)",
+          "Line history yang memuat kredensial mentah"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-cred-bash-history-root",
+        "inspection_point_id": "history-credential-grep",
+        "signal_description": "Ditemukan perintah login root dengan password plaintext di .bash_history.",
+        "output_snippet": "$ cat /home/alice/.bash_history\nsudo su\necho 'root:Summer2023!Admin' | chpasswd",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Riwayat perintah membocorkan password root terbaru yang disetel oleh user alice.",
+        "hypothesis_id": "hyp-cred-root-reuse",
+        "evidence_to_capture": [
+          "Tangkapan output grep .bash_history",
+          "Bukti kepemilikan file history"
+        ]
+      },
+      {
+        "id": "sig-history-password-leak",
+        "inspection_point_id": "cred-env-memory-hunting",
+        "signal_description": "File .bash_history memuat perintah eksekusi langsung dengan parameter password.",
+        "output_snippet": "$ cat ~/.bash_history | grep -i pass\nmysql -u root -pP@ssw0rdSecure2026! production_db\nsshpass -p \"AdminPass#99\" ssh deploy@internal.srv",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Kredensial tersimpan dalam riwayat bash dapat digunakan langsung untuk akses ke database dan server internal lain.",
+        "hypothesis_id": "hyp-history-cred-reuse",
+        "evidence_to_capture": [
+          "Cuplikan .bash_history",
+          "Uji validitas password pada layanan terkait"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Kunci privat SSH terenkripsi dengan passphrase kuat"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-cred-root-reuse",
+        "name": "Privilege Escalation via Password Reuse from History",
+        "description": "Menggunakan password yang bocor di history untuk beralih menjadi root via `su -` atau `sudo`.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-cred-bash-history-root"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji kredensial dengan perintah: `su - root` di terminal lokal.",
+            "expected_output": "Password diterima dan prompt berubah menjadi `#` (root).",
+            "interesting_output": "Akses root penuh aktif.",
+            "unexpected_output": "Authentication failure.",
+            "interpretation": "Membuktikan password valid untuk akun root.",
+            "evidence_to_record": [
+              "Output `whoami` menunjukkan root"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-history-cred-reuse",
+        "name": "Credential Reuse via Shell History Leakage",
+        "description": "Password yang bocor pada file riwayat dicoba pada akun user lain atau sudo prompt.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-history-password-leak"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Coba password yang ditemukan pada perintah: sudo -l atau su - root.",
+            "expected_output": "Sorry, try again (password salah).",
+            "interesting_output": "Sudo privileges ditampilkan atau shell root terbuka.",
+            "unexpected_output": "Account locked out.",
+            "interpretation": "Password reuse berhasil → eskalasi lokal atau lateral tervalidasi.",
+            "evidence_to_record": [
+              "Output sudo -l dengan password yang ditemukan"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Password yang ditemukan tidak cocok dengan akun manapun pada target.",
+      "File history telah dihapus atau dikosongkan.",
+      "Root login dinonaktifkan di semua interface."
+    ],
+    "common_mistakes": [
+      "Langsung mencoba password berulang-ulang hingga memicu lockout akun.",
+      "Lupa memeriksa file backup editor (`.bash_history~` atau `.viminfo`)."
+    ],
+    "ctf_notes": "Di CTF, password database di `wp-config.php` sangat sering digunakan kembali (password reuse) oleh user pembuat mesin sebagai password login SSH.",
+    "pentest_notes": "Penyimpanan password di bash history dicatat sebagai High Severity karena melanggar kebijakan manajemen kredensial korporat.",
+    "unknown_guide": {
+      "what_is_this": "File teks tersembunyi di folder user yang mencatat perintah-perintah yang pernah diketikkan di terminal.",
+      "why_does_it_exist": "Fitur kenyamanan shell agar user dapat menekan tombol panah atas untuk memanggil kembali perintah sebelumnya.",
+      "what_parts_matter": "Baris perintah yang memuat kata sandi, token API, atau kunci koneksi database.",
+      "what_normal_looks_like": "Riwayat terminal tidak memuat rahasia plaintext dan dihapus secara berkala.",
+      "what_to_record_immediately": [
+        "Path file yang memuat kredensial",
+        "Nilai kredensial (disensor)"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Tidak ditemukan kredensial di file history atau konfigurasi standar.",
+      "why_not_secure": "Tester masih dapat mencari password di memory proses aktif (mimikatz/gdb dump) atau traffic jaringan lokal.",
+      "next_pivot_observations": [
+        "obs-priv-suid-binary",
+        "obs-priv-sudo-rules"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "44",
+        "slug": "linux-privesc",
+        "title": "44. Linux Privilege Escalation Workflow",
+        "section_title": "4.1 Credential Hunting in Files",
+        "anchor": "41-credential-hunting-in-files",
+        "rationale": "Pola regex pencarian kredensial di file sistem, history, dan variabel memori."
+      }
+    ],
+    "related_observations": [
+      "obs-web-backup-config-file",
+      "obs-priv-sudo-rules"
+    ],
+    "provenance": [
+      "MITRE ATT&CK T1552.003 (Unsecured Credentials: Bash History)",
+      "CWE-312 (Cleartext Storage of Sensitive Information)"
+    ]
+  }
+]

@@ -3,8 +3,8 @@ id: "05"
 title: "05. SMB & Samba Exploitation Workflow — Master Field Guide"
 category: "2. Network Services"
 categoryId: "network"
-filename: "05_smb_samba_workflow.md"
-refs_out: ["03","04","06","07","08","11","12","14a","14b","35","37","42","43","45"]
+filename: "05_smb_samba-workflow.md"
+refs_out: ["06","07","08","11","12","14a","14b","35","42","43","45"]
 refs_in: ["04","06","07","08","09","10","11","12","14a","14b","14c","17","17b","17c","18","19","22","25","26","35","36","37","38","39","41","42","46","54","57","58","61","62","63","64"]
 ---
 
@@ -583,15 +583,15 @@ Setiap kali dapat credentials dari SMB, test ke service ini:
 ```text
 SMB Creds Found
      │
-     ├─ ─→ Port 22  (SSH)     → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
-     ├──→ Port 21  (FTP)     → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
-     ├──→ Port 25  (SMTP)    → <a href="/docs/smtp" class="text-[#00b4d8] hover:underline font-mono font-semibold">08_smtp_workflow.md</a>
-     ├──→ Port 389 (LDAP)    → <a href="/docs/ldap" class="text-[#00b4d8] hover:underline font-mono font-semibold">11_ldap_workflow.md</a>
-     ├──→ Port 3389 (RDP)    → <a href="/docs/rdp" class="text-[#00b4d8] hover:underline font-mono font-semibold">12_rdp_workflow.md</a>
+     ├─ ─→ Port 22  (SSH)     → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a></a>
+     ├──→ Port 21  (FTP)     → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a></a>
+     ├──→ Port 25  (SMTP)    → <a href="/docs/smtp" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/smtp" class="text-[#00b4d8] hover:underline font-mono font-semibold">08_smtp_workflow.md</a></a>
+     ├──→ Port 389 (LDAP)    → <a href="/docs/ldap" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ldap" class="text-[#00b4d8] hover:underline font-mono font-semibold">11_ldap_workflow.md</a></a>
+     ├──→ Port 3389 (RDP)    → <a href="/docs/rdp" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/rdp" class="text-[#00b4d8] hover:underline font-mono font-semibold">12_rdp_workflow.md</a></a>
      ├──→ Port 5985 (WinRM)  → evil-winrm
-     ├──→ Port 1433 (MSSQL)  → <a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14b_mssql_workflow.md</a>
-     ├──→ Port 3306 (MySQL)  → <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a>
-     └──→ AD Environment     → <a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>
+     ├──→ Port 1433 (MSSQL)  → <a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14b_mssql_workflow.md</a></a>
+     ├──→ Port 3306 (MySQL)  → <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a></a>
+     └──→ AD Environment     → <a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a></a>
 ```
 
 ---
@@ -1137,7 +1137,7 @@ Bash
 ssh -i ~/smb_loot/keys/id_rsa jordan@$TARGET
 ssh -i ~/smb_loot/keys/id_rsa svc_backup@$TARGET
 
-# → Jika berhasil, lanjut ke <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
+# → Jika berhasil, lanjut ke <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a></a>
 ```
 
 **OUTPUT BERHASIL ✅ — Ketemu file .kdbx (KeePass database):**
@@ -1759,7 +1759,7 @@ hashcat -m 13100 ~/smb_loot/creds/kerberoast_hashes.txt \
 cat cracked_kerberoast.txt
 ```
 
-➡️ Setelah crack → lanjut ke **<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>** dan **[🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)**
+➡️ Setelah crack → lanjut ke **<a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a></a>** dan **[🔥 Workflow 37 — Kerberoasting & AS-REP Roasting](/docs/kerberoasting-asreproasting)**
 
 ---
 
@@ -1883,8 +1883,8 @@ C:\> net localgroup administrators
 C:\> ipconfig /all    # Cari network lain untuk pivoting
 
 # Dump hashes (untuk lateral movement)
-# → Lanjut ke <a href="/docs/lateral-movement" class="text-[#00b4d8] hover:underline font-mono font-semibold">42_lateral_movement_workflow.md</a>
-# → Lanjut ke <a href="/docs/domain-persistence" class="text-[#00b4d8] hover:underline font-mono font-semibold">43_domain_persistence_workflow.md</a>
+# → Lanjut ke <a href="/docs/lateral-movement" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/lateral-movement" class="text-[#00b4d8] hover:underline font-mono font-semibold">42_lateral_movement_workflow.md</a></a>
+# → Lanjut ke <a href="/docs/domain-persistence" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/domain-persistence" class="text-[#00b4d8] hover:underline font-mono font-semibold">43_domain_persistence_workflow.md</a></a>
 ```
 
 **OUTPUT GAGAL ❌ — Exploit crash/BSOD:**
@@ -1966,7 +1966,7 @@ Bash
 
 # SSH (port 22) - paling umum di Linux
 nxc ssh $TARGET -u "$USER" -p "$PASS"
-ssh "$USER@$TARGET"                              # → ke <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
+ssh "$USER@$TARGET"                              # → ke <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a></a>
 
 # WinRM (port 5985) - Windows management
 nxc winrm $TARGET -u "$USER" -p "$PASS"
@@ -1975,11 +1975,11 @@ nxc winrm $TARGET -u "$USER" -p "$PASS"
 nxc rdp $TARGET -u "$USER" -p "$PASS"
 
 # FTP (port 21)
-nxc ftp $TARGET -u "$USER" -p "$PASS"          # → ke <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
+nxc ftp $TARGET -u "$USER" -p "$PASS"          # → ke <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a></a>
 
 # Database ports
-nxc mssql $TARGET -u "$USER" -p "$PASS"         # port 1433 → ke <a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14b_mssql_workflow.md</a>
-nxc mysql $TARGET -u "$USER" -p "$PASS"         # port 3306 → ke <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a>
+nxc mssql $TARGET -u "$USER" -p "$PASS"         # port 1433 → ke <a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14b_mssql_workflow.md</a></a>
+nxc mysql $TARGET -u "$USER" -p "$PASS"         # port 3306 → ke <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a></a>
 ```
 
 **OUTPUT BERHASIL ✅ — WinRM Pwn3d:**
@@ -2001,7 +2001,7 @@ evil-winrm -i $TARGET -u "$USER" -p "$PASS"
 *Evil-WinRM* PS C:\Users\diana\Documents> whoami
 corp\diana
 *Evil-WinRM* PS C:\Users\diana\Documents> whoami /priv
-# Cek privilege untuk privesc → ke <a href="/docs/windows-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">45_windows_privesc_workflow.md</a>
+# Cek privilege untuk privesc → ke <a href="/docs/windows-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/windows-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">45_windows_privesc_workflow.md</a></a>
 ```
 
 **OUTPUT BERHASIL ✅ — SSH valid:**
@@ -2159,15 +2159,15 @@ text
 ```
 SMB Creds Found
      │
-     ├─ ─→ Port 22  (SSH)     → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
-     ├──→ Port 21  (FTP)     → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
-     ├──→ Port 25  (SMTP)    → <a href="/docs/smtp" class="text-[#00b4d8] hover:underline font-mono font-semibold">08_smtp_workflow.md</a>
-     ├──→ Port 389 (LDAP)    → <a href="/docs/ldap" class="text-[#00b4d8] hover:underline font-mono font-semibold">11_ldap_workflow.md</a>
-     ├──→ Port 3389 (RDP)    → <a href="/docs/rdp" class="text-[#00b4d8] hover:underline font-mono font-semibold">12_rdp_workflow.md</a>
+     ├─ ─→ Port 22  (SSH)     → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a></a>
+     ├──→ Port 21  (FTP)     → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a></a>
+     ├──→ Port 25  (SMTP)    → <a href="/docs/smtp" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/smtp" class="text-[#00b4d8] hover:underline font-mono font-semibold">08_smtp_workflow.md</a></a>
+     ├──→ Port 389 (LDAP)    → <a href="/docs/ldap" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ldap" class="text-[#00b4d8] hover:underline font-mono font-semibold">11_ldap_workflow.md</a></a>
+     ├──→ Port 3389 (RDP)    → <a href="/docs/rdp" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/rdp" class="text-[#00b4d8] hover:underline font-mono font-semibold">12_rdp_workflow.md</a></a>
      ├──→ Port 5985 (WinRM)  → evil-winrm
-     ├──→ Port 1433 (MSSQL)  → <a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14b_mssql_workflow.md</a>
-     ├──→ Port 3306 (MySQL)  → <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a>
-     └──→ AD Environment     → <a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a>
+     ├──→ Port 1433 (MSSQL)  → <a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/mssql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14b_mssql_workflow.md</a></a>
+     ├──→ Port 3306 (MySQL)  → <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a></a>
+     └──→ AD Environment     → <a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold"><a href="/docs/ad-initial-enumeration" class="text-[#00b4d8] hover:underline font-mono font-semibold">35_ad_initial_enumeration_workflow.md</a></a>
 ```
 
 ---

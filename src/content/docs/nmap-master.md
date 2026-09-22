@@ -5,7 +5,7 @@ category: "1. Fondasi"
 categoryId: "fondasi"
 filename: "03_nmap_master_workflow.md"
 refs_out: ["01","02","04"]
-refs_in: ["02","04","05","09","10","12","13","14a","14c","15","16"]
+refs_in: ["02","04","09","10","12","13","14a","14c","15","16"]
 ---
 
 # 03. Nmap Master Workflow & Network Scanning — Panduan Komprehensif

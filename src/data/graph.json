@@ -37,9 +37,9 @@
         "categoryLabel": "1. Fondasi",
         "color": "#10B981",
         "slug": "nmap-master",
-        "refsInCount": 11,
+        "refsInCount": 10,
         "refsOutCount": 3,
-        "degree": 14
+        "degree": 13
       }
     },
     {
@@ -51,9 +51,9 @@
         "categoryLabel": "1. Fondasi",
         "color": "#10B981",
         "slug": "service-identification-decision-tree",
-        "refsInCount": 5,
+        "refsInCount": 4,
         "refsOutCount": 27,
-        "degree": 32
+        "degree": 31
       }
     },
     {
@@ -66,8 +66,8 @@
         "color": "#3B8BD4",
         "slug": "smb-samba",
         "refsInCount": 34,
-        "refsOutCount": 14,
-        "degree": 48
+        "refsOutCount": 11,
+        "degree": 45
       }
     },
     {
@@ -611,9 +611,9 @@
         "categoryLabel": "4. Active Directory",
         "color": "#EF4444",
         "slug": "kerberoasting-asreproasting",
-        "refsInCount": 14,
+        "refsInCount": 13,
         "refsOutCount": 12,
-        "degree": 26
+        "degree": 25
       }
     },
     {
@@ -1257,20 +1257,6 @@
     },
     {
       "data": {
-        "id": "05->03",
-        "source": "05",
-        "target": "03"
-      }
-    },
-    {
-      "data": {
-        "id": "05->04",
-        "source": "05",
-        "target": "04"
-      }
-    },
-    {
-      "data": {
         "id": "05->06",
         "source": "05",
         "target": "06"
@@ -1323,13 +1309,6 @@
         "id": "05->35",
         "source": "05",
         "target": "35"
-      }
-    },
-    {
-      "data": {
-        "id": "05->37",
-        "source": "05",
-        "target": "37"
       }
     },
     {

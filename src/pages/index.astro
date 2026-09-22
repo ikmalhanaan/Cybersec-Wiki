@@ -109,6 +109,54 @@ const mostReferenced = [...pages].sort((a, b) => b.refs_in.length - a.refs_in.le
       </div>
     </div>
 
+    <!-- ===== NAVIGATOR FEATURE BANNER ===== -->
+    <div class="relative rounded-2xl border border-[#00b4d8]/40 bg-gradient-to-r from-[#00b4d8]/8 via-[#161b22] to-[#00b4d8]/5 p-5 sm:p-6 overflow-hidden shadow-xl">
+      <div class="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-[#00b4d8]/8 blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-5 justify-between">
+        <div class="flex items-start gap-4">
+          <!-- Icon -->
+          <div class="w-14 h-14 rounded-xl bg-[#00b4d8]/15 border border-[#00b4d8]/40 flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#00b4d8]/10">
+            <svg class="w-7 h-7 text-[#00b4d8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+          </div>
+
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-base sm:text-lg font-bold text-[#f0f6fc] font-mono">
+                ✦ OBSERVATION & DECISION NAVIGATOR
+              </h2>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#e84a5f]/15 border border-[#e84a5f]/30 text-[#e84a5f]">
+                FITUR BARU
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-[#8b949e] leading-relaxed max-w-xl">
+              <strong class="text-[#c9d1d9]">Apa yang Anda lihat di target?</strong> — Temukan titik inspeksi, interpretasi sinyal, hindari rabbit hole, dan dapatkan rute langsung ke workflow pentesting yang relevan. 38 observasi siap digunakan.
+            </p>
+
+            <!-- Mini Axiom Badges -->
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0d1117] border border-[#30363d] text-[#8b949e]">CLUE ≠ FINDING</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0d1117] border border-[#30363d] text-[#8b949e]">VERSION ≠ VULNERABLE</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0d1117] border border-[#30363d] text-[#8b949e]">OBSERVE → VALIDATE → ROUTE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA Button -->
+        <a
+          href="/navigator"
+          class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00b4d8] hover:bg-[#00b4d8]/90 text-[#0d1117] font-bold font-mono text-sm transition-all shadow-lg shadow-[#00b4d8]/20 hover:shadow-[#00b4d8]/30 hover:scale-105"
+        >
+          <span>Buka Navigator</span>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </a>
+      </div>
+    </div>
+
     <!-- 9 Workflow Cards Section -->
     <div class="space-y-4">
       <div class="flex items-center justify-between">

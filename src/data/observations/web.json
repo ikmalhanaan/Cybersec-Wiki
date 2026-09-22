@@ -1,0 +1,3692 @@
+[
+  {
+    "id": "obs-web-login-page",
+    "title": "Halaman Login Terdeteksi (Login Page Found)",
+    "domain": "Authentication",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Form input Username / Email / ID",
+      "Form input Password (type='password')",
+      "Tombol submit (Login / Sign In / Masuk)",
+      "Link navigasi Forgot Password / Register",
+      "Opsi 'Remember Me' atau pemilihan Login Provider (SSO)"
+    ],
+    "context": "Ditemukan selama web crawling, directory fuzzing (/login, /admin, /portal), atau saat mengakses root aplikasi yang memerlukan otentikasi.",
+    "why_it_matters": "Halaman login adalah pintu masuk utama otentikasi. Menginspeksi perilakunya membentuk baseline bagaimana sistem memproses kredensial, menangani kesalahan, mengatur sesi, dan membatasi percobaan (rate limiting). Jangan pernah langsung berasumsi ada vulnerability hanya karena halaman login ada.",
+    "questions_to_ask": [
+      "Apakah mekanisme otentikasi berbasis form POST standar, HTTP Basic, JSON API, atau SSO/OAuth?",
+      "Bagaimana respons server ketika username salah vs password salah?",
+      "Apakah ada mekanisme rate limiting atau account lockout?",
+      "Bagaimana sesi atau cookie dibuat sebelum dan sesudah submit form?",
+      "Apakah ada token anti-CSRF atau proteksi CAPTCHA yang disertakan?"
+    ],
+    "inspection_points": [
+      {
+        "id": "login-form-mechanics",
+        "name": "Mekanisme & Atribut Form Submit",
+        "why_check": "Mengetahui endpoint penerima kredensial, method HTTP, enkripsi transit, dan token pendukung.",
+        "what_to_look_for": [
+          "Action URL (apakah mengarah ke domain yang sama atau external auth provider?)",
+          "HTTP Method (POST atau GET yang mengekspos password di URL?)",
+          "Transmisi HTTPS vs HTTP plaintext",
+          "Hidden input fields (CSRF token, client state, client role)"
+        ],
+        "normal_baseline": "Form mengirim HTTP POST melalui HTTPS ke endpoint otentikasi server lokal dengan token CSRF valid.",
+        "interesting_clues": [
+          "Form submit menggunakan HTTP GET sehingga password masuk ke log browser/server",
+          "Hidden field memuat role atau nilai otorisasi (contoh: <input type='hidden' name='role' value='user'>)",
+          "Form submit ke protokol HTTP tidak terenkripsi"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan raw HTML tag <form action='...' method='...'>",
+          "Daftar input hidden beserta value default",
+          "URL endpoint dan protokol jaringan"
+        ]
+      },
+      {
+        "id": "login-error-differential",
+        "name": "Analisis Respons Error (Username Enumeration Differential)",
+        "why_check": "Mendeteksi apakah aplikasi membocorkan validitas akun berdasarkan perbedaan pesan kesalahan atau waktu respon.",
+        "what_to_look_for": [
+          "Pesan saat username acak / tidak terdaftar dikirim",
+          "Pesan saat username valid (misal: admin, root, test) dikirim dengan password salah",
+          "Perbedaan HTTP status code, panjang respon (content-length), atau waktu respon (response time)"
+        ],
+        "normal_baseline": "Aplikasi mengembalikan pesan generik seragam ('Invalid username or password') dengan status code dan response length yang identik.",
+        "interesting_clues": [
+          "Pesan berbeda: 'User does not exist' vs 'Incorrect password for user admin'",
+          "HTTP status code berbeda (misal: 404 saat user tidak ada vs 401 saat password salah)",
+          "Perbedaan waktu respon konsisten > 500ms karena hashing bcrypt hanya berjalan jika user ditemukan"
+        ],
+        "evidence_to_capture": [
+          "Raw request & response saat username invalid (lengkap dengan Content-Length & timing)",
+          "Raw request & response saat username valid (password salah)",
+          "Tabel perbandingan diff respons (body diff / status diff)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-login-user-enum",
+        "inspection_point_id": "login-error-differential",
+        "signal_description": "Pesan error membedakan antara username salah dan password salah.",
+        "output_snippet": "HTTP/1.1 200 OK\n{\"status\": \"error\", \"message\": \"User 'admin' found but password does not match.\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi memverifikasi keberadaan user di database sebelum mengevaluasi hash password, memungkinkan pemetaan akun valid.",
+        "hypothesis_id": "hyp-login-user-enum",
+        "evidence_to_capture": [
+          "Request POST user valid & respons",
+          "Request POST user dummy acak & respons",
+          "Tangkapan burp compare body response"
+        ]
+      },
+      {
+        "id": "sig-login-sql-error",
+        "inspection_point_id": "login-form-mechanics",
+        "signal_description": "Input karakter quote (') menghasilkan database syntax error di respon.",
+        "output_snippet": "HTTP/1.1 500 Internal Server Error\nFatal error: Uncaught mysqli_sql_exception: You have an error in your SQL syntax near '''",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Input form login disematkan langsung ke query SQL tanpa parameter binding / prepared statement.",
+        "hypothesis_id": "hyp-login-sqli-bypass",
+        "evidence_to_capture": [
+          "Request dengan payload ' or 1=1-- -",
+          "Respons lengkap yang memuat string database exception",
+          "Parameter yang menjadi titik injeksi"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Aplikasi crash (HTTP 502 Bad Gateway) saat menerima username panjang > 500 karakter",
+      "Token CSRF statis tidak pernah berubah antar session yang berbeda"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-login-user-enum",
+        "name": "Username Enumeration via Login Error Discrepancy",
+        "description": "Perilaku respon memungkinkan penyerang menyusun daftar username valid sebelum melakukan password spraying tertarget.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-login-user-enum"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim 3 username acak berentropi tinggi. Catat panjang respon dan pesan error.",
+            "expected_output": "Pesan error konsisten atau Content-Length identik.",
+            "interesting_output": "Pesan error berbeda dari ketika mencoba username 'admin'.",
+            "unexpected_output": "WAF memblokir IP tester.",
+            "interpretation": "Mengonfirmasi hipotesis bahwa keberadaan user dapat diverifikasi secara deterministik.",
+            "evidence_to_record": [
+              "3 Request & Response mentah dengan timestamp"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-login-sqli-bypass",
+        "name": "SQL Injection Authentication Bypass",
+        "description": "Klausa WHERE pada query otentikasi dapat dimanipulasi dengan logika boolean TRUE untuk melewati verifikasi password.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-login-sql-error"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji parameter username dengan payload non-destruktif: admin' AND '1'='1 vs admin' AND '1'='2.",
+            "expected_output": "Respon berbeda antara kondisi TRUE dan FALSE tanpa merusak data database.",
+            "interesting_output": "Kondisi TRUE menghasilkan login berhasil atau pesan 'wrong password'.",
+            "unexpected_output": "HTTP 500 Database timeout.",
+            "interpretation": "Mengonfirmasi input terinterpolasi langsung ke query SQL engine.",
+            "evidence_to_record": [
+              "Burp repeater raw logs untuk kedua request boolean"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Aplikasi mengembalikan pesan generik 'Invalid credentials' secara seragam dengan waktu dan panjang respon konstan.",
+      "IP tester terkunci atau memicu CAPTCHA Cloudflare / WAF setelah 3 percobaan.",
+      "Tidak ada indikasi perubahan perilaku setelah mencoba 5 username umum dan 3 karakter escape."
+    ],
+    "common_mistakes": [
+      "Langsung menjalankan Hydra dengan 10.000 password sebelum memverifikasi apakah username memang valid.",
+      "Menyimpulkan 'Vulnerable SQLi' hanya karena melihat status HTTP 500 tanpa menganalisis pesan exception."
+    ],
+    "ctf_notes": "Dalam CTF, halaman login sering kali menyembunyikan kredensial di comment HTML (`<!-- test:test -->`), atau rentan terhadap SQLi bypass klasik (`' OR 1=1 -- -`), atau NoSQL injection (`username[$ne]=null`).",
+    "pentest_notes": "Dalam pentest korporat resmi, catat kelemahan penanganan username enumeration sebagai finding Medium/Low (OWASP WSTG-ATHN-02). Hindari lockout akun user nyata.",
+    "unknown_guide": {
+      "what_is_this": "Halaman antarmuka web yang meminta entitas pembuktian identitas (kredensial) sebelum memberikan hak akses ke fungsionalitas dalam aplikasi.",
+      "why_does_it_exist": "Menerapkan prinsip keamanan Identification & Authentication agar server dapat mengenali identitas subjek dan membatasi otorisasi objek.",
+      "what_parts_matter": "Metode HTTP (POST vs GET), atribut Action form, perlakuan cookie Set-Cookie, dan variasi pesan respons saat kredensial keliru.",
+      "what_normal_looks_like": "Form HTTPS mengirim POST dengan token CSRF. Input salah menghasilkan pesan netral dan tidak membocorkan keberadaan username.",
+      "what_to_record_immediately": [
+        "URL lengkap halaman login",
+        "Nama parameter form (misal: user, username, email, pwd, password)",
+        "Contoh header request POST dan response mentah"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Form login merespons secara aman dengan pesan seragam, rate limiting aktif, dan tidak ada kelemahan SQL syntax.",
+      "why_not_secure": "Respon form login yang aman tidak menjamin keamanan endpoint password reset, registrasi, atau REST API otentikasi di background.",
+      "next_pivot_observations": [
+        "obs-web-password-reset",
+        "obs-web-registration",
+        "obs-web-session-cookie"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "1.1 Identifikasi Login Page",
+        "anchor": "11-identifikasi-login-page",
+        "rationale": "Pelajari metodologi lengkap asesmen otentikasi, fuzzing kredensial, dan bypass teknik."
+      },
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "1.3 Username Enumeration Dulu",
+        "anchor": "13-username-enumeration-dulu",
+        "rationale": "Langkah taktis memetakan validitas akun sebelum melakukan brute force."
+      }
+    ],
+    "related_observations": [
+      "obs-web-registration",
+      "obs-web-password-reset",
+      "obs-web-session-cookie"
+    ],
+    "provenance": [
+      "OWASP WSTG-ATHN-01",
+      "OWASP WSTG-ATHN-02",
+      "MITRE ATT&CK T1078"
+    ]
+  },
+  {
+    "id": "obs-web-session-cookie",
+    "title": "Cookie Sesi Terdeteksi (Session Cookie Inspection)",
+    "domain": "Session Management",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Header respons HTTP: 'Set-Cookie: NAME=VALUE; ...'",
+      "Header request HTTP: 'Cookie: NAME=VALUE; ...'",
+      "Storage browser (Application / Storage / Cookies di DevTools)"
+    ],
+    "context": "Muncul saat pertama kali mengunjungi situs atau segera setelah submit form login.",
+    "why_it_matters": "Cookie sesi adalah token pembawa identitas sementara pada protokol HTTP yang stateless. Memeriksa atribut dan siklus hidup cookie sangat penting untuk mencegah pembajakan sesi (Session Hijacking).",
+    "questions_to_ask": [
+      "Apakah cookie ini membawa token identitas otentikasi?",
+      "Atribut keamanan apa saja yang disematkan (Secure, HttpOnly, SameSite)?",
+      "Apakah nilai cookie memiliki entropi acak tinggi?",
+      "Apakah cookie diperbarui setelah login dan logout?"
+    ],
+    "inspection_points": [
+      {
+        "id": "cookie-security-attributes",
+        "name": "1. Atribut Keamanan & Proteksi Flag",
+        "why_check": "Memverifikasi proteksi dari transit sniffing dan pembacaan skrip client.",
+        "what_to_look_for": [
+          "HttpOnly",
+          "Secure",
+          "SameSite"
+        ],
+        "normal_baseline": "Set-Cookie: session=...; Path=/; Secure; HttpOnly; SameSite=Lax",
+        "interesting_clues": [
+          "HttpOnly tidak ada pada cookie otentikasi",
+          "Secure flag tidak ada pada situs HTTPS"
+        ],
+        "evidence_to_capture": [
+          "Header Set-Cookie mentah",
+          "Console output document.cookie"
+        ]
+      },
+      {
+        "id": "cookie-value-entropy",
+        "name": "2. Analisis Nilai & Entropi Token",
+        "why_check": "Nilai cookie dengan entropi rendah atau pola prediktif memungkinkan serangan brute-force atau forging token.",
+        "what_to_look_for": [
+          "Perhatikan panjang value: < 16 karakter → potensi mudah di-brute",
+          "Base64-decode nilai: apakah berisi JSON, user ID, atau timestamp?",
+          "Bandingkan 10 cookie dari 10 request berbeda: apakah ada pola berulang?",
+          "Cek apakah nilai mengandung data user (username, email, role)"
+        ],
+        "normal_baseline": "String acak 32-128 karakter (hex atau base64) tanpa informasi yang dapat dibaca manusia.",
+        "interesting_clues": [
+          "Nilai tampak seperti Base64 dan setelah decode berisi JSON atau user ID",
+          "Nilai hanya terdiri dari angka atau terlalu pendek (< 20 karakter)",
+          "Nilai berisi \"admin\", \"user\", \"role\", atau angka sekuensial",
+          "Nilai identik antara dua sesi berbeda"
+        ],
+        "evidence_to_capture": [
+          "Raw cookie value (sebelum dan sesudah decode)",
+          "Screenshot comparison 5+ cookie dari session berbeda",
+          "Output `echo \"VALUE\" | base64 -d` jika base64-looking"
+        ]
+      },
+      {
+        "id": "cookie-lifecycle",
+        "name": "3. Siklus Hidup & Rotasi Token",
+        "why_check": "Token yang tidak diperbarui setelah login (session fixation) atau tidak diinvalidasi setelah logout adalah kerentanan serius.",
+        "what_to_look_for": [
+          "Catat nilai cookie SEBELUM login (pre-auth cookie jika ada)",
+          "Catat nilai cookie SETELAH login berhasil — apakah berubah?",
+          "Lakukan logout, kemudian coba gunakan cookie lama ke endpoint /api/me atau /profile",
+          "Cek header Set-Cookie: apakah ada Expires / Max-Age yang sangat panjang?"
+        ],
+        "normal_baseline": "Cookie baru di-set setelah login (nilai berubah total). Cookie lama tidak lagi valid setelah logout.",
+        "interesting_clues": [
+          "Nilai cookie sama persis sebelum dan sesudah login (Session Fixation)",
+          "Cookie lama masih valid setelah logout (Server-Side Invalidation Missing)",
+          "Max-Age atau Expires melebihi 30 hari untuk sesi sensitif"
+        ],
+        "evidence_to_capture": [
+          "Cookie value pre-auth vs post-auth (screenshot berdampingan)",
+          "Bukti request dengan cookie lama setelah logout + respons server (200 vs 401)",
+          "Header Set-Cookie beserta Max-Age / Expires value"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-cookie-no-httponly",
+        "inspection_point_id": "cookie-security-attributes",
+        "signal_description": "Set-Cookie tidak menyertakan flag HttpOnly pada token sesi.",
+        "output_snippet": "HTTP/1.1 200 OK\nSet-Cookie: sessionid=k8s9d7f6a5s4d3f2; Path=/; Secure",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Token sesi dapat diakses oleh skrip JavaScript via document.cookie jika terjadi celah XSS.",
+        "hypothesis_id": "hyp-cookie-xss-theft",
+        "evidence_to_capture": [
+          "Header Set-Cookie lengkap dari respon server"
+        ]
+      },
+      {
+        "id": "sig-cookie-value-contains-data",
+        "inspection_point_id": "cookie-value-entropy",
+        "signal_description": "Nilai cookie mengandung data yang dapat di-decode (Base64 → JSON dengan user role atau ID).",
+        "output_snippet": "$ echo \"dXNlcl9pZD0xMjMmcm9sZT11c2Vy\" | base64 -d\nuser_id=123&role=user",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Cookie menyimpan state di sisi klien tanpa signature verifikasi — attacker dapat memodifikasi nilai untuk privilege escalation.",
+        "hypothesis_id": "hyp-cookie-tampering",
+        "evidence_to_capture": [
+          "Raw cookie value + hasil decode",
+          "Screenshot modify cookie melalui DevTools → kirim request modifikasi"
+        ]
+      },
+      {
+        "id": "sig-session-fixation",
+        "inspection_point_id": "cookie-lifecycle",
+        "signal_description": "Nilai cookie tidak berubah sebelum dan sesudah login berhasil.",
+        "output_snippet": "# Pre-login cookie:\nSet-Cookie: session=abc123\n\n# Post-login (nilai sama!):\nSet-Cookie: session=abc123",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Server tidak meng-generate session baru setelah autentikasi — potensi Session Fixation attack jika attacker bisa set cookie awal.",
+        "hypothesis_id": "hyp-session-fixation",
+        "evidence_to_capture": [
+          "Screenshot cookie pre-login vs post-login (nilai identik)",
+          "Bukti bahwa cookie awal yang di-set attacker diterima server setelah korban login"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Nilai cookie berubah secara acak pada setiap klik halaman"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-cookie-xss-theft",
+        "name": "Session Hijacking via Missing HttpOnly & XSS Chaining",
+        "description": "Ketiadaan flag HttpOnly memungkinkan attacker yang menemukan XSS untuk mencuri token sesi langsung.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-cookie-no-httponly"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan console browser: document.cookie pada halaman terotentikasi.",
+            "expected_output": "Cookie sesi tidak muncul jika HttpOnly aktif.",
+            "interesting_output": "Cookie sesi muncul jelas dalam output string.",
+            "unexpected_output": "Console error CSP blocking.",
+            "interpretation": "Mengonfirmasi aksesibilitas client-side script.",
+            "evidence_to_record": [
+              "Screenshot console browser document.cookie"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-cookie-tampering",
+        "name": "Client-Side Cookie Tampering untuk Privilege Escalation",
+        "description": "Cookie menyimpan state user (role, ID) tanpa HMAC signature → attacker dapat langsung memodifikasi nilai untuk mengklaim role admin.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-cookie-value-contains-data"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Decode cookie, ubah role=user menjadi role=admin, encode kembali, kirim request.",
+            "expected_output": "Server menolak karena ada validasi signature (400 / 403 / redirect ke login).",
+            "interesting_output": "Server menerima cookie yang dimodifikasi dan menampilkan panel admin.",
+            "unexpected_output": "Server crash atau error 500 saat menerima cookie yang dimodifikasi.",
+            "interpretation": "Jika server menerima → cookie tampering berhasil, severity Critical.",
+            "evidence_to_record": [
+              "Screenshot panel admin yang berhasil diakses dengan cookie yang dimodifikasi"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-session-fixation",
+        "name": "Session Fixation Attack",
+        "description": "Attacker yang dapat men-set cookie target (via XSS atau URL parameter) bisa membajak sesi korban setelah korban login.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-session-fixation"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Di browser A (attacker), catat session cookie pre-login. Di browser B (korban), set cookie tersebut lalu login.",
+            "expected_output": "Setelah login di browser B, cookie baru di-generate, browser A tidak memiliki akses.",
+            "interesting_output": "Browser A (attacker) dapat mengakses akun korban menggunakan session yang sama.",
+            "unexpected_output": "Server error atau logout paksa.",
+            "interpretation": "Jika browser A bisa akses → Session Fixation terkonfirmasi, severity High.",
+            "evidence_to_record": [
+              "Video rekaman sinkronisasi dua browser dengan session yang sama"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Cookie memiliki flag Secure, HttpOnly, SameSite=Strict/Lax lengkap."
+    ],
+    "common_mistakes": [
+      "Melaporkan 'Missing HttpOnly' sebagai High Severity tanpa ada bukti jalur XSS."
+    ],
+    "ctf_notes": "Di CTF Web, cookie sering kali berisi serialisasi objek atau token JWT yang dapat dimodifikasi.",
+    "pentest_notes": "Insecure Cookie Attributes umumnya diklasifikasikan sebagai Low / Informational.",
+    "unknown_guide": {
+      "what_is_this": "Data teks kecil yang dikirim oleh server ke browser web tester untuk disimpan dan dikirim kembali pada request berikutnya.",
+      "why_does_it_exist": "Menjaga status login pengguna antar request halaman.",
+      "what_parts_matter": "Nama cookie, nilainya, dan flag keamanan (Secure, HttpOnly, SameSite).",
+      "what_normal_looks_like": "String acak panjang dengan flag Secure dan HttpOnly.",
+      "what_to_record_immediately": [
+        "Header Set-Cookie lengkap beserta seluruh atributnya"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Cookie sesi dikonfigurasi dengan flag keamanan lengkap dan entropi tinggi.",
+      "why_not_secure": "Keamanan cookie tidak melindungi dari IDOR atau SQL injection.",
+      "next_pivot_observations": [
+        "obs-web-id-parameter",
+        "obs-web-api-endpoint"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "11.3 Cookie Security Analysis",
+        "anchor": "113-cookie-security-analysis",
+        "rationale": "Pelajari tabel atribut cookie, risiko ketiadaan flag, dan langkah audit keamanan sesi."
+      }
+    ],
+    "related_observations": [
+      "obs-web-login-page",
+      "obs-web-cookie-attributes"
+    ],
+    "provenance": [
+      "RFC 6265",
+      "OWASP WSTG-SESS-02"
+    ]
+  },
+  {
+    "id": "obs-web-registration",
+    "title": "Halaman Registrasi Akun Terdeteksi (User Registration Page)",
+    "domain": "Authentication",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Form input pendaftaran akun: Username, Email, Password, Confirm Password",
+      "Field opsional: Phone number, Invitation Code, Role selection dropdown"
+    ],
+    "context": "Ditemukan pada portal publik, link 'Sign Up' di dekat form login.",
+    "why_it_matters": "Form registrasi adalah permukaan interaksi di mana pengguna publik dapat memasukkan data baru ke database. Di sini tester dapat menguji penanganan akun duplikat (Username Enumeration) dan penugasan role otomatis (Mass Assignment / Privilege Escalation).",
+    "questions_to_ask": [
+      "Bagaimana server merespons jika mendaftarkan username/email yang sudah ada di database?",
+      "Apakah ada field tersembunyi seperti role=user yang dapat diubah menjadi role=admin saat pendaftaran?",
+      "Apakah akun baru otomatis aktif tanpa verifikasi email?"
+    ],
+    "inspection_points": [
+      {
+        "id": "reg-duplicate-handling",
+        "name": "Penanganan Akun Duplikat & Username Enumeration",
+        "why_check": "Melihat apakah respon registrasi membocorkan keberadaan akun tertentu.",
+        "what_to_look_for": [
+          "Pesan 'Username sudah digunakan'"
+        ],
+        "normal_baseline": "Sistem privat menampilkan pesan netral atau mengirimkan tautan konfirmasi tanpa membedakan secara publik.",
+        "interesting_clues": [
+          "Aplikasi mengonfirmasi secara instan bahwa user admin sudah ada di sistem"
+        ],
+        "evidence_to_capture": [
+          "Request POST registrasi user terdaftar",
+          "Pesan error penolakan duplikat"
+        ]
+      },
+      {
+        "id": "reg-role-assignment-mass",
+        "name": "2. Mass Assignment pada Parameter Registrasi",
+        "why_check": "Form pendaftaran sering mengekspos parameter tersembunyi seperti role, is_admin, atau account_type.",
+        "what_to_look_for": [
+          "Intercept request POST /register di Burp Suite",
+          "Tambahkan parameter JSON/form: \"role\": \"admin\", \"is_admin\": true, \"group\": \"administrators\"",
+          "Periksa apakah parameter tersebut diterima tanpa validasi server-side"
+        ],
+        "normal_baseline": "Server mengabaikan field yang tidak diizinkan atau mengembalikan error 400 Bad Request.",
+        "interesting_clues": [
+          "Akun baru langsung memiliki hak akses administrator setelah login",
+          "Response JSON mengonfirmasi \"role\": \"admin\" pada object profil yang dibuat"
+        ],
+        "evidence_to_capture": [
+          "Request POST /register dengan parameter injeksi",
+          "Response JSON registrasi"
+        ]
+      },
+      {
+        "id": "reg-email-verification-bypass",
+        "name": "3. Alur Verifikasi Email & Auto-Login",
+        "why_check": "Menentukan apakah aplikasi langsung memberikan sesi login aktif sebelum email divalidasi.",
+        "what_to_look_for": [
+          "Daftar dengan email acak non-existent (misal: test@nonexistent.xyz)",
+          "Periksa apakah session cookie langsung diberikan di respons",
+          "Coba akses fungsionalitas sensitif tanpa klik link verifikasi email"
+        ],
+        "normal_baseline": "Aplikasi membatasi hak akses hingga link token verifikasi email diklik.",
+        "interesting_clues": [
+          "Aplikasi langsung memberikan full access tanpa memverifikasi kepemilikan email"
+        ],
+        "evidence_to_capture": [
+          "Header Set-Cookie dari respons registrasi"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-reg-role-elevation",
+        "inspection_point_id": "reg-duplicate-handling",
+        "signal_description": "Menambahkan parameter role=admin pada payload JSON registrasi berhasil membuat akun berhak akses admin.",
+        "output_snippet": "POST /api/register HTTP/1.1\n{\"username\": \"test_hacker\", \"password\": \"P@ssword123\", \"role\": \"admin\"}\n\nHTTP/1.1 201 Created\n{\"id\": 55, \"role\": \"admin\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Backend framework menggunakan model binding otomatis tanpa whitelist atribut (Mass Assignment).",
+        "hypothesis_id": "hyp-reg-mass-assignment",
+        "evidence_to_capture": [
+          "Request pendaftaran",
+          "Response 201 Created dengan role admin"
+        ]
+      },
+      {
+        "id": "sig-reg-mass-assign-admin",
+        "inspection_point_id": "reg-role-assignment-mass",
+        "signal_description": "Injeksi parameter \"is_admin\": true pada endpoint registrasi berhasil membuat akun admin.",
+        "output_snippet": "POST /api/v1/users/register HTTP/1.1\n{\"username\":\"attacker\",\"password\":\"Password123!\",\"is_admin\":true}\n\nHTTP/1.1 201 Created\n{\"id\":42,\"username\":\"attacker\",\"role\":\"admin\",\"is_admin\":true}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Kerentanan Mass Assignment aktif pada form registrasi, memungkinkan eskalasi privilege langsung ke role administrator.",
+        "hypothesis_id": "hyp-reg-mass-assign",
+        "evidence_to_capture": [
+          "Full HTTP request dan response registrasi"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengirimkan pesan konfirmasi pendaftaran beserta password plaintext di body response"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-reg-mass-assignment",
+        "name": "Privilege Escalation via Mass Assignment on Registration",
+        "description": "Pengguna dapat menaikkan hak aksesnya sendiri menjadi administrator saat pertama kali mendaftar.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-reg-role-elevation"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Login dengan akun baru tersebut dan coba akses endpoint terproteksi /admin/users.",
+            "expected_output": "Mendapatkan akses penuh ke panel kontrol sistem.",
+            "interesting_output": "Dapat melihat daftar seluruh user.",
+            "unexpected_output": "Akun ditolak.",
+            "interpretation": "Mengonfirmasi eskalasi hak akses berhasil.",
+            "evidence_to_record": [
+              "Screenshot panel admin"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-reg-mass-assign",
+        "name": "Privilege Escalation via Registration Mass Assignment",
+        "description": "Parameter role atau admin pada request registrasi tidak difilter di sisi server.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-reg-mass-assign-admin"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Login dengan akun yang baru didaftarkan, buka endpoint panel kontrol /admin.",
+            "expected_output": "403 Forbidden.",
+            "interesting_output": "200 OK dengan dashboard admin penuh.",
+            "unexpected_output": "Redirect ke halaman login.",
+            "interpretation": "Akses admin berhasil → Mass assignment tervalidasi.",
+            "evidence_to_record": [
+              "Screenshot dashboard admin dengan akun tester baru"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server mengabaikan seluruh parameter tambahan dan hanya menerapkan role default user."
+    ],
+    "common_mistakes": [
+      "Lupa menguji pendaftaran dengan format JSON selain form-urlencoded."
+    ],
+    "ctf_notes": "Di CTF, registrasi akun sering kali memiliki celah SQL injection pada username field atau Stored XSS.",
+    "pentest_notes": "Mass Assignment pada form pendaftaran adalah temuan High/Critical.",
+    "unknown_guide": {
+      "what_is_this": "Formulir pendaftaran pengguna baru pada aplikasi web.",
+      "why_does_it_exist": "Mendaftarkan profil user baru ke dalam database sistem.",
+      "what_parts_matter": "Parameter input, penanganan akun duplikat, dan penentuan role awal.",
+      "what_normal_looks_like": "Mendaftarkan user dengan role standar.",
+      "what_to_record_immediately": [
+        "Format payload registrasi (JSON vs Form URL Encoded)",
+        "Nama parameter role"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Form registrasi mengabaikan parameter tidak dikenal dan menerapkan rate limit.",
+      "why_not_secure": "Fitur pendaftaran yang aman tidak menjamin form reset password kebal dari kelemahan.",
+      "next_pivot_observations": [
+        "obs-web-password-reset",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "1.3 Username Enumeration Dulu",
+        "anchor": "13-username-enumeration-dulu",
+        "rationale": "Analisis enumerasi user via pesan penolakan pendaftaran duplikat."
+      }
+    ],
+    "related_observations": [
+      "obs-web-login-page",
+      "obs-web-password-reset"
+    ],
+    "provenance": [
+      "OWASP WSTG-ATHN-02",
+      "CWE-915"
+    ]
+  },
+  {
+    "id": "obs-web-password-reset",
+    "title": "Alur Reset Password Terdeteksi (Password Reset Flow)",
+    "domain": "Authentication",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Halaman minta reset password: /forgot-password atau /reset-password",
+      "Input field meminta email atau username akun yang ingin di-reset",
+      "Tautan link reset berformat: /reset?token=abc123xyz"
+    ],
+    "context": "Diakses saat pengguna lupa password untuk mendapatkan akses kembali ke akunnya.",
+    "why_it_matters": "Kelemahan pada entropi token, Host Header Poisoning, token reuse, atau ketiadaan kedaluwarsa dapat menyebabkan pengambilalihan akun penuh (Account Takeover).",
+    "questions_to_ask": [
+      "Bagaimana token reset dibuat?",
+      "Apakah domain link reset di email dipengaruhi oleh header Host pada request pemohon?",
+      "Apakah token masih dapat digunakan kembali setelah password berhasil diubah (Token Reuse)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "reset-host-header",
+        "name": "Audit Host Header Poisoning pada Email Reset",
+        "why_check": "Melihat apakah server membangun tautan reset password berdasarkan header Host yang dikontrol pengguna.",
+        "what_to_look_for": [
+          "Header: 'Host: evil.com' atau 'X-Forwarded-Host: evil.com'"
+        ],
+        "normal_baseline": "Server membangun tautan reset menggunakan konfigurasi base URL server internal yang statis.",
+        "interesting_clues": [
+          "Server merespons 200 OK dan mengirimkan email dengan tautan yang mengarah ke host penyerang"
+        ],
+        "evidence_to_capture": [
+          "Request POST forgot-password dengan Host header dimanipulasi",
+          "Tangkapan isi email"
+        ]
+      },
+      {
+        "id": "pwreset-token-generation",
+        "name": "2. Kualitas Token Reset & Delivery Mechanism",
+        "why_check": "Token reset yang lemah (pendek, prediktif, atau tidak expire) dapat di-brute-force atau dicuri dari logs.",
+        "what_to_look_for": [
+          "Minta reset link → periksa token di URL: panjangnya berapa karakter?",
+          "Minta reset 2x untuk user yang sama: apakah token lama masih valid?",
+          "Periksa apakah token di-embed di URL query param vs POST body",
+          "Uji: apakah token expire setelah digunakan sekali?"
+        ],
+        "normal_baseline": "Token kriptografi acak 32-64 karakter, expire dalam 15-60 menit, invalid setelah sekali digunakan.",
+        "interesting_clues": [
+          "Token hanya 6-8 karakter numerik (mudah di-brute)",
+          "Token lama masih valid setelah token baru diminta",
+          "Token tidak expire setelah digunakan",
+          "Token di-embed di HTTP Referer header yang bocor ke third-party"
+        ],
+        "evidence_to_capture": [
+          "URL reset link lengkap dengan token",
+          "Bukti token lama masih valid: request dengan token lama → response 200",
+          "Response setelah token digunakan: apakah request kedua dengan token sama diterima atau ditolak?"
+        ]
+      },
+      {
+        "id": "pwreset-host-header",
+        "name": "3. Host Header Injection pada Email Reset Link",
+        "why_check": "Jika server menggunakan Host header untuk membangun URL dalam email reset, attacker bisa memanipulasi link reset ke domain miliknya.",
+        "what_to_look_for": [
+          "Intercept request POST /forgot-password dengan Burp Suite",
+          "Modifikasi header: Host: attacker.com atau tambahkan X-Forwarded-Host: attacker.com",
+          "Kirim request dan periksa email yang diterima: URL reset mengarah ke mana?",
+          "Coba juga: Host: legit.com:evil.com atau Host: legit.com.attacker.com"
+        ],
+        "normal_baseline": "Email reset selalu berisi URL dengan domain aplikasi asli tanpa memperhatikan Host header yang dikirim.",
+        "interesting_clues": [
+          "URL di email berubah sesuai nilai Host header yang dimanipulasi",
+          "Server menggunakan X-Forwarded-Host atau X-Forwarded-For untuk membangun URL"
+        ],
+        "evidence_to_capture": [
+          "Request asli vs request dengan Host header dimodifikasi (Burp Screenshot)",
+          "Konten email yang diterima — terutama URL reset link",
+          "Perbandingan: Host normal vs Host attacker.com dalam email"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-reset-host-poison",
+        "inspection_point_id": "reset-host-header",
+        "signal_description": "Header X-Forwarded-Host merefleksikan domain luar ke dalam email tautan reset.",
+        "output_snippet": "POST /api/forgot-password HTTP/1.1\nHost: target.com\nX-Forwarded-Host: attacker-server.com\nemail=victim@target.com\n\nHTTP/1.1 200 OK",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi rentan terhadap Password Reset Poisoning, memungkinkan penyerang mencuri token korban.",
+        "hypothesis_id": "hyp-reset-account-takeover",
+        "evidence_to_capture": [
+          "Request HTTP dengan X-Forwarded-Host"
+        ]
+      },
+      {
+        "id": "sig-pwreset-weak-token",
+        "inspection_point_id": "pwreset-token-generation",
+        "signal_description": "Token reset hanya 6 digit numerik atau pola prediktif (timestamp-based).",
+        "output_snippet": "GET /reset-password?token=123456\nGET /reset-password?token=1695834712",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Token dengan entropi rendah dapat di-brute-force dalam hitungan menit jika tidak ada rate limiting.",
+        "hypothesis_id": "hyp-pwreset-bruteforce",
+        "evidence_to_capture": [
+          "URL token reset lengkap",
+          "Jumlah karakter dan charset token"
+        ]
+      },
+      {
+        "id": "sig-pwreset-host-injection",
+        "inspection_point_id": "pwreset-host-header",
+        "signal_description": "URL di email reset link berubah mengikuti nilai Host header yang dimodifikasi attacker.",
+        "output_snippet": "# Request dengan Host: attacker.com\n# Email yang diterima:\nKlik link: https://attacker.com/reset?token=abc123",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Host Header Injection aktif — attacker dapat mengarahkan link reset ke domain kontrolnya untuk mencuri token.",
+        "hypothesis_id": "hyp-pwreset-host-injection",
+        "evidence_to_capture": [
+          "Screenshot Burp request dengan Host yang dimodifikasi",
+          "Konten email yang diterima"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan token reset langsung di dalam response JSON"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-reset-account-takeover",
+        "name": "Account Takeover via Host Header Poisoning",
+        "description": "Penyerang memanipulasi domain pengiriman link reset untuk memanen token rahasia pengguna lain.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-reset-host-poison"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim request reset untuk akun tester sendiri dengan menyetel `X-Forwarded-Host: burpcollaborator.net`.",
+            "expected_output": "Email yang diterima tester memuat link menuju collaborator domain.",
+            "interesting_output": "Collaborator menerima interaksi HTTP GET dengan parameter ?token=...",
+            "unexpected_output": "Server menolak request dengan 400 Bad Request.",
+            "interpretation": "Mengonfirmasi kemungkinan pengambilalihan akun secara penuh.",
+            "evidence_to_record": [
+              "Collaborator DNS/HTTP interaction log"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-pwreset-bruteforce",
+        "name": "Brute-Force Token Reset Password (Weak Token Entropy)",
+        "description": "Token numerik pendek tanpa rate limiting dapat di-enumerate untuk mereset password akun manapun.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-pwreset-weak-token"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi: ada rate limiting? Kirim 10 request /reset dengan token salah → apakah diblokir?",
+            "expected_output": "Setelah beberapa percobaan, IP diblokir atau mendapat 429 Too Many Requests.",
+            "interesting_output": "Semua 10 request mendapat response berbeda (200 valid, 400 invalid) tanpa throttling.",
+            "unexpected_output": "Semua request mendapat 200 OK tanpa validasi token.",
+            "interpretation": "Tanpa rate limiting + token pendek → feasible brute force attack.",
+            "evidence_to_record": [
+              "Jumlah request sebelum trigger rate limit",
+              "Response time dan status code sequence"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-pwreset-host-injection",
+        "name": "Password Reset Poisoning via Host Header Injection",
+        "description": "Attacker dapat mencuri token reset dengan memancing korban request reset lalu memodifikasi Host header untuk redirect email ke server attacker.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-pwreset-host-injection"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Dalam lab/lab environment: set Host: [burp-collaborator-domain] pada request forgot-password.",
+            "expected_output": "Tidak ada DNS lookup atau HTTP request ke Burp Collaborator.",
+            "interesting_output": "Burp Collaborator menerima HTTP request dengan token reset dalam URL.",
+            "unexpected_output": "Email tidak terkirim sama sekali.",
+            "interpretation": "Interaksi di Collaborator → Host Header Injection terkonfirmasi, severity High/Critical.",
+            "evidence_to_record": [
+              "Burp Collaborator interaction log dengan token",
+              "Email asli vs email poisoned"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server menggunakan hardcoded domain name pada konfigurasi aplikasi."
+    ],
+    "common_mistakes": [
+      "Menguji Host Header Poisoning pada akun orang lain tanpa izin."
+    ],
+    "ctf_notes": "Di CTF, token reset sering kali merupakan fungsi dari timestamp yang dapat ditebak.",
+    "pentest_notes": "Password Reset Poisoning adalah temuan High Severity di OWASP WSTG-ATHN-09.",
+    "unknown_guide": {
+      "what_is_this": "Mekanisme pemulihan akun bagi pengguna yang kehilangan akses password.",
+      "why_does_it_exist": "Fungsionalitas self-service agar pengguna dapat mereset kredensial.",
+      "what_parts_matter": "Bagaimana token dibuat dan bagaimana link dirangkai.",
+      "what_normal_looks_like": "Tautan acak berumur pendek dikirim ke email terdaftar.",
+      "what_to_record_immediately": [
+        "Contoh URL reset lengkap",
+        "Format token"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Alur reset password menggunakan token acak kuat dan base domain statis.",
+      "why_not_secure": "Aplikasi mungkin masih rentan terhadap enumerasi email pengguna.",
+      "next_pivot_observations": [
+        "obs-web-mfa-otp",
+        "obs-web-login-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "5.1 Predictable Reset Token",
+        "anchor": "51-predictable-reset-token",
+        "rationale": "Pelajari teknik identifikasi token lemah dan enkripsi token reset."
+      },
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "5.2 Host Header Poisoning di Password Reset",
+        "anchor": "52-host-header-poisoning-di-password-reset",
+        "rationale": "Metodologi eksploitasi Host Header Poisoning pada pengiriman email reset."
+      }
+    ],
+    "related_observations": [
+      "obs-web-login-page",
+      "obs-web-registration"
+    ],
+    "provenance": [
+      "OWASP WSTG-ATHN-09",
+      "CWE-640"
+    ]
+  },
+  {
+    "id": "obs-web-mfa-otp",
+    "title": "Tantangan MFA / OTP Terdeteksi (Multi-Factor Authentication / OTP Prompt)",
+    "domain": "Authentication",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Input 6-digit angka OTP atau kode authenticator",
+      "Pemberitahuan: 'Kode verifikasi telah dikirim ke nomor/email Anda'"
+    ],
+    "context": "Muncul segera setelah kredensial username dan password benar disubmit.",
+    "why_it_matters": "Implementasi yang cacat sering kali mengizinkan: Response Manipulation (mengubah respon gagal menjadi sukses di client), ketiadaan rate limit pada brute force 6 digit, atau melewati langkah verifikasi dengan langsung mengakses endpoint /dashboard.",
+    "questions_to_ask": [
+      "Apakah sesi otentikasi penuh sudah diberikan sebelum kode OTP diverifikasi?",
+      "Bagaimana server merespons jika kode OTP acak dimasukkan berulang kali?",
+      "Apakah mengubah respon JSON dari false menjadi true meloloskan proteksi di browser?"
+    ],
+    "inspection_points": [
+      {
+        "id": "mfa-direct-access",
+        "name": "Uji Akses Langsung (Forced Browsing / Step Skipping)",
+        "why_check": "Melihat apakah backend membatasi hak akses pada level otorisasi server.",
+        "what_to_look_for": [
+          "Akses langsung via URL ke /dashboard saat tertahan di prompt OTP"
+        ],
+        "normal_baseline": "Server menolak akses dengan HTTP 403 atau me-redirect kembali ke halaman OTP.",
+        "interesting_clues": [
+          "Halaman dashboard terbuka penuh meskipun OTP belum dimasukkan"
+        ],
+        "evidence_to_capture": [
+          "Request ke endpoint terproteksi beserta respon 200 OK tanpa OTP"
+        ]
+      },
+      {
+        "id": "mfa-rate-limiting-brute",
+        "name": "2. Ketahanan Brute-Force & Rate Limiting OTP",
+        "why_check": "OTP 4-6 digit memiliki ruang kunci kecil (10.000 - 1.000.000 kemungkinan) yang rentan di-brute-force tanpa proteksi.",
+        "what_to_look_for": [
+          "Kirim 10 request OTP salah berurutan melalui Burp Intruder",
+          "Periksa apakah ada header Retry-After, status 429, atau captcha",
+          "Uji apakah IP-rotation (header X-Forwarded-For) membypass pembatasan rate limit"
+        ],
+        "normal_baseline": "Akun dikunci atau request di-throttle setelah 3-5 kali percobaan OTP salah.",
+        "interesting_clues": [
+          "Tidak ada delay atau blokir setelah 20+ percobaan salah",
+          "Header status tetap 200 OK dengan pesan \"Invalid code\" tanpa pembatasan"
+        ],
+        "evidence_to_capture": [
+          "Tabel response Burp Intruder membuktikan ketiadaan rate limit"
+        ]
+      },
+      {
+        "id": "mfa-response-manipulation",
+        "name": "3. Response Code Manipulation & Direct Endpoint Browsing",
+        "why_check": "Beberapa aplikasi web mengecek MFA di sisi klien (frontend) dan mengizinkan bypass jika respons JSON dimodifikasi.",
+        "what_to_look_for": [
+          "Intercept response verifikasi OTP di Burp Suite",
+          "Ubah {\"success\": false, \"code\": \"INVALID\"} menjadi {\"success\": true}",
+          "Coba akses langsung URL dashboard (/dashboard) sebelum submit OTP"
+        ],
+        "normal_baseline": "Server memverifikasi token sesi MFA di backend pada setiap request ke endpoint dashboard.",
+        "interesting_clues": [
+          "Browser me-redirect ke dashboard dan mengaktifkan sesi penuh setelah manipulasi respons JSON",
+          "Akses langsung ke /dashboard berhasil tanpa menyelesaikan MFA"
+        ],
+        "evidence_to_capture": [
+          "Screenshot Burp response interception dan respons yang dimodifikasi"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-mfa-response-manipulation",
+        "inspection_point_id": "mfa-direct-access",
+        "signal_description": "Mengubah body respon server dari error menjadi success meloloskan verifikasi MFA di browser.",
+        "output_snippet": "Client receives:\nHTTP/1.1 200 OK\n{\"status\": \"success\", \"mfa_verified\": true, \"redirect\": \"/dashboard\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Otorisasi MFA hanya divalidasi oleh JavaScript sisi client (Client-Side Enforcement Flaw).",
+        "hypothesis_id": "hyp-mfa-bypass",
+        "evidence_to_capture": [
+          "Tangkapan layar Burp Match & Replace rules",
+          "Akses sukses ke dashboard"
+        ]
+      },
+      {
+        "id": "sig-mfa-response-tamper-bypass",
+        "inspection_point_id": "mfa-response-manipulation",
+        "signal_description": "Mengubah status respons OTP dari 401 ke 200 dengan payload success:true membypass MFA secara menyeluruh.",
+        "output_snippet": "HTTP/1.1 200 OK\nContent-Type: application/json\n\n{\"status\":\"success\",\"mfa_verified\":true,\"redirect\":\"/dashboard\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Validasi MFA hanya dilakukan di frontend JavaScript, backend tidak menerapkan state verification yang ketat.",
+        "hypothesis_id": "hyp-mfa-client-bypass",
+        "evidence_to_capture": [
+          "Burp match & replace rule",
+          "Screenshot dashboard yang terbuka"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan kode OTP yang benar di dalam atribut komentar HTML"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-mfa-bypass",
+        "name": "MFA Verification Bypass via Client-Side Response Tampering",
+        "description": "Server tidak memvalidasi status penyelesaian MFA pada request API berikutnya.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-mfa-response-manipulation"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Gunakan akun lab tester. Submit OTP salah, cegat respon di Burp Proxy, ubah status menjadi success.",
+            "expected_output": "Browser melanjutkan ke dashboard.",
+            "interesting_output": "Akses akun aktif penuh tanpa kode OTP valid.",
+            "unexpected_output": "Server menolak request API berikutnya dengan 401 Unauthorized.",
+            "interpretation": "Membuktikan otentikasi dua faktor dapat dilewati.",
+            "evidence_to_record": [
+              "Burp HTTP proxy history logs"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-mfa-client-bypass",
+        "name": "MFA Bypass via Response Tampering",
+        "description": "Frontend aplikasi mempercayai status respons tanpa verifikasi state di backend.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-mfa-response-tamper-bypass"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim request ke API internal sensitif (/api/user/transactions) dengan session yang dihasilkan dari bypass.",
+            "expected_output": "401 Unauthorized (MFA required).",
+            "interesting_output": "200 OK dengan data transaksi penuh.",
+            "unexpected_output": "Redirect ke login.",
+            "interpretation": "Data transaksi muncul → MFA bypass tervalidasi end-to-end.",
+            "evidence_to_record": [
+              "Respons API transaksi sensitif"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server mengunci akun setelah 5 percobaan OTP salah."
+    ],
+    "common_mistakes": [
+      "Mengira response manipulation selalu berhasil."
+    ],
+    "ctf_notes": "Di CTF, kode OTP sering kali memiliki nomor statis (misal: 000000).",
+    "pentest_notes": "MFA Bypass adalah temuan Critical/High.",
+    "unknown_guide": {
+      "what_is_this": "Langkah pembuktian identitas tambahan berupa kode angka singkat.",
+      "why_does_it_exist": "Mencegah pencurian akun jika password pengguna bocor di tempat lain.",
+      "what_parts_matter": "Apakah backend benar-benar menolak request sebelum kode ini dimasukkan.",
+      "what_normal_looks_like": "Sistem membatasi percobaan maksimal 3-5 kali.",
+      "what_to_record_immediately": [
+        "Endpoint penerima OTP",
+        "Format request"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Proteksi MFA divalidasi ketat di backend dengan rate limiting aktif.",
+      "why_not_secure": "MFA yang kuat tidak melindungi dari Session Hijacking jika cookie sesi berhasil dicuri.",
+      "next_pivot_observations": [
+        "obs-web-session-cookie",
+        "obs-web-id-parameter"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "10.1 OTP Bypass Techniques",
+        "anchor": "101-otp-bypass-techniques",
+        "rationale": "Pelajari teknik bypass OTP: response manipulation dan rate limit bypass."
+      }
+    ],
+    "related_observations": [
+      "obs-web-login-page",
+      "obs-web-session-cookie"
+    ],
+    "provenance": [
+      "OWASP WSTG-ATHN-07",
+      "NIST SP 800-63B"
+    ]
+  },
+  {
+    "id": "obs-web-cookie-attributes",
+    "title": "Atribut Cookie Keamanan Mendalam (HttpOnly, Secure, SameSite, Scope)",
+    "domain": "Session Management",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Set-Cookie header memuat atau kekurangan flag: HttpOnly, Secure, SameSite",
+      "Parameter Domain=.target.com (wildcard subdomain scope)",
+      "Parameter Path=/ (aplikasi luas) vs Path=/app/admin"
+    ],
+    "context": "Diinspeksi pada setiap respon HTTP yang mengeluarkan cookie otentikasi atau preferensi.",
+    "why_it_matters": "Atribut cookie adalah pertahanan lapis pertama terhadap pencurian sesi via Cross-Site Scripting (XSS), penyadapan lalu lintas jaringan (Man-in-the-Middle), dan serangan CSRF.",
+    "questions_to_ask": [
+      "Apakah flag HttpOnly aktif untuk mencegah akses via document.cookie?",
+      "Apakah flag Secure aktif agar cookie tidak pernah dikirim via koneksi HTTP plaintext?",
+      "Apakah SameSite diset ke Strict atau Lax untuk memitigasi CSRF?"
+    ],
+    "inspection_points": [
+      {
+        "id": "point-cookie-flags",
+        "name": "Audit Flag Proteksi (HttpOnly & Secure)",
+        "why_check": "Mencegah pencurian kredensial sesi oleh skrip berbahaya dan sniffing jaringan.",
+        "what_to_look_for": [
+          "HttpOnly",
+          "Secure"
+        ],
+        "normal_baseline": "Kedua flag selalu disematkan pada seluruh cookie sesi otentikasi.",
+        "interesting_clues": [
+          "Flag HttpOnly hilang pada cookie sesi sensitif"
+        ],
+        "evidence_to_capture": [
+          "Header Set-Cookie mentah",
+          "Console output document.cookie"
+        ]
+      },
+      {
+        "id": "cookie-samesite-csrf",
+        "name": "2. Konfigurasi SameSite & Paparan CSRF",
+        "why_check": "SameSite=None tanpa Secure atau ketiadaan SameSite (default browser lama) membuat cookie dikirim pada cross-origin request.",
+        "what_to_look_for": [
+          "Periksa atribut SameSite pada header Set-Cookie: Strict vs Lax vs None",
+          "Uji apakah cookie dikirim pada permintaan POST cross-origin dari form HTML lokal",
+          "Cek apakah aplikasi memiliki token anti-CSRF independen"
+        ],
+        "normal_baseline": "SameSite=Lax atau SameSite=Strict pada semua cookie sesi sensitif.",
+        "interesting_clues": [
+          "SameSite=None tanpa atribut anti-CSRF pada form ubah email atau ganti password"
+        ],
+        "evidence_to_capture": [
+          "Header Set-Cookie lengkap",
+          "PoC file HTML CSRF"
+        ]
+      },
+      {
+        "id": "cookie-domain-path-scoping",
+        "name": "3. Scoping Domain & Path Cookie",
+        "why_check": "Cookie dengan Domain=.domain.com (wildcard) bocor ke seluruh subdomain termasuk subdomain rentan (staging, dev).",
+        "what_to_look_for": [
+          "Periksa atribut Domain pada Set-Cookie: apakah ada prefix titik (.example.com)?",
+          "Periksa atribut Path: apakah dibatasi ke /app atau berlaku untuk / (root)?"
+        ],
+        "normal_baseline": "Domain tidak menggunakan wildcard dan dibatasi hanya pada FQDN host pengirim.",
+        "interesting_clues": [
+          "Domain=.corp.local memungkinkan pencurian session cookie dari subdomain blog atau dev yang rentan XSS"
+        ],
+        "evidence_to_capture": [
+          "Header Set-Cookie Domain parameter"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-cookie-no-flags",
+        "inspection_point_id": "point-cookie-flags",
+        "signal_description": "Cookie otentikasi dikirim tanpa HttpOnly dan Secure di lingkungan HTTPS.",
+        "output_snippet": "Set-Cookie: auth=a8f7c9e2b1; Path=/; Domain=example.com",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Cookie rentan dibaca via XSS dan bocor jika ada link HTTP yang dibuka.",
+        "hypothesis_id": "hyp-cookie-flag-leak",
+        "evidence_to_capture": [
+          "Header respons lengkap",
+          "URL halaman yang mengeluarkan cookie"
+        ]
+      },
+      {
+        "id": "sig-cookie-wildcard-domain-leak",
+        "inspection_point_id": "cookie-domain-path-scoping",
+        "signal_description": "Cookie sesi dikonfigurasi dengan wildcard domain (.target.com), dapat dibaca oleh sembarang subdomain.",
+        "output_snippet": "Set-Cookie: auth_token=9f8e7d6c5b; Domain=.target.com; Path=/; Secure",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Jika attacker menemukan celah XSS pada subdomain target (misal: dev.target.com), session token aplikasi utama dapat disedot.",
+        "hypothesis_id": "hyp-cookie-subdomain-hijack",
+        "evidence_to_capture": [
+          "Set-Cookie Domain parameter"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Cookie memiliki atribut Max-Age negatif"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-cookie-flag-leak",
+        "name": "Session Exposure via Missing Cookie Security Flags",
+        "description": "Ketiadaan flag proteksi memperbesar dampak kerentanan XSS dan network sniffing.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-cookie-no-flags"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi keterbacaan cookie dari console JavaScript: `console.log(document.cookie)`.",
+            "expected_output": "Cookie sesi tidak tampil jika terlindungi HttpOnly.",
+            "interesting_output": "Token otentikasi muncul dalam string.",
+            "unexpected_output": "Peringatan CSP.",
+            "interpretation": "Mengonfirmasi aksesibilitas client-side script.",
+            "evidence_to_record": [
+              "Screenshot console log"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-cookie-subdomain-hijack",
+        "name": "Session Hijacking via Subdomain Scope Overreach",
+        "description": "Wildcard domain scoping membocorkan token otentikasi ke subdomain lain.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-cookie-wildcard-domain-leak"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi di DevTools browser pada subdomain lain apakah cookie auth_token otomatis tersedia.",
+            "expected_output": "Cookie tidak tersedia di subdomain lain.",
+            "interesting_output": "Cookie auth_token otomatis terlampir pada request ke subdomain lain.",
+            "unexpected_output": "Cookie ditolak oleh browser.",
+            "interpretation": "Cookie terlampir → lingkup kebocoran terbukti.",
+            "evidence_to_record": [
+              "Screenshot cookie storage pada subdomain berbeda"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Flag HttpOnly, Secure, dan SameSite=Lax/Strict terpasang lengkap."
+    ],
+    "common_mistakes": [
+      "Menganggap missing flag sebagai kerentanan kritis mandiri tanpa adanya XSS."
+    ],
+    "ctf_notes": "Di CTF XSS challenge, jika HttpOnly tidak ada, tujuannya hampir pasti mencuri cookie admin bot.",
+    "pentest_notes": "Di laporan pentest resmi, catat sebagai Informational atau Low Severity sesuai standar OWASP.",
+    "unknown_guide": {
+      "what_is_this": "Atribut tambahan di belakang Set-Cookie yang mengatur hak akses browser terhadap cookie tersebut.",
+      "why_does_it_exist": "Memberikan kontrol keamanan kepada web developer atas perilaku browser menyimpan dan mengirim cookie.",
+      "what_parts_matter": "HttpOnly, Secure, SameSite, Domain, dan Path.",
+      "what_normal_looks_like": "Set-Cookie: sess=...; Path=/; Secure; HttpOnly; SameSite=Lax",
+      "what_to_record_immediately": [
+        "Seluruh baris Set-Cookie dari header response"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Seluruh atribut keamanan cookie dikonfigurasi dengan benar.",
+      "why_not_secure": "Aplikasi tetap dapat rentan terhadap SQLi atau IDOR di endpoint backend.",
+      "next_pivot_observations": [
+        "obs-web-id-parameter",
+        "obs-web-url-query-param"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "11.3 Cookie Security Analysis",
+        "anchor": "113-cookie-security-analysis",
+        "rationale": "Audit menyeluruh atribut cookie dan dampaknya terhadap sesi pengguna."
+      }
+    ],
+    "related_observations": [
+      "obs-web-session-cookie",
+      "obs-web-login-page"
+    ],
+    "provenance": [
+      "RFC 6265bis",
+      "OWASP WSTG-SESS-02"
+    ]
+  },
+  {
+    "id": "obs-web-id-parameter",
+    "title": "Parameter Identitas / Objek Terdeteksi (ID / Object Reference Parameter)",
+    "domain": "Authorization & Access Control",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "URL query parameter: ?id=101, ?user_id=45, ?account=A88, ?doc_id=9281",
+      "REST URL path: /api/v1/users/42, /orders/1002/invoice, /patient/554/records",
+      "JSON body field: {\"accountId\": 1044, \"reportId\": 88}",
+      "Header kustom: X-User-Id: 50"
+    ],
+    "context": "Ditemukan saat membuka profil user, melihat riwayat transaksi, mengunduh file faktur, atau mengedit data akun sendiri.",
+    "why_it_matters": "Ketika aplikasi menerima pengidentifikasi objek langsung dari client untuk menentukan data mana yang akan diakses, server wajib melakukan verifikasi otorisasi: 'Apakah pengguna yang sedang login berhak melihat/mengubah objek ini?'. Mengubah ID adalah tes otorisasi, bukan bukti IDOR sebelum data objek milik user lain berhasil diakses.",
+    "questions_to_ask": [
+      "Apakah nilai ID berupa angka sequential (1, 2, 3...) atau GUID/UUID berentropi tinggi?",
+      "Bagaimana server merespons jika nilai ID diubah ke ID milik user lain atau ID dummy?",
+      "Apakah endpoint ini memerlukan otentikasi (cookie/token) atau dapat diakses publik?",
+      "Metode HTTP apa saja yang didukung (GET untuk baca, PUT/DELETE untuk ubah/hapus)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "id-predictability",
+        "name": "1. Format & Prediktabilitas Pengidentifikasi (ID Predictability)",
+        "why_check": "Mengetahui seberapa mudah penyerang dapat menebak atau mengiterasi objek lain.",
+        "what_to_look_for": [
+          "Sequential integer (101, 102, 103)",
+          "Pola hash yang dapat di-rekonstruksi (misal: MD5 dari username atau timestamp)",
+          "UUID v1 vs UUID v4"
+        ],
+        "normal_baseline": "Aplikasi modern menggunakan pengidentifikasi non-prediktif (UUID v4) atau memeriksa kepemilikan objek di session server.",
+        "interesting_clues": [
+          "ID berupa angka sequential kecil yang dapat di-increment dengan mudah",
+          "ID merupakan string base64 dari ID numerik"
+        ],
+        "evidence_to_capture": [
+          "Contoh URL dan nilai parameter ID dari akun tester",
+          "Pola penomoran ID yang diamati"
+        ]
+      },
+      {
+        "id": "id-authorization-boundary",
+        "name": "2. Batas Otorisasi Objek (Horizontal & Vertical Boundary)",
+        "why_check": "Menguji apakah server memeriksa kepemilikan objek terhadap sesi user aktif.",
+        "what_to_look_for": [
+          "Respon saat ID diubah menjadi ID milik akun tester kedua dengan role setara",
+          "Respon saat ID diubah menjadi ID objek milik akun admin"
+        ],
+        "normal_baseline": "Server menolak akses dengan HTTP 403 Forbidden atau 404 Not Found.",
+        "interesting_clues": [
+          "Server mengembalikan HTTP 200 OK dengan payload data lengkap milik pengguna lain",
+          "Data berhasil terubah saat mengirim method PUT/POST dengan ID pengguna lain"
+        ],
+        "evidence_to_capture": [
+          "Request & Response akun A saat mengakses objek A",
+          "Request & Response akun A saat mengakses objek B",
+          "Data sensitif yang terungkap"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-idor-success",
+        "inspection_point_id": "id-authorization-boundary",
+        "signal_description": "Mengubah ID parameter mengembalikan data profil pengguna lain dengan status 200 OK.",
+        "output_snippet": "GET /api/user?id=102 HTTP/1.1\nCookie: session_user_101\n\nHTTP/1.1 200 OK\n{\"id\": 102, \"name\": \"Bob Smith\", \"email\": \"bob@corp.local\", \"salary\": 85000}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi mengambil objek dari database hanya berdasarkan parameter ID tanpa mencocokkan session ID pemanggil (Insecure Direct Object Reference / BOLA).",
+        "hypothesis_id": "hyp-idor-horizontal",
+        "evidence_to_capture": [
+          "Request akun tester 1 mengakses objek 101",
+          "Request akun tester 1 mengakses objek 102 beserta respons berisi data akun tester 2"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "HTTP 500 SQL syntax error saat parameter ID diisi karakter kutip tunggal"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-idor-horizontal",
+        "name": "Horizontal Insecure Direct Object Reference (IDOR / BOLA)",
+        "description": "Pengguna dapat membaca atau memodifikasi data milik pengguna lain pada tingkat hak akses yang sama.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-idor-success"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Buat 2 akun uji coba mandiri: Akun A (ID: 101) dan Akun B (ID: 102).",
+            "expected_output": "Akun A hanya dapat mengakses objek 101.",
+            "interesting_output": "Akun A dapat melihat invoice/profil milik objek 102.",
+            "unexpected_output": "Akun terkunci.",
+            "interpretation": "Membuktikan ketiadaan validasi ACL pada backend.",
+            "evidence_to_record": [
+              "Side-by-side burp repeater logs"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server konsisten mengembalikan HTTP 403 Forbidden atau 401 Unauthorized saat ID diubah.",
+      "Aplikasi mengabaikan parameter ID dan selalu menampilkan data dari sesi user aktif."
+    ],
+    "common_mistakes": [
+      "Menguji IDOR pada data pengguna nyata tanpa izin (selalu gunakan 2 akun milik tester sendiri)."
+    ],
+    "ctf_notes": "Di CTF, IDOR sering kali berupa parameter numerik sederhana pada fitur invoice (?id=1) atau catatan rahasia admin (/api/notes/1).",
+    "pentest_notes": "IDOR / BOLA adalah temuan peringkat #1 di OWASP API Security Top 10.",
+    "unknown_guide": {
+      "what_is_this": "Bagian dari URL, body, atau header yang menentukan nomor file atau baris database yang diminta.",
+      "why_does_it_exist": "Memberitahu backend objek mana yang ingin ditampilkan atau diedit oleh client.",
+      "what_parts_matter": "Nama variabel parameter, nilai identifier, dan apakah server memeriksa hak akses kepemilikan objek.",
+      "what_normal_looks_like": "Server hanya mengizinkan user mengakses ID yang terikat dengan session akunnya sendiri.",
+      "what_to_record_immediately": [
+        "URL lengkap dan nama parameter ID",
+        "Nilai ID akun Anda sendiri"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Server menolak akses ke objek lain dengan HTTP 403 Forbidden yang benar.",
+      "why_not_secure": "Proteksi IDOR pada endpoint profil tidak menjamin endpoint ekspor PDF atau update password memiliki proteksi serupa.",
+      "next_pivot_observations": [
+        "obs-web-api-endpoint",
+        "obs-web-form-input"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "27",
+        "slug": "idor-access-control",
+        "title": "27. IDOR & Access Control Workflow",
+        "section_title": "1.1 IDOR Identification",
+        "anchor": "11-idor-identification",
+        "rationale": "Pelajari metodologi sistematis menemukan dan mengeksploitasi IDOR horizontal dan vertikal."
+      }
+    ],
+    "related_observations": [
+      "obs-web-url-query-param",
+      "obs-web-api-endpoint"
+    ],
+    "provenance": [
+      "OWASP WSTG-ATHZ-04",
+      "OWASP API Security Top 10 API1:2023"
+    ]
+  },
+  {
+    "id": "obs-web-url-query-param",
+    "title": "Parameter Query URL Terdeteksi (URL Query Parameter Inspection)",
+    "domain": "Web Application",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Karakter tanda tanya dan pasangan key=value pada URL: ?page=about, ?file=data.txt, ?url=https://...",
+      "Parameter pencarian, filter, navigasi, redirect, dan view"
+    ],
+    "context": "Terlihat di address bar browser, link internal, atau riwayat traffic proxy (Burp Suite).",
+    "why_it_matters": "Parameter URL adalah input langsung dari pengguna ke server. Menjadi titik masuk utama untuk Local File Inclusion (LFI), Server-Side Request Forgery (SSRF), SQL Injection, Cross-Site Scripting (XSS), dan Open Redirect.",
+    "questions_to_ask": [
+      "Bagaimana server menggunakan nilai parameter (apakah dimuat ke database atau diakses dari filesystem)?",
+      "Apakah nilai parameter menyerupai path file, nama file, URL eksternal, atau template?",
+      "Bagaimana respons server jika nilai parameter dikosongkan atau diisi karakter escape (' \" < > `)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "point-param-purpose",
+        "name": "Analisis Tujuan Parameter (File, URL, Database, Refleksi)",
+        "why_check": "Menentukan vektor pengujian yang relevan berdasarkan semantik nama dan nilai parameter.",
+        "what_to_look_for": [
+          "Parameter file/path: ?file=, ?page=, ?include=, ?doc=",
+          "Parameter URL/link: ?url=, ?redirect=, ?next=, ?dest=, ?target="
+        ],
+        "normal_baseline": "Parameter hanya menerima nilai dari whitelist terbatas.",
+        "interesting_clues": [
+          "Parameter ?file=about.php memuat isi file dari server",
+          "Parameter ?url=http://... memuat resource dari server remote (SSRF suspect)"
+        ],
+        "evidence_to_capture": [
+          "URL lengkap dengan query string",
+          "Contoh respon server"
+        ]
+      },
+      {
+        "id": "url-param-reflection-xss",
+        "name": "2. Refleksi Parameter dalam Respons (Reflected XSS / SSTI)",
+        "why_check": "Nilai parameter yang dipantulkan langsung ke HTML response tanpa sanitasi adalah vektor utama XSS.",
+        "what_to_look_for": [
+          "Injeksi string unik: ?q=HanzSecurityTest123",
+          "Lihat di page source: di mana string tersebut muncul? (di dalam tag <p>, atribut value=\"\", atau di dalam blok <script>?)",
+          "Uji karakter khusus: ?q=test<>\"'/{}"
+        ],
+        "normal_baseline": "Karakter khusus di-encode menjadi entitas HTML (&lt;&gt;&quot;&#39;).",
+        "interesting_clues": [
+          "Karakter < > muncul mentah tanpa encoding di dalam dokumen HTML",
+          "String muncul di dalam blok <script> JavaScript langsung"
+        ],
+        "evidence_to_capture": [
+          "URL request lengkap",
+          "Cuplikan source code HTML yang memantulkan payload"
+        ]
+      },
+      {
+        "id": "url-param-open-redirect",
+        "name": "3. Parameter Pengalihan (Open Redirect / SSRF)",
+        "why_check": "Parameter seperti redirect, return, url, next, dest sering kali mengizinkan pengalihan ke domain eksternal berbahaya.",
+        "what_to_look_for": [
+          "Uji URL eksternal: ?redirect=https://google.com atau ?next=//evil.com",
+          "Periksa kode status respons: 301, 302, atau 307 dengan header Location: https://google.com"
+        ],
+        "normal_baseline": "Pengalihan hanya diizinkan ke relative path (/dashboard) atau domain dalam whitelist.",
+        "interesting_clues": [
+          "Header Location mengarahkan browser ke domain luar (Location: https://google.com)"
+        ],
+        "evidence_to_capture": [
+          "Header respons HTTP 302 dengan header Location"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-param-reflection",
+        "inspection_point_id": "point-param-purpose",
+        "signal_description": "Nilai parameter direfleksikan mentah ke dalam body response HTML tanpa sanitasi.",
+        "output_snippet": "GET /search?q=test123\nHTTP/1.1 200 OK\n<div>Hasil untuk: test123</div>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi menampilkan kembali input pengguna ke browser, membuka hipotesis Reflected XSS jika karakter HTML tidak di-encode.",
+        "hypothesis_id": "hyp-param-xss",
+        "evidence_to_capture": [
+          "Request dengan string unik",
+          "Response mentah yang menunjukkan refleksi"
+        ]
+      },
+      {
+        "id": "sig-param-raw-html-reflection",
+        "inspection_point_id": "url-param-reflection-xss",
+        "signal_description": "Karakter HTML injeksi dipantulkan tanpa sanitasi di dalam tag body.",
+        "output_snippet": "GET /search?q=%3Ch1%3EHanz%3C%2Fh1%3E HTTP/1.1\n\nHTTP/1.1 200 OK\n<body>Hasil pencarian untuk: <h1>Hanz</h1></body>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Reflected XSS terkonfirmasi — browser akan mengeksekusi tag script jika dikirimkan payload JavaScript.",
+        "hypothesis_id": "hyp-param-reflected-xss",
+        "evidence_to_capture": [
+          "URL payload",
+          "Source HTML browser"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "HTTP 500 saat parameter diisi karakter khusus"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-param-xss",
+        "name": "Reflected Cross-Site Scripting (XSS)",
+        "description": "Input pengguna dieksekusi sebagai kode HTML/JavaScript di browser korban.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-param-reflection"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim payload karakter aman: `test<b>bold</b>123` dan periksa apakah tag `<b>` dirender.",
+            "expected_output": "Server meng-encode karakter HTML menjadi entitas teks aman.",
+            "interesting_output": "Teks 'bold' dirender tebal oleh browser.",
+            "unexpected_output": "WAF blocking.",
+            "interpretation": "Mengonfirmasi apakah konteks HTML mengizinkan injeksi tag.",
+            "evidence_to_record": [
+              "Source view HTML dari respons"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-param-reflected-xss",
+        "name": "Reflected Cross-Site Scripting (XSS) via Query Parameter",
+        "description": "Input pengguna di-render langsung ke browser korban tanpa encoding.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-param-raw-html-reflection"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim payload non-destruktif: ?q=%3Cscript%3Econsole.log(window.origin)%3C/script%3E",
+            "expected_output": "Payload di-encode atau diblokir WAF.",
+            "interesting_output": "Origin website tercetak di console browser.",
+            "unexpected_output": "403 WAF Blocked.",
+            "interpretation": "Origin tercetak → eksekusi JavaScript terbukti.",
+            "evidence_to_record": [
+              "Screenshot console browser"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server meng-encode seluruh karakter khusus menjadi HTML entities."
+    ],
+    "common_mistakes": [
+      "Langsung menembakkan payload alert(1) tanpa memeriksa konteks refleksi."
+    ],
+    "ctf_notes": "Di CTF, parameter ?page=index hampir selalu merupakan LFI ke file flag.",
+    "pentest_notes": "Di pentest resmi, pastikan mendokumentasikan dampak XSS terhadap pencurian cookie.",
+    "unknown_guide": {
+      "what_is_this": "Bagian URL setelah tanda tanya (?) yang mengirimkan variabel input ke server web.",
+      "why_does_it_exist": "Meneruskan data navigasi, query pencarian, dan preferensi tampilan antar request.",
+      "what_parts_matter": "Nama variabel parameter dan bagaimana server memproses nilainya.",
+      "what_normal_looks_like": "Parameter memproses input standar tanpa mengubah struktur halaman secara berbahaya.",
+      "what_to_record_immediately": [
+        "URL lengkap",
+        "Nama parameter"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Parameter query disanitasi dan di-encode dengan aman.",
+      "why_not_secure": "Aplikasi mungkin masih memiliki hidden parameters yang belum ditemukan.",
+      "next_pivot_observations": [
+        "obs-web-search-field",
+        "obs-web-form-input"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "19",
+        "slug": "sql-injection",
+        "title": "19. SQL Injection Workflow",
+        "section_title": "1.1 Identifikasi Parameter Rentan",
+        "anchor": "11-identifikasi-parameter-rentan",
+        "rationale": "Pelajari cara mengenali dan menguji parameter query yang terhubung ke query database."
+      }
+    ],
+    "related_observations": [
+      "obs-web-id-parameter",
+      "obs-web-search-field"
+    ],
+    "provenance": [
+      "OWASP WSTG-INPV-01",
+      "MITRE ATT&CK T1059.007"
+    ]
+  },
+  {
+    "id": "obs-web-search-field",
+    "title": "Field Pencarian Terdeteksi (Search Input Field)",
+    "domain": "Web Application",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Input text pencarian: <input type='search'> atau <input name='q'>",
+      "Halaman menampilkan hasil pencarian dengan teks refleksi"
+    ],
+    "context": "Ditemukan pada portal berita, e-commerce, blog CMS, dan dashboard aplikasi.",
+    "why_it_matters": "Field pencarian umumnya terhubung langsung ke query backend (SQL LIKE '%...%', Elasticsearch, LDAP, atau template engine).",
+    "questions_to_ask": [
+      "Di mana nilai pencarian ditampilkan kembali pada halaman?",
+      "Bagaimana jika ekspresi matematika dimasukkan (misal: {{7*7}} atau ${7*7})?"
+    ],
+    "inspection_points": [
+      {
+        "id": "point-search-template-eval",
+        "name": "Pemeriksaan Evaluasi Template (SSTI Check)",
+        "why_check": "Mendeteksi apakah engine pencarian menggunakan template engine.",
+        "what_to_look_for": [
+          "Input: {{7*7}}",
+          "Input: ${7*7}"
+        ],
+        "normal_baseline": "Teks {{7*7}} dicetak persis secara literal sebagai teks biasa.",
+        "interesting_clues": [
+          "Halaman menampilkan angka '49' di tempat teks query (SSTI terkonfirmasi)"
+        ],
+        "evidence_to_capture": [
+          "Request payload ekspresi matematika",
+          "Response merender angka 49"
+        ]
+      },
+      {
+        "id": "search-sqli-probing",
+        "name": "2. Probing SQL Injection & Syntax Error",
+        "why_check": "Fitur pencarian sering menyusun query SQL dinamis seperti: SELECT * FROM items WHERE title LIKE '%$search%'.",
+        "what_to_look_for": [
+          "Injeksi karakter kutip: test' atau test\" atau test\\",
+          "Periksa apakah ada pesan error database (SQL syntax error, Unclosed quotation mark)",
+          "Uji boolean: test' OR '1'='1 dan test' AND '1'='2 (apakah jumlah hasil berbeda?)"
+        ],
+        "normal_baseline": "Pencarian dengan tanda kutip menghasilkan 0 item atau mencari karakter kutip secara literal tanpa error.",
+        "interesting_clues": [
+          "Error database eksplisit (MySQL, SQLite, PostgreSQL)",
+          "Hasil pencarian berubah drastis antara kondisi TRUE vs FALSE"
+        ],
+        "evidence_to_capture": [
+          "Teks error SQL lengkap",
+          "Perbedaan jumlah record antara TRUE vs FALSE"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-search-ssti-49",
+        "inspection_point_id": "point-search-template-eval",
+        "signal_description": "Input {{7*7}} dievaluasi menjadi 49 pada halaman hasil pencarian.",
+        "output_snippet": "GET /search?query={{7*7}}\nHTTP/1.1 200 OK\n<h1>Hasil pencarian untuk: 49</h1>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Backend template engine mengeksekusi ekspresi dinamis yang disuplai pengguna (Server-Side Template Injection / SSTI).",
+        "hypothesis_id": "hyp-search-ssti-rce",
+        "evidence_to_capture": [
+          "Request HTTP mentah dengan {{7*7}}",
+          "Response HTML yang merender angka 49"
+        ]
+      },
+      {
+        "id": "sig-search-sql-syntax-error",
+        "inspection_point_id": "search-sqli-probing",
+        "signal_description": "Injeksi tanda kutip tunggal memicu pesan error SQL syntax dari database backend.",
+        "output_snippet": "GET /items?search=phone' HTTP/1.1\n\nHTTP/1.1 500 Internal Server Error\nFatal error: Uncaught mysqli_sql_exception: You have an error in your SQL syntax near ''phone'%' in /var/www/search.php:12",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Parameter pencarian rentan terhadap SQL Injection, memungkinkan ekstraksi seluruh database via UNION based atau Error based SQLi.",
+        "hypothesis_id": "hyp-search-sqli-extract",
+        "evidence_to_capture": [
+          "Error message lengkap",
+          "URL parameter pencarian"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Database error saat query memuat kutip (')"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-search-ssti-rce",
+        "name": "Server-Side Template Injection (SSTI)",
+        "description": "Template engine backend mengeksekusi ekspresi pengguna yang berpotensi ditingkatkan menjadi Remote Code Execution.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-search-ssti-49"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim payload pembeda template engine: `{{7*'7'}}`. Jika hasilnya `7777777` adalah Jinja2/Python; jika `49` adalah Twig/PHP.",
+            "expected_output": "Mengetahui spesifikasi template engine yang digunakan.",
+            "interesting_output": "Identifikasi engine Jinja2 atau Twig secara akurat.",
+            "unexpected_output": "Template syntax error.",
+            "interpretation": "Menentukan payload escalation yang sesuai.",
+            "evidence_to_record": [
+              "Output body response"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-search-sqli-extract",
+        "name": "Data Extraction via SQL Injection in Search Feature",
+        "description": "Kueri pencarian tidak menggunakan parameterized query sehingga attacker dapat memanipulasi logika SQL.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-search-sql-syntax-error"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji query aman version lookup: search=phone' UNION SELECT @@version,2,3-- -",
+            "expected_output": "Query diblokir atau error.",
+            "interesting_output": "Versi database (misal: 10.5.12-MariaDB) muncul di daftar hasil pencarian.",
+            "unexpected_output": "500 generic error.",
+            "interpretation": "Versi DB muncul → UNION SQLi terbukti 100%.",
+            "evidence_to_record": [
+              "Screenshot hasil pencarian yang memuat versi DB"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Aplikasi meng-encode seluruh karakter dan tidak mengevaluasi template syntax."
+    ],
+    "common_mistakes": [
+      "Menganggap semua angka 49 adalah SSTI tanpa memverifikasi evaluasi."
+    ],
+    "ctf_notes": "SSTI pada Flask/Jinja2 adalah salah satu challenge paling populer di CTF Web modern.",
+    "pentest_notes": "SSTI umumnya bernilai Critical karena berujung pada RCE.",
+    "unknown_guide": {
+      "what_is_this": "Kolom input teks di aplikasi web yang memungkinkan pencarian konten.",
+      "why_does_it_exist": "Fitur navigasi standar untuk memudahkan pengguna menemukan informasi.",
+      "what_parts_matter": "Bagaimana input disaring sebelum dikirim ke database atau template engine.",
+      "what_normal_looks_like": "Pencarian menampilkan konten yang cocok tanpa mengeksekusi kode.",
+      "what_to_record_immediately": [
+        "Nama parameter pencarian"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Field pencarian aman dari injeksi template dan SQL injection.",
+      "why_not_secure": "Fitur filter kategori atau pagination mungkin memiliki parameter rentan.",
+      "next_pivot_observations": [
+        "obs-web-url-query-param",
+        "obs-web-form-input"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "23",
+        "slug": "ssti",
+        "title": "23. Server-Side Template Injection Workflow",
+        "section_title": "1.1 Template Engine Identification",
+        "anchor": "11-identifikasi-template-engine",
+        "rationale": "Panduan identifikasi engine template (Jinja, Twig, Smarty) dan payload RCE."
+      }
+    ],
+    "related_observations": [
+      "obs-web-url-query-param",
+      "obs-web-error-message"
+    ],
+    "provenance": [
+      "OWASP WSTG-INPV-18",
+      "CWE-1336"
+    ]
+  },
+  {
+    "id": "obs-web-form-input",
+    "title": "Input Form & Hidden Field Terdeteksi (Form Inputs & Hidden Fields)",
+    "domain": "Client-Side Security",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Tag HTML form: <input type='hidden' name='...' value='...'>",
+      "Field form yang dinonaktifkan (disabled / readonly) di sisi browser"
+    ],
+    "context": "Ditemukan saat menginspeksi halaman checkout belanja, edit profile, atau formulir pendaftaran.",
+    "why_it_matters": "Pengembang sering kali salah berasumsi bahwa input yang tidak terlihat oleh pengguna (hidden field) tidak dapat diubah. Penyerang dapat memodifikasi nilai hidden input via proxy untuk melakukan Mass Assignment atau Price Tampering.",
+    "questions_to_ask": [
+      "Apa fungsi dari masing-masing hidden input field?",
+      "Apakah ada parameter sensitif seperti 'role', 'is_admin', 'price', atau 'discount'?"
+    ],
+    "inspection_points": [
+      {
+        "id": "point-hidden-fields",
+        "name": "Audit Field Tersembunyi (Hidden Inputs Audit)",
+        "why_check": "Menemukan parameter bisnis sensitif yang dikirim secara tidak aman melalui client.",
+        "what_to_look_for": [
+          "<input type='hidden' name='role' value='user'>",
+          "<input type='hidden' name='price' value='99.99'>"
+        ],
+        "normal_baseline": "Hidden field hanya digunakan untuk state navigasi aman atau token anti-CSRF acak.",
+        "interesting_clues": [
+          "Parameter role atau harga dapat diedit langsung"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan layar inspect element HTML form",
+          "Request POST mentah"
+        ]
+      },
+      {
+        "id": "form-csrf-token-validation",
+        "name": "2. Analisis Keberadaan & Validasi CSRF Token",
+        "why_check": "Form tindakan sensitif (ubah password, transfer dana, ubah email) tanpa token CSRF rentan terhadap aksi paksa.",
+        "what_to_look_for": [
+          "Periksa apakah ada hidden input: <input type=\"hidden\" name=\"csrf_token\" value=\"...\">",
+          "Uji: kirim form tanpa csrf_token parameter — apakah request tetap berhasil?",
+          "Uji: ubah nilai token menjadi sembarang string atau token user lain"
+        ],
+        "normal_baseline": "Server menolak request tanpa CSRF token yang valid (403 Forbidden / CSRF token mismatch).",
+        "interesting_clues": [
+          "Form sensitif tidak menyertakan input CSRF token sama sekali",
+          "Server menerima request ketika parameter csrf_token dihapus seluruhnya"
+        ],
+        "evidence_to_capture": [
+          "Source code HTML form",
+          "Respons HTTP saat token dihapus"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-form-price-tamper",
+        "inspection_point_id": "point-hidden-fields",
+        "signal_description": "Mengubah hidden input 'price' dari 100 menjadi 1 berhasil diproses oleh gateway checkout.",
+        "output_snippet": "POST /checkout HTTP/1.1\nitem_id=42&price=1.00\n\nHTTP/1.1 200 OK\n{\"order_id\": \"9812\", \"status\": \"paid_success\", \"total\": 1.00}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi mempercayai harga dari client tanpa validasi ulang terhadap database produk di backend (Business Logic Flaw).",
+        "hypothesis_id": "hyp-form-logic-tampering",
+        "evidence_to_capture": [
+          "Request POST dengan harga diubah",
+          "Respon konfirmasi order sukses"
+        ]
+      },
+      {
+        "id": "sig-form-missing-csrf-validation",
+        "inspection_point_id": "form-csrf-token-validation",
+        "signal_description": "Request perubahan password berhasil dieksekusi saat parameter csrf_token dihapus.",
+        "output_snippet": "POST /user/update-email HTTP/1.1\nCookie: session=abc123\nemail=attacker@evil.com\n\nHTTP/1.1 200 OK\n{\"status\":\"email_updated\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "CSRF token tidak divalidasi oleh backend, memungkinkan pembuatan halaman web jebakan yang mengubah email korban secara otomatis.",
+        "hypothesis_id": "hyp-form-csrf-account-takeover",
+        "evidence_to_capture": [
+          "Request POST tanpa csrf_token",
+          "Respons 200 OK email_updated"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan error 'HMAC validation failed'"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-form-logic-tampering",
+        "name": "Business Logic Parameter Tampering",
+        "description": "Manipulasi parameter bisnis di form client mengarah pada manipulasi status transaksi.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-form-price-tamper"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim request dengan nilai harga normal untuk mencatat baseline transaksi, lalu kirim request uji dengan nilai yang diubah pada item lab.",
+            "expected_output": "Server menolak transaksi atau mengambil harga dari database backend.",
+            "interesting_output": "Transaksi diproses menggunakan harga manipulasi.",
+            "unexpected_output": "Account lockout.",
+            "interpretation": "Membuktikan ketiadaan validasi server-side pada input tersembunyi.",
+            "evidence_to_record": [
+              "Bukti transaksi Burp Repeater"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-form-csrf-account-takeover",
+        "name": "Cross-Site Request Forgery (CSRF) Account Takeover",
+        "description": "Ketiadaan validasi CSRF token memungkinkan penyerang memalsukan request atas nama korban yang sedang login.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-form-missing-csrf-validation"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Buat file PoC HTML sederhana dengan auto-submit form ke endpoint target, buka di browser terotentikasi.",
+            "expected_output": "Browser diblokir oleh SameSite atau server menolak permintaan.",
+            "interesting_output": "Email akun berubah tanpa interaksi eksplisit selain membuka halaman.",
+            "unexpected_output": "Captcha diminta.",
+            "interpretation": "Email berubah → CSRF terkonfirmasi valid.",
+            "evidence_to_record": [
+              "File PoC HTML CSRF",
+              "Screenshot perubahan data"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server menolak nilai yang diubah dan menghitung harga secara eksklusif di backend."
+    ],
+    "common_mistakes": [
+      "Mengira field disabled di HTML aman dari manipulasi."
+    ],
+    "ctf_notes": "Di CTF, inspeksi source code HTML sering kali menemukan hidden field dengan komentar author.",
+    "pentest_notes": "Price Tampering adalah temuan High Severity dengan dampak finansial langsung.",
+    "unknown_guide": {
+      "what_is_this": "Elemen form HTML yang tidak terlihat di layar pengguna namun tetap dikirim saat form disubmit.",
+      "why_does_it_exist": "Menyimpan variabel state seperti session id atau token CSRF.",
+      "what_parts_matter": "Nama variabel dan apakah nilainya berisi data penting.",
+      "what_normal_looks_like": "Hanya membawa token CSRF atau nilai referensi yang divalidasi ketat.",
+      "what_to_record_immediately": [
+        "Kode HTML tag form lengkap"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Seluruh data form divalidasi ulang di backend database.",
+      "why_not_secure": "Form mungkin masih rentan terhadap CSRF jika tidak memiliki anti-CSRF token yang valid.",
+      "next_pivot_observations": [
+        "obs-web-error-message",
+        "obs-web-api-endpoint"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "29",
+        "slug": "csrf",
+        "title": "29. CSRF Workflow",
+        "section_title": "1.1 CSRF Token Inspection",
+        "anchor": "11-csrf-token-inspection",
+        "rationale": "Analisis keberadaan dan validasi token anti-CSRF pada form web."
+      }
+    ],
+    "related_observations": [
+      "obs-web-id-parameter",
+      "obs-web-url-query-param"
+    ],
+    "provenance": [
+      "OWASP WSTG-BUSL-04",
+      "CWE-472"
+    ]
+  },
+  {
+    "id": "obs-web-error-message",
+    "title": "Pesan Kesalahan Rinci / Stack Trace Terdeteksi (Verbose Error / Stack Trace)",
+    "domain": "Information Disclosure",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Halaman error HTTP 500 memuat jejak tumpukan (Stack Trace) kode sumber",
+      "Pesan database exception: MySQL, PostgreSQL, MSSQL, Oracle, SQLite syntax error"
+    ],
+    "context": "Muncul saat mengirimkan input tak terduga, karakter kutip ganda, atau format tipe data salah.",
+    "why_it_matters": "Verbose error message adalah kebocoran informasi berharga (Information Disclosure). Pesan ini membongkar struktur internal aplikasi, nama tabel/kolom database, dan path direktori absolut.",
+    "questions_to_ask": [
+      "Teknologi apa yang disebutkan dalam pesan error?",
+      "Apakah path file lokal (/var/www/...) terungkap?",
+      "Apakah potongan query SQL asli tercetak di halaman?"
+    ],
+    "inspection_points": [
+      {
+        "id": "point-error-tech-leak",
+        "name": "Ekstraksi Komponen Teknologi & Path",
+        "why_check": "Mendapatkan informasi lingkungan backend tanpa menebak.",
+        "what_to_look_for": [
+          "Nama database",
+          "Path direktori web root"
+        ],
+        "normal_baseline": "Aplikasi menampilkan halaman error kustom yang rapi tanpa rincian teknis.",
+        "interesting_clues": [
+          "Potongan query SQL lengkap terlihat: SELECT * FROM users WHERE id = '...'"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan layar pesan error lengkap",
+          "Teks traceback mentah"
+        ]
+      },
+      {
+        "id": "err-stack-trace-secrets",
+        "name": "2. Stack Trace & Pembocoran Kode Sumber / Path Sistem",
+        "why_check": "Pesan error debug sering mencantumkan path direktori server, nama file, konfigurasi database, dan baris kode rentan.",
+        "what_to_look_for": [
+          "Periksa apakah error menampilkan path internal (misal: /var/www/vhosts/app/config/database.php)",
+          "Lihat apakah ada potongan kode PHP/Python/Java yang ditampilkan",
+          "Cari credentials atau database connection string yang tercantum dalam exception stack"
+        ],
+        "normal_baseline": "Halaman error generik (500 Internal Server Error kustom) tanpa detail internal.",
+        "interesting_clues": [
+          "Stack trace lengkap framework (Django debug page, Laravel Whoops, Spring Whitelabel)",
+          "Path instalasi server dan username sistem operasi bocor"
+        ],
+        "evidence_to_capture": [
+          "Screenshot halaman error debug lengkap",
+          "Path sistem yang bocor"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-error-sqli-syntax",
+        "inspection_point_id": "point-error-tech-leak",
+        "signal_description": "Pesan error membocorkan sintaks SQL engine secara spesifik.",
+        "output_snippet": "mysqli_query(): You have an error in your SQL syntax near '1'' at line 1 in /var/www/html/catalog.php on line 34",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Input pengguna dikonkatenasi langsung ke perintah SQL database (Error-Based SQL Injection vector).",
+        "hypothesis_id": "hyp-error-sqli",
+        "evidence_to_capture": [
+          "Request pemicu error",
+          "Pesan error mysqli lengkap"
+        ]
+      },
+      {
+        "id": "sig-err-framework-debug-active",
+        "inspection_point_id": "err-stack-trace-secrets",
+        "signal_description": "Halaman interaktif debug framework (Laravel Ignition / Django Debug) aktif di server produksi.",
+        "output_snippet": "HTTP/1.1 500 Internal Server Error\nTitle: Flare Exception - Laravel Ignition\nEnvironment: production\nDatabase: mysql://root:SuperSecretPass@127.0.0.1:3306/prod_db",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Mode debug aktif di server produksi membocorkan database credentials dan sering kali memiliki endpoint eksekusi kode (Ignition RCE CVE-2021-3129).",
+        "hypothesis_id": "hyp-err-debug-rce",
+        "evidence_to_capture": [
+          "Full HTML response debug page",
+          "Kredensial yang bocor (redacted)"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan error 'Out of Memory'"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-error-sqli",
+        "name": "Error-Based SQL Injection",
+        "description": "Pesan error database dapat dimanfaatkan untuk mengekstrak data sensitif menggunakan fungsi error generator.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-error-sqli-syntax"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim payload konversi tipe data aman (misal: CAST('1' AS INT)) untuk memverifikasi eksekusi SQL.",
+            "expected_output": "Pesan error terprediksi dari database engine.",
+            "interesting_output": "Data versi database tercetak di dalam teks pesan error.",
+            "unexpected_output": "WAF drop connection.",
+            "interpretation": "Mengonfirmasi kapabilitas Error-Based SQL Injection.",
+            "evidence_to_record": [
+              "Burp repeater raw response"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-err-debug-rce",
+        "name": "Information Disclosure & RCE via Exposed Debug Interface",
+        "description": "Interface debug yang aktif mengekspos kredensial database atau mengizinkan manipulasi kode.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-err-framework-debug-active"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi kredensial database yang bocor dengan mencoba koneksi lokal atau cek versi Ignition.",
+            "expected_output": "Kredensial sudah diganti atau tidak dapat diakses dari luar.",
+            "interesting_output": "Versi framework rentan CVE-2021-3129 terkonfirmasi.",
+            "unexpected_output": "Halaman debug dinonaktifkan.",
+            "interpretation": "Debug page aktif adalah temuan valid High/Critical.",
+            "evidence_to_record": [
+              "Screenshot informasi sensitif"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Aplikasi dinonaktifkan mode debug-nya dan menampilkan generic 500 error page."
+    ],
+    "common_mistakes": [
+      "Mengira semua status HTTP 500 adalah SQL injection."
+    ],
+    "ctf_notes": "Di CTF, Werkzeug debugger console aktif sering kali memiliki fitur interactive console yang dapat dieksekusi menjadi RCE via pin.",
+    "pentest_notes": "Information Disclosure via Stack Trace dicatat sebagai Low/Medium.",
+    "unknown_guide": {
+      "what_is_this": "Pesan kesalahan teknis dari server ketika terjadi kegagalan eksekusi kode internal.",
+      "why_does_it_exist": "Membantu programmer menemukan letak bug saat tahap pengembangan.",
+      "what_parts_matter": "Nama file, baris kode, nama database, dan informasi rahasia.",
+      "what_normal_looks_like": "Halaman error yang ramah pengguna tanpa rincian baris kode.",
+      "what_to_record_immediately": [
+        "Teks pesan error lengkap"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Server menangani exception dengan aman dan menyembunyikan stack trace.",
+      "why_not_secure": "Penanganan error yang rapi tidak menjamin aplikasi kebal dari Time-Based Blind SQLi.",
+      "next_pivot_observations": [
+        "obs-web-url-query-param",
+        "obs-web-api-endpoint"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "19",
+        "slug": "sql-injection",
+        "title": "19. SQL Injection Workflow",
+        "section_title": "4.1 Error-Based SQLi",
+        "anchor": "41-error-based-sqli",
+        "rationale": "Pelajari teknik ekstraksi data memanfaatkan fungsi error database."
+      }
+    ],
+    "related_observations": [
+      "obs-web-url-query-param",
+      "obs-web-search-field"
+    ],
+    "provenance": [
+      "OWASP WSTG-INFO-05",
+      "CWE-209"
+    ]
+  },
+  {
+    "id": "obs-web-file-upload",
+    "title": "Fitur Unggah File Terdeteksi (File Upload Interface)",
+    "domain": "Server-Side Vulnerabilities",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Form input HTML: <input type='file' name='avatar'>",
+      "Drag-and-drop zone untuk file upload",
+      "Header request HTTP: Content-Type: multipart/form-data"
+    ],
+    "context": "Ditemukan pada pengaturan profil user, form pendaftaran kerja, atau sistem ticketing.",
+    "why_it_matters": "Jika server menyimpan file di direktori web-accessible dan mengeksekusinya via web server handler (PHP, ASPX, JSP, Python), penyerang dapat mencapai Remote Code Execution (RCE).",
+    "questions_to_ask": [
+      "Tipe file apa yang diharapkan oleh aplikasi?",
+      "Apakah validasi dilakukan di client-side atau server-side?",
+      "Di mana file disimpan? Apakah dapat diakses langsung via URL?"
+    ],
+    "inspection_points": [
+      {
+        "id": "upload-validation-layers",
+        "name": "1. Lapisan Validasi File (Extension, MIME, Content)",
+        "why_check": "Mengetahui di mana dan bagaimana filter upload diterapkan.",
+        "what_to_look_for": [
+          "Ekstensi file",
+          "Header Content-Type",
+          "Magic bytes"
+        ],
+        "normal_baseline": "Server memverifikasi ekstensi terhadap whitelist ketat dan memeriksa magic bytes.",
+        "interesting_clues": [
+          "Validasi hanya berjalan di JavaScript browser",
+          "Blacklist filtering tidak lengkap (.phtml)"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan request multipart mentah",
+          "Daftar ekstensi"
+        ]
+      },
+      {
+        "id": "upload-bypass-techniques",
+        "name": "2. Teknik Bypass Validasi Upload",
+        "why_check": "Validasi file upload sering hanya dilakukan di client-side atau hanya cek extension — banyak cara bypass.",
+        "what_to_look_for": [
+          "Ubah Content-Type header: image/jpeg → application/x-php",
+          "Coba double extension: shell.php.jpg, shell.php5, shell.phtml, shell.pHp",
+          "Magic bytes: tambahkan GIF89a; di awal file PHP untuk lolos cek magic bytes",
+          "Null byte: shell.php%00.jpg (untuk PHP versi lama)",
+          "Perhatikan path direktori penyimpanan dari respons setelah upload"
+        ],
+        "normal_baseline": "Server menolak semua file non-image/non-document bahkan setelah manipulasi Content-Type dan extension.",
+        "interesting_clues": [
+          "Server menerima file .phtml atau .php5 yang dapat dieksekusi",
+          "Server menerima file dengan Content-Type dimanipulasi",
+          "Response upload menampilkan path penyimpanan file (e.g., /uploads/shell.jpg)",
+          "File yang diupload dapat diakses via URL publik dan dieksekusi server"
+        ],
+        "evidence_to_capture": [
+          "Request HTTP upload (method, headers, body) — Burp screenshot",
+          "Response server setelah upload (path, URL)",
+          "Bukti akses ke file yang diupload via URL",
+          "Bukti eksekusi: response dari webshell yang diupload (dalam lab)"
+        ]
+      },
+      {
+        "id": "upload-storage-location",
+        "name": "3. Lokasi Penyimpanan & Eksekusi File",
+        "why_check": "Bahkan jika file berbahaya berhasil diupload, perlu tahu apakah direktori penyimpanan dapat dieksekusi oleh web server.",
+        "what_to_look_for": [
+          "Perhatikan response body setelah upload: ada URL atau path file?",
+          "Coba akses URL file yang diupload langsung via browser",
+          "Uji apakah server mengeksekusi script: upload file dengan <?php echo \"PWNED\"; ?>",
+          "Cari direktori upload yang di-list di robots.txt, sitemap, atau error message"
+        ],
+        "normal_baseline": "File disimpan di luar web root atau dengan nama random yang tidak dapat ditebak. Eksekusi script di-disable dengan Options -ExecCGI.",
+        "interesting_clues": [
+          "File tersimpan di /uploads/ yang dapat diakses langsung via browser",
+          "Akses ke URL file mengembalikan konten PHP yang dieksekusi (bukan ditampilkan sebagai text)",
+          "Direktori upload di-serve tanpa .htaccess yang melarang eksekusi"
+        ],
+        "evidence_to_capture": [
+          "URL lengkap file yang diupload",
+          "Response HTTP saat mengakses file: apakah dieksekusi atau ditampilkan sebagai text",
+          "Screenshot eksekusi PHP jika berhasil (dalam lab)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-upload-ext-bypass",
+        "inspection_point_id": "upload-validation-layers",
+        "signal_description": "File berekstensi script alternatif (.phtml) berhasil diunggah dengan status 200 OK.",
+        "output_snippet": "POST /upload.php HTTP/1.1\nContent-Disposition: form-data; name=\"file\"; filename=\"test.phtml\"\n\nHTTP/1.1 200 OK\n{\"status\": \"success\", \"url\": \"/uploads/test.phtml\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Filter ekstensi server berbasis blacklist yang tidak lengkap, memblokir .php namun melewatkan ekstensi eksekutabel sekunder.",
+        "hypothesis_id": "hyp-upload-rce",
+        "evidence_to_capture": [
+          "Request upload file .phtml beserta respon 200 OK"
+        ]
+      },
+      {
+        "id": "sig-upload-php-executed",
+        "inspection_point_id": "upload-storage-location",
+        "signal_description": "File PHP yang diupload berhasil dieksekusi oleh web server — Remote Code Execution confirmed.",
+        "output_snippet": "# Upload shell.php dengan konten: <?php system($_GET[\"cmd\"]); ?>\nGET /uploads/shell.php?cmd=id\n\nHTTP/1.1 200 OK\nuid=33(www-data) gid=33(www-data) groups=33(www-data)",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Web shell aktif — RCE terkonfirmasi. Attacker dapat menjalankan perintah sistem sebagai user web server.",
+        "hypothesis_id": "hyp-upload-rce",
+        "evidence_to_capture": [
+          "URL web shell",
+          "Output perintah id, whoami, hostname",
+          "Screenshot RCE (dalam lab)"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "HTTP 500 Image Processing Exception saat mengunggah file SVG"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-upload-rce",
+        "name": "Remote Code Execution via Unrestricted Web Shell Upload",
+        "description": "File skrip dieksekusi oleh web server backend saat diakses melalui browser.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-upload-ext-bypass"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Unggah file uji coba non-destruktif: info.phtml berisi `<?php echo 'SAFE_TEST_VERIFIED'; ?>`.",
+            "expected_output": "File ditolak atau jika diakses menampilkan kode sumber mentah.",
+            "interesting_output": "Halaman /uploads/info.phtml merender teks 'SAFE_TEST_VERIFIED'.",
+            "unexpected_output": "File didownload otomatis sebagai binary.",
+            "interpretation": "Mengonfirmasi server mengeksekusi skrip pengguna secara langsung.",
+            "evidence_to_record": [
+              "Curl output /uploads/info.phtml"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server menolak seluruh file selain whitelist (.jpg, .png)."
+    ],
+    "common_mistakes": [
+      "Langsung mengunggah webshell destruktif sebelum memvalidasi eksekusi secara aman."
+    ],
+    "ctf_notes": "Di CTF, upload filter sering kali dapat dilewati dengan Null Byte atau Double Extension.",
+    "pentest_notes": "Dalam pentest resmi, selalu gunakan payload non-destruktif.",
+    "unknown_guide": {
+      "what_is_this": "Mekanisme formulir web yang memungkinkan client mentransfer file lokal ke server target.",
+      "why_does_it_exist": "Fungsionalitas bisnis umum untuk upload dokumen atau avatar profil.",
+      "what_parts_matter": "Ekstensi file, Content-Type, dan keterjangkauan file via URL.",
+      "what_normal_looks_like": "Server hanya menerima tipe file yang relevan dan menyimpan di folder terisolasi.",
+      "what_to_record_immediately": [
+        "Request upload mentah",
+        "Respon server dan URL file"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Form upload memvalidasi file secara ketat di server-side.",
+      "why_not_secure": "Keamanan form upload tidak menjamin aplikasi kebal terhadap LFI via PHP wrapper.",
+      "next_pivot_observations": [
+        "obs-web-url-query-param",
+        "obs-web-error-message"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "25",
+        "slug": "file-upload",
+        "title": "25. File Upload Vulnerability Workflow",
+        "section_title": "1.1 File Upload Reconnaissance",
+        "anchor": "11-file-upload-reconnaissance",
+        "rationale": "Pelajari taksonomi lengkap bypass upload: MIME, Extension, Magic Bytes, dan Race Condition."
+      }
+    ],
+    "related_observations": [
+      "obs-web-url-query-param",
+      "obs-web-form-input"
+    ],
+    "provenance": [
+      "OWASP WSTG-BUSL-08",
+      "CWE-434"
+    ]
+  },
+  {
+    "id": "obs-web-backup-config-file",
+    "title": "File Backup & Konfigurasi Terekspos (Exposed Backup & Config Files)",
+    "domain": "Information Disclosure",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "File berekstensi backup: .bak, .old, .swp, .save, ~",
+      "File arsip terkompresi di web root: backup.zip, site.tar.gz, dump.sql",
+      "Folder kontrol versi terekspos: /.git/, /.env, /web.config, /settings.py"
+    ],
+    "context": "Ditemukan saat melakukan directory fuzzing dengan ffuf / gobuster.",
+    "why_it_matters": "Web server tidak memproses file .bak sebagai script melainkan menyajikannya sebagai plaintext, membongkar seluruh kode sumber backend dan password database.",
+    "questions_to_ask": [
+      "Apakah file dapat diunduh langsung tanpa otentikasi?",
+      "Apakah file memuat kredensial database?"
+    ],
+    "inspection_points": [
+      {
+        "id": "backup-content-analysis",
+        "name": "Analisis Konten File Sensitif",
+        "why_check": "Mengekstrak rahasia infrastruktur untuk eskalasi.",
+        "what_to_look_for": [
+          "Password database plaintext",
+          "API keys"
+        ],
+        "normal_baseline": "File konfigurasi ditolak dengan HTTP 403/404.",
+        "interesting_clues": [
+          "File .env dapat diunduh dan memuat kredensial AWS atau database"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan layar potongan isi file konfigurasi",
+          "Header HTTP 200 OK"
+        ]
+      },
+      {
+        "id": "backup-git-env-discovery",
+        "name": "2. Deteksi Folder .git dan File .env",
+        "why_check": "Folder .git yang terekspos memungkinkan rekonstruksi seluruh source code aplikasi via git-dumper.",
+        "what_to_look_for": [
+          "curl -I http://TARGET/.env dan curl -I http://TARGET/.git/HEAD",
+          "Periksa status respons: 200 OK dengan konten \"ref: refs/heads/master\" untuk .git/HEAD",
+          "Gunakan gobuster / ffuf dengan wordlist backup: .env, .git, config.php.bak, backup.sql"
+        ],
+        "normal_baseline": "Server mengembalikan 404 Not Found atau 403 Forbidden untuk semua file tersembunyi.",
+        "interesting_clues": [
+          ".git/HEAD mengembalikan 200 OK dengan format teks Git yang valid",
+          ".env mengembalikan 200 OK dengan kredensial database dan API keys"
+        ],
+        "evidence_to_capture": [
+          "Output curl -i http://TARGET/.git/HEAD",
+          "Baris pertama file .env (redacted)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-backup-env-exposed",
+        "inspection_point_id": "backup-content-analysis",
+        "signal_description": "File /.env berhasil diunduh dan memuat kredensial MySQL root dan APP_KEY.",
+        "output_snippet": "$ curl http://target.com/.env\nDB_CONNECTION=mysql\nDB_HOST=127.0.0.1\nDB_PORT=3306\nDB_DATABASE=production\nDB_USERNAME=root\nDB_PASSWORD=SuperSecurePass99!",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi mengekspos environment variable ke publik (Critical Information Disclosure).",
+        "hypothesis_id": "hyp-backup-cred-access",
+        "evidence_to_capture": [
+          "Output curl http://target.com/.env",
+          "Status respon 200 OK"
+        ]
+      },
+      {
+        "id": "sig-backup-git-exposed",
+        "inspection_point_id": "backup-git-env-discovery",
+        "signal_description": "Direktori .git terekspos dan dapat diunduh, memungkinkan dump source code lengkap.",
+        "output_snippet": "$ curl -i http://192.168.1.40/.git/HEAD\nHTTP/1.1 200 OK\nContent-Type: text/plain\n\nref: refs/heads/main",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Attacker dapat menggunakan git-dumper untuk mengunduh seluruh repository termasuk commit history, source code, dan hardcoded API keys.",
+        "hypothesis_id": "hyp-backup-git-source-dump",
+        "evidence_to_capture": [
+          "Response curl .git/HEAD",
+          "Contoh commit log hasil git-dumper"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "File .git/HEAD terdeteksi dan mengembalikan teks: 'ref: refs/heads/main'"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-backup-cred-access",
+        "name": "Credential Access via Exposed Environment Configuration",
+        "description": "Kredensial database yang terekspos dapat digunakan untuk pivot ke database service.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-backup-env-exposed"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji apakah database menerima koneksi remote menggunakan kredensial tersebut.",
+            "expected_output": "Mengetahui apakah kredensial aktif pada layanan target.",
+            "interesting_output": "Berhasil login ke MySQL.",
+            "unexpected_output": "Access denied.",
+            "interpretation": "Membuktikan validitas kredensial yang bocor.",
+            "evidence_to_record": [
+              "Log percobaan koneksi"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-backup-git-source-dump",
+        "name": "Full Source Code Disclosure via Exposed Git Repository",
+        "description": "Folder metadata .git di web root tidak diblokir web server, memungkinkan source code reconstruction.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-backup-git-exposed"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan uji aman: curl -s http://TARGET/.git/config | grep -i \"url\"",
+            "expected_output": "403 Forbidden atau 404.",
+            "interesting_output": "URL repository internal atau konfigurasi Git remote muncul.",
+            "unexpected_output": "HTML redirect.",
+            "interpretation": "File config terbaca → dump source code tervalidasi 100%.",
+            "evidence_to_record": [
+              "Cuplikan file .git/config"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Web server mengembalikan 403 Forbidden atau 404 Not Found pada seluruh ekstensi backup."
+    ],
+    "common_mistakes": [
+      "Mengabaikan file editor swap seperti .index.php.swp."
+    ],
+    "ctf_notes": "Di CTF, gunakan tool git-dumper untuk merekonstruksi seluruh repo jika folder .git terbuka.",
+    "pentest_notes": "Exposed .env atau backup database adalah temuan Critical.",
+    "unknown_guide": {
+      "what_is_this": "File cadangan atau konfigurasi sistem yang tidak sengaja diletakkan di folder publik web server.",
+      "why_does_it_exist": "Ditinggalkan oleh developer saat mengedit file di server produksi.",
+      "what_parts_matter": "Isi kode sumber, password database, dan API key.",
+      "what_normal_looks_like": "File konfigurasi tidak pernah dapat diakses melalui browser web.",
+      "what_to_record_immediately": [
+        "URL file backup",
+        "Daftar kredensial yang tertera di dalamnya"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Tidak ditemukan file backup di web root.",
+      "why_not_secure": "Aplikasi mungkin masih memiliki endpoint API tersembunyi.",
+      "next_pivot_observations": [
+        "obs-web-admin-panel",
+        "obs-web-api-endpoint"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "16",
+        "slug": "directory-vhost-fuzzing",
+        "title": "16. Directory & VHost Fuzzing Workflow",
+        "section_title": "2.1 Backup Files Discovery",
+        "anchor": "21-backup-files-discovery",
+        "rationale": "Pelajari strategi wordlist fuzzing untuk menemukan file backup, ekstensi .swp, dan folder .git."
+      }
+    ],
+    "related_observations": [
+      "obs-web-admin-panel",
+      "obs-priv-credential-history"
+    ],
+    "provenance": [
+      "OWASP WSTG-CONF-04",
+      "MITRE ATT&CK T1552.001"
+    ]
+  },
+  {
+    "id": "obs-web-admin-panel",
+    "title": "Panel Administrasi Terdeteksi (Admin Panel / Management Portal)",
+    "domain": "Administration & Access Control",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Path URL: /admin, /administrator, /manage, /controlpanel, /cpanel, /wp-admin",
+      "Judul halaman: 'Admin Dashboard', 'Management Console'",
+      "Form login terpisah dari login pengguna umum"
+    ],
+    "context": "Ditemukan via fuzzing direktori, link di footer, atau crawling halaman awal.",
+    "why_it_matters": "Panel admin memegang kendali tertinggi atas fungsionalitas dan data aplikasi. Menemukan panel admin membuka pengujian kredensial default vendor, pembatasan IP (IP whitelisting), dan fitur administratif berbahaya yang berujung pada RCE.",
+    "questions_to_ask": [
+      "Apakah panel admin dapat diakses publik atau dibatasi oleh IP/VPN?",
+      "Software atau CMS apa yang menjalankan panel ini?",
+      "Apakah ada kredensial default bawaan vendor yang belum diubah?"
+    ],
+    "inspection_points": [
+      {
+        "id": "admin-ip-restriction",
+        "name": "Audit Pembatasan Akses Jaringan (IP Whitelisting)",
+        "why_check": "Memastikan antarmuka administratif tidak terekspos ke internet publik.",
+        "what_to_look_for": [
+          "Status code 200 OK dari sembarang IP publik vs 403 Forbidden"
+        ],
+        "normal_baseline": "Akses ke panel admin hanya diizinkan dari subnet kantor atau IP VPN internal.",
+        "interesting_clues": [
+          "Panel admin terbuka penuh untuk koneksi internet publik tanpa perlambatan"
+        ],
+        "evidence_to_capture": [
+          "Tangkapan layar form login admin",
+          "Alamat IP publik tester"
+        ]
+      },
+      {
+        "id": "admin-default-cred-bypass",
+        "name": "2. Pengujian Kredensial Default & IP Restriction",
+        "why_check": "Panel administrasi internal sering kali menggunakan password default (admin/admin) atau tidak menerapkan IP restriction.",
+        "what_to_look_for": [
+          "Uji kombinasi default: admin:admin, admin:password, admin:123456, root:root",
+          "Cek apakah IP whitelist dapat dibypass via header: X-Forwarded-For: 127.0.0.1, X-Real-IP: 127.0.0.1",
+          "Periksa apakah ada mekanisme CAPTCHA atau akun lockout"
+        ],
+        "normal_baseline": "Panel admin dilindungi MFA, IP restricted (403), dan kredensial default diganti.",
+        "interesting_clues": [
+          "Login berhasil dengan kredensial default vendor",
+          "Header X-Forwarded-For: 127.0.0.1 mengubah status respons dari 403 ke 200 OK"
+        ],
+        "evidence_to_capture": [
+          "Screenshot login panel admin",
+          "Header manipulasi IP yang berhasil"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-admin-default-pass",
+        "inspection_point_id": "admin-ip-restriction",
+        "signal_description": "Kredensial bawaan admin:admin berhasil membuka konsol administrasi.",
+        "output_snippet": "POST /admin/login HTTP/1.1\nuser=admin&pass=admin\n\nHTTP/1.1 302 Found\nLocation: /admin/dashboard\nSet-Cookie: admin_auth=true",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Administrator mengabaikan hardening konfigurasi awal (Default Administrative Credentials).",
+        "hypothesis_id": "hyp-admin-takeover",
+        "evidence_to_capture": [
+          "Request POST login admin",
+          "Screenshot dashboard pengelolaan sistem"
+        ]
+      },
+      {
+        "id": "sig-admin-ip-bypass-header",
+        "inspection_point_id": "admin-default-cred-bypass",
+        "signal_description": "Menambahkan header X-Forwarded-For: 127.0.0.1 membypass blokir IP 403 pada panel admin.",
+        "output_snippet": "GET /admin HTTP/1.1\nHost: target.com\nX-Forwarded-For: 127.0.0.1\n\nHTTP/1.1 200 OK\n<title>Enterprise Administration Dashboard</title>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Reverse proxy / load balancer mempercayai header IP client secara membabi buta, memungkinkan bypass pembatasan jaringan internal.",
+        "hypothesis_id": "hyp-admin-bypass-takeover",
+        "evidence_to_capture": [
+          "Request dengan header X-Forwarded-For",
+          "Halaman admin yang terbuka"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Panel admin menampilkan phpinfo() atau debug panel di halaman awal tanpa login"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-admin-takeover",
+        "name": "Administrative Takeover via Default Credentials",
+        "description": "Pengendalian sistem penuh diperoleh melalui kredensial administratif default pabrikan.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-admin-default-pass"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Periksa halaman pengaturan sistem untuk mencari fitur upload file atau backup database.",
+            "expected_output": "Mengidentifikasi vektor eksploitasi lanjutan yang sah di panel admin.",
+            "interesting_output": "Menemukan fitur upload template/plugin PHP.",
+            "unexpected_output": "Akses logout paksa.",
+            "interpretation": "Membuka attack path langsung menuju Remote Code Execution.",
+            "evidence_to_record": [
+              "Screenshot menu administratif"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-admin-bypass-takeover",
+        "name": "Administrative Access via Reverse Proxy IP Spoofing",
+        "description": "Pembatasan akses admin berbasis IP dapat dilewati dengan memalsukan header IP forwarding.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-admin-ip-bypass-header"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Akses halaman admin dengan dan tanpa header X-Forwarded-For, bandingkan status kodenya (403 vs 200).",
+            "expected_output": "Keduanya menghasilkan 403 Forbidden.",
+            "interesting_output": "Dengan header menghasilkan 200 OK, tanpa header menghasilkan 403 Forbidden.",
+            "unexpected_output": "Redirect ke portal login eksternal.",
+            "interpretation": "Perbedaan status membuktikan bypass IP restriction.",
+            "evidence_to_record": [
+              "Perbandingan request & response berdampingan"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Panel admin meminta 2FA perangkat keras atau menolak koneksi dari luar VPN internal."
+    ],
+    "common_mistakes": [
+      "Mencoba brute force ribuan password pada panel admin yang memiliki proteksi lockout aktif."
+    ],
+    "ctf_notes": "Di CTF, begitu masuk ke panel admin (misal: WordPress), langkah berikutnya hampir selalu upload plugin PHP jahat.",
+    "pentest_notes": "Exposed Admin Panel tanpa IP restriction adalah temuan Medium; jika dapat diakses dengan default creds, severity menjadi Critical.",
+    "unknown_guide": {
+      "what_is_this": "Halaman antarmuka khusus untuk administrator mengelola seluruh sistem web.",
+      "why_does_it_exist": "Mempermudah staf IT mengatur pengguna dan database secara visual.",
+      "what_parts_matter": "URL akses, perlindungan jaringan (IP restriction), dan kekuatan kredensial akun.",
+      "what_normal_looks_like": "Hanya dapat dibuka dari jaringan internal perusahaan dan mewajibkan otentikasi MFA.",
+      "what_to_record_immediately": [
+        "URL panel admin",
+        "Nama vendor software (jika CMS)"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Panel admin terproteksi dengan MFA dan kredensial kuat.",
+      "why_not_secure": "Backend API yang mendukung panel admin mungkin tidak memvalidasi otorisasi jika diakses langsung.",
+      "next_pivot_observations": [
+        "obs-web-api-endpoint",
+        "obs-web-cors-headers"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "3.1 Tabel Default Credentials",
+        "anchor": "31-tabel-default-credentials",
+        "rationale": "Daftar kredensial default berbagai perangkat keras, router, CMS, dan software server."
+      }
+    ],
+    "related_observations": [
+      "obs-web-login-page",
+      "obs-web-backup-config-file"
+    ],
+    "provenance": [
+      "OWASP WSTG-CONF-05",
+      "MITRE ATT&CK T1078.001"
+    ]
+  },
+  {
+    "id": "obs-web-api-endpoint",
+    "title": "Endpoint API REST / JSON Terdeteksi (API Endpoint Inspection)",
+    "domain": "API Security",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "URL pola API: /api/v1/..., /rest/..., /graphql, /swagger.json, /v2/data",
+      "Header respons HTTP: Content-Type: application/json",
+      "Struktur data respon berupa objek atau array JSON: {\"status\": \"ok\", \"data\": [...]}"
+    ],
+    "context": "Teramati pada network tab DevTools browser saat aplikasi modern melakukan background data fetch (XHR/Fetch).",
+    "why_it_matters": "API backend sering kali dirancang dengan asumsi bahwa pemanggilnya hanyalah aplikasi frontend mereka sendiri. Ini sering kali menyebabkan hilangnya validasi otorisasi di sisi backend (BOLA/IDOR) dan paparan data berlebih (Excessive Data Exposure).",
+    "questions_to_ask": [
+      "Bagaimana API mengotentikasi request (Bearer Token JWT atau cookie)?",
+      "Apakah ada endpoint dokumentasi publik (Swagger / OpenAPI UI)?",
+      "Apakah respon JSON memuat properti data sensitif yang tidak ditampilkan di antarmuka UI?"
+    ],
+    "inspection_points": [
+      {
+        "id": "api-excessive-data",
+        "name": "Audit Paparan Data Berlebih (Excessive Data Exposure)",
+        "why_check": "Melihat apakah backend mengirim seluruh objek database ke client dan hanya memfilter tampilan di JavaScript.",
+        "what_to_look_for": [
+          "Field tersembunyi di JSON: password_hash, ssn, role, internal_notes"
+        ],
+        "normal_baseline": "API hanya mengembalikan atribut spesifik yang dibutuhkan oleh antarmuka pengguna saat ini.",
+        "interesting_clues": [
+          "Respon JSON untuk profil publik memuat hash password atau alamat email pribadi user lain"
+        ],
+        "evidence_to_capture": [
+          "Body response JSON mentah lengkap dari Burp Suite"
+        ]
+      },
+      {
+        "id": "api-schema-swagger-docs",
+        "name": "2. Pencarian Skema API & Dokumentasi Swagger/OpenAPI",
+        "why_check": "Dokumentasi Swagger atau OpenAPI membocorkan seluruh endpoint tersembunyi, struktur payload, dan parameter internal.",
+        "what_to_look_for": [
+          "Cek endpoint dokumentasi standar: /swagger-ui.html, /v2/api-docs, /openapi.json, /api/swagger",
+          "Periksa apakah ada endpoint versi lama yang masih aktif: /api/v1/ vs /api/v2/",
+          "Cari endpoint GraphQL: /graphql, /graphiql (apakah introspection query diizinkan?)"
+        ],
+        "normal_baseline": "Dokumentasi API diproteksi otentikasi internal atau dinonaktifkan di environment produksi.",
+        "interesting_clues": [
+          "Swagger UI terbuka untuk publik tanpa otentikasi",
+          "GraphQL introspection query mengembalikan skema lengkap database dan mutation"
+        ],
+        "evidence_to_capture": [
+          "URL dokumentasi Swagger/OpenAPI yang dapat diakses",
+          "Daftar endpoint sensitif"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-api-excessive-data",
+        "inspection_point_id": "api-excessive-data",
+        "signal_description": "Respon endpoint /api/users/1 mengembalikan kolom password_hash dan role admin di payload JSON.",
+        "output_snippet": "GET /api/users/1 HTTP/1.1\n\nHTTP/1.1 200 OK\n{\"id\": 1, \"name\": \"Admin\", \"password_hash\": \"$2y$12$e8F...\", \"role\": \"superadmin\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi tidak menggunakan Data Transfer Object (DTO) dan membocorkan data sensitif langsung dari model database (OWASP API3: Excessive Data Exposure).",
+        "hypothesis_id": "hyp-api-data-leak",
+        "evidence_to_capture": [
+          "Request & Response lengkap endpoint profil"
+        ]
+      },
+      {
+        "id": "sig-api-swagger-public-exposed",
+        "inspection_point_id": "api-schema-swagger-docs",
+        "signal_description": "Dokumentasi Swagger UI terbuka ke publik, menampilkan endpoint internal administratif.",
+        "output_snippet": "GET /v2/api-docs HTTP/1.1\n\nHTTP/1.1 200 OK\nContent-Type: application/json\n{\"swagger\":\"2.0\",\"paths\":{\"/api/internal/users/delete\":{\"post\":{...}}}}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Seluruh struktur API dapat dipelajari attacker secara instan tanpa perlu fuzzing manual.",
+        "hypothesis_id": "hyp-api-schema-abuse",
+        "evidence_to_capture": [
+          "Cuplikan file api-docs JSON"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Mengirim Content-Type: application/xml menghasilkan eksekusi XML parser (XXE)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-api-data-leak",
+        "name": "Excessive Data Exposure & Mass Assignment on API",
+        "description": "Paparan data sensitif di API memudahkan peretasan kredensial dan pemahaman skema database.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-api-excessive-data"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Analisis apakah field yang terekspos (misal: role) dapat dikirim balik melalui request PUT /api/users/1.",
+            "expected_output": "Server menolak atau mengabaikan field role.",
+            "interesting_output": "Role berhasil diperbarui di database.",
+            "unexpected_output": "HTTP 405 Method Not Allowed.",
+            "interpretation": "Membuktikan kombinasi Excessive Data Exposure dan Mass Assignment.",
+            "evidence_to_record": [
+              "Perubahan status profil sebelum dan sesudah PUT"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-api-schema-abuse",
+        "name": "Targeted API Abuse via Public Swagger Documentation",
+        "description": "Endpoint internal dan parameter tidak terdokumentasi ditemukan melalui file spesifikasi OpenAPI publik.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-api-swagger-public-exposed"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Pilih satu endpoint non-destruktif dari Swagger (contoh: GET /api/v1/system/status), uji tanpa auth.",
+            "expected_output": "401 Unauthorized.",
+            "interesting_output": "200 OK dengan informasi status internal sistem.",
+            "unexpected_output": "404 Not Found.",
+            "interpretation": "Endpoint aktif tanpa otentikasi terkonfirmasi.",
+            "evidence_to_record": [
+              "Respons dari endpoint status"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "API hanya mengembalikan data publik minimal dan memvalidasi otorisasi di setiap request."
+    ],
+    "common_mistakes": [
+      "Hanya menguji metode GET dan lupa mencoba POST, PUT, DELETE, atau PATCH pada endpoint API."
+    ],
+    "ctf_notes": "Di CTF, endpoint API sering kali tidak memiliki rate limiting sehingga brute force PIN dapat dilakukan sangat cepat.",
+    "pentest_notes": "Dokumentasikan endpoint yang tidak terdaftar di dokumentasi resmi (Shadow APIs) sebagai finding manajemen aset.",
+    "unknown_guide": {
+      "what_is_this": "Antarmuka pertukaran data antar sistem yang menggunakan format terstruktur (biasanya JSON).",
+      "why_does_it_exist": "Menghubungkan frontend web atau aplikasi mobile dengan server database pusat.",
+      "what_parts_matter": "Token otentikasi di header dan struktur data JSON yang dikirim dan diterima.",
+      "what_normal_looks_like": "Mengirim data yang terenkripsi dan memvalidasi izin pengguna secara ketat.",
+      "what_to_record_immediately": [
+        "URL endpoint API",
+        "Header Authorization yang digunakan"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Endpoint API membatasi data respon dan memvalidasi otentikasi dengan benar.",
+      "why_not_secure": "Versi lama v1 masih mungkin aktif di server tanpa otentikasi.",
+      "next_pivot_observations": [
+        "obs-web-id-parameter",
+        "obs-web-jwt",
+        "obs-web-cors-headers"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "30",
+        "slug": "api-security",
+        "title": "30. API Security Workflow",
+        "section_title": "1.1 API Endpoint Discovery",
+        "anchor": "11-api-endpoint-discovery",
+        "rationale": "Pelajari teknik pemetaan API, pengujian BOLA/IDOR, BFLA, dan Mass Assignment."
+      }
+    ],
+    "related_observations": [
+      "obs-web-id-parameter",
+      "obs-web-jwt"
+    ],
+    "provenance": [
+      "OWASP API Security Top 10",
+      "RFC 7231"
+    ]
+  },
+  {
+    "id": "obs-web-jwt",
+    "title": "Token JWT Terdeteksi (JSON Web Token Found)",
+    "domain": "Authentication & Session",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "String terbagi menjadi 3 bagian yang dipisahkan oleh karakter titik (header.payload.signature)",
+      "Karakter awal tipikal Base64Url: eyJ...",
+      "Ditemukan di header HTTP: Authorization: Bearer eyJhbGci..."
+    ],
+    "context": "Muncul pada Single Page Applications (SPA), autentikasi REST API modern, dan microservices.",
+    "why_it_matters": "JWT adalah standar RFC 7519 untuk pertukaran klaim terotentikasi secara stateless. Kelemahan verifikasi tanda tangan kriptografis (algoritma 'none' atau weak HMAC secret) dapat memungkinkan penyerang memalsukan identitas dan hak akses admin.",
+    "questions_to_ask": [
+      "Algoritma apa yang dideklarasikan pada header JWT ('alg': 'HS256', 'RS256', 'none')?",
+      "Klaim apa saja yang dibawa dalam payload (sub, role, admin)?",
+      "Apakah server benar-benar memvalidasi signature pada setiap request?",
+      "Apakah kunci simetris HS256 rentan terhadap dictionary attack offline?"
+    ],
+    "inspection_points": [
+      {
+        "id": "jwt-header-algorithm",
+        "name": "1. Inspeksi Header & Algoritma Tanda Tangan",
+        "why_check": "Melihat mekanisme kriptografi yang diharapkan server.",
+        "what_to_look_for": [
+          "Nilai klaim 'alg'",
+          "Klaim 'kid'"
+        ],
+        "normal_baseline": "Algoritma asimetris kuat (RS256) atau HS256 dengan secret key panjang acak.",
+        "interesting_clues": [
+          "Header 'alg' diset ke 'none'",
+          "Klaim 'kid' memuat path traversal"
+        ],
+        "evidence_to_capture": [
+          "JSON decoded header mentah",
+          "Nilai string JWT asli"
+        ]
+      },
+      {
+        "id": "jwt-algorithm-confusion",
+        "name": "2. Algorithm Confusion & Header Manipulation",
+        "why_check": "JWT yang mengizinkan alg:none atau menerima RS256 diubah ke HS256 dengan public key sebagai secret adalah kerentanan kritis.",
+        "what_to_look_for": [
+          "Decode header JWT: echo \"HEADER\" | base64 -d → periksa alg dan kid",
+          "Coba modifikasi alg: \"none\" lalu kirim tanpa signature",
+          "Coba ubah RS256 → HS256 dan sign dengan public key server",
+          "Periksa apakah kid (Key ID) digunakan untuk lookup file: kid: \"../../etc/passwd\""
+        ],
+        "normal_baseline": "Server menolak token dengan alg:none atau signature yang tidak valid dengan error 401/403.",
+        "interesting_clues": [
+          "Server menerima token dengan alg: \"none\" dan signature kosong",
+          "Server menerima token RS256→HS256 yang di-sign dengan public key",
+          "kid parameter mengikuti path pada filesystem",
+          "Token payload berisi field seperti role, admin, isAdmin yang dapat dimodifikasi"
+        ],
+        "evidence_to_capture": [
+          "Header JWT decoded (alg, kid, typ)",
+          "Payload JWT decoded (claims)",
+          "Response server setelah manipulasi algorithm"
+        ]
+      },
+      {
+        "id": "jwt-secret-weakness",
+        "name": "3. Weak Secret & Offline Cracking",
+        "why_check": "HS256/HS512 JWT dengan secret lemah dapat di-crack offline untuk memalsukan token apapun.",
+        "what_to_look_for": [
+          "Simpan full JWT token",
+          "hashcat -m 16500 token.txt /usr/share/wordlists/rockyou.txt",
+          "john --format=HMAC-SHA256 --wordlist=rockyou.txt token.txt",
+          "Coba common secrets: \"secret\", \"password\", nama aplikasi, \"jwt_secret\""
+        ],
+        "normal_baseline": "Secret cukup panjang dan acak — crack tidak feasible dalam waktu reasonable.",
+        "interesting_clues": [
+          "Secret ter-crack: secret=\"secret\", \"password123\", nama_aplikasi",
+          "Secret ditemukan dalam source code yang bocor",
+          "Waktu crack < 1 menit dengan wordlist standar"
+        ],
+        "evidence_to_capture": [
+          "Token JWT original",
+          "Secret yang berhasil di-crack",
+          "Contoh token yang berhasil diforged dengan secret tersebut"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-jwt-none-accepted",
+        "inspection_point_id": "jwt-header-algorithm",
+        "signal_description": "Server menerima JWT dengan header 'alg': 'none' dan signature kosong.",
+        "output_snippet": "GET /api/admin/metrics HTTP/1.1\nAuthorization: Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiJ9.\n\nHTTP/1.1 200 OK\n{\"metrics\": \"secret_admin_data\"}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Backend parser JWT mengizinkan cipher none tanpa memverifikasi tanda tangan kriptografis.",
+        "hypothesis_id": "hyp-jwt-none-bypass",
+        "evidence_to_capture": [
+          "Raw request dengan JWT unsigned",
+          "Respon 200 OK administratif"
+        ]
+      },
+      {
+        "id": "sig-jwt-alg-none",
+        "inspection_point_id": "jwt-algorithm-confusion",
+        "signal_description": "Server menerima JWT dengan alg: \"none\" dan signature kosong — signature verification bypass.",
+        "output_snippet": "# Modified JWT dengan alg:none\neyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiJ9.\n\n# Response: HTTP 200 OK dengan data admin",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Server tidak memvalidasi signature — attacker dapat membuat token dengan claim apapun (admin, root, arbitrary user ID).",
+        "hypothesis_id": "hyp-jwt-alg-none-bypass",
+        "evidence_to_capture": [
+          "Token asli",
+          "Token yang dimodifikasi",
+          "Response 200 OK dengan data yang di-claim"
+        ]
+      },
+      {
+        "id": "sig-jwt-weak-secret",
+        "inspection_point_id": "jwt-secret-weakness",
+        "signal_description": "HMAC secret berhasil di-crack dengan wordlist standar.",
+        "output_snippet": "$ hashcat -m 16500 token.txt rockyou.txt\nToken.$2y$10$... : secret\nSession..........: hashcat\nStatus...........: Cracked",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Dengan secret yang diketahui, attacker dapat memalsukan token valid dengan claim apapun.",
+        "hypothesis_id": "hyp-jwt-forged-token",
+        "evidence_to_capture": [
+          "Secret plaintext",
+          "Token yang di-forge sebagai admin",
+          "Response server 200 OK"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "HTTP 500 JSON Parser Exception saat payload didekodekan"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-jwt-none-bypass",
+        "name": "JWT None Algorithm Authentication Bypass",
+        "description": "Penyerang dapat memodifikasi payload menjadi 'admin' dan menghapus signature untuk mendapatkan hak akses penuh.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-jwt-none-accepted"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim request profil dengan token asli. Catat respon baseline. Ubah ke alg: none dan kirim ulang.",
+            "expected_output": "Profil user normal.",
+            "interesting_output": "Profil tetap terbaca normal atau berubah role saat alg: none digunakan.",
+            "unexpected_output": "HTTP 401 Signature verification failed.",
+            "interpretation": "Mengonfirmasi bypass tanda tangan token.",
+            "evidence_to_record": [
+              "Side-by-side burp repeater logs"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-jwt-alg-none-bypass",
+        "name": "Authentication Bypass via JWT Algorithm None",
+        "description": "Server menerima token tanpa signature → attacker dapat mengklaim identitas user/admin apapun.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-jwt-alg-none"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Buat token dengan alg:none, payload {\"sub\":\"admin\",\"role\":\"admin\"}, signature kosong. Kirim ke endpoint /api/admin.",
+            "expected_output": "401 Unauthorized atau 403 Forbidden.",
+            "interesting_output": "200 OK dengan data admin panel.",
+            "unexpected_output": "500 Internal Server Error — parsing error.",
+            "interpretation": "200 OK → authentication bypass terkonfirmasi, severity Critical.",
+            "evidence_to_record": [
+              "Token yang digunakan",
+              "Response 200 dengan konten sensitif"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-jwt-forged-token",
+        "name": "Privilege Escalation via Forged JWT dengan Weak Secret",
+        "description": "Secret yang di-crack memungkinkan pembuatan token valid dengan role admin atau user ID apapun.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-jwt-weak-secret"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Forge token: python3 -c \"import jwt; print(jwt.encode({'sub':'admin','role':'admin'}, 'SECRET', algorithm='HS256'))\"",
+            "expected_output": "403 Forbidden — secret salah atau validasi tambahan ada.",
+            "interesting_output": "200 OK dengan akses admin.",
+            "unexpected_output": "Token diterima tapi data tidak berubah.",
+            "interpretation": "Akses admin berhasil → privilege escalation via JWT forgery, severity Critical.",
+            "evidence_to_record": [
+              "Token yang di-forge",
+              "Response dengan admin access",
+              "Proof of secret"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server menolak seluruh token dengan signature tidak valid (HTTP 401)."
+    ],
+    "common_mistakes": [
+      "Menganggap keberadaan JWT adalah kerentanan."
+    ],
+    "ctf_notes": "Di CTF, token JWT sering rentan terhadap Algorithm Confusion (RS256 public key treated as HS256 secret).",
+    "pentest_notes": "Secret key lemah pada JWT diklasifikasikan sebagai High Severity.",
+    "unknown_guide": {
+      "what_is_this": "Token string kompak dan aman-URL yang membawa klaim terstruktur antar pihak.",
+      "why_does_it_exist": "Memungkinkan autentikasi tanpa harus menyimpan sesi di memori server.",
+      "what_parts_matter": "Tiga komponen: Header (algoritma), Payload (data user), dan Signature (keaslian).",
+      "what_normal_looks_like": "Token berumur pendek yang ditandatangani dengan kunci privat kuat.",
+      "what_to_record_immediately": [
+        "String lengkap token JWT",
+        "Hasil decode Header dan Payload"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "JWT ditandatangani dengan algoritma kuat dan divalidasi ketat.",
+      "why_not_secure": "Validitas JWT tidak mencegah penyerang mengeksploitasi IDOR di endpoint API.",
+      "next_pivot_observations": [
+        "obs-web-id-parameter",
+        "obs-web-api-endpoint"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "28",
+        "slug": "jwt",
+        "title": "28. JWT Security Workflow",
+        "section_title": "1.1 JWT Structure Analysis",
+        "anchor": "11-jwt-structure-analysis",
+        "rationale": "Pelajari anatomi token, pembedahan header, dan teknik eksploitasi none-alg & brute force."
+      }
+    ],
+    "related_observations": [
+      "obs-web-session-cookie",
+      "obs-web-api-endpoint"
+    ],
+    "provenance": [
+      "RFC 7519",
+      "OWASP WSTG-SESS-10"
+    ]
+  },
+  {
+    "id": "obs-web-oauth-sso",
+    "title": "Alur Autentikasi OAuth 2.0 / SSO Terdeteksi (OAuth & SSO Flow)",
+    "domain": "Federated Identity & OAuth",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Tombol login pihak ketiga: 'Login with Google', 'Sign in with GitHub', 'Microsoft SSO'",
+      "Redirect URL menuju: https://auth.provider.com/oauth/authorize?client_id=...&redirect_uri=...",
+      "Parameter OAuth di URL: client_id, redirect_uri, response_type=code, scope, state"
+    ],
+    "context": "Ditemukan pada portal SaaS modern atau login aplikasi multi-tenant.",
+    "why_it_matters": "OAuth 2.0 mendelegasikan verifikasi identitas ke Identity Provider (IdP). Miskonfigurasi validasi redirect_uri memungkinkan penyerang mencuri Authorization Code korban. Ketiadaan atau prediktabilitas parameter state membuka celah CSRF Login (Account Linking CSRF).",
+    "questions_to_ask": [
+      "Apakah parameter state digunakan dan memiliki nilai acak berentropi tinggi?",
+      "Bagaimana server IdP memvalidasi redirect_uri?",
+      "Bagaimana Authorization Code dipertukarkan dengan token sesi di backend?"
+    ],
+    "inspection_points": [
+      {
+        "id": "oauth-redirect-validation",
+        "name": "1. Audit Validasi Parameter redirect_uri",
+        "why_check": "Memastikan kode otorisasi tidak dapat dibelokkan ke server penyerang.",
+        "what_to_look_for": [
+          "redirect_uri=https://target.com/callback -> ubah ke https://attacker.com",
+          "redirect_uri=https://target.com/callback/../../attacker"
+        ],
+        "normal_baseline": "IdP menolak request dengan pesan 'redirect_uri mismatch' yang ketat.",
+        "interesting_clues": [
+          "IdP menerima redirect_uri ke domain sembarang atau wildcard subdomain",
+          "IdP menerima path traversal yang mengarah ke Open Redirect di domain target"
+        ],
+        "evidence_to_capture": [
+          "URL lengkap request otorisasi OAuth",
+          "Respon server saat redirect_uri dimanipulasi"
+        ]
+      },
+      {
+        "id": "oauth-state-csrf-redirect",
+        "name": "2. Parameter State & Validasi Redirect URI",
+        "why_check": "Parameter state wajib melindungi alur OAuth dari serangan Login CSRF. Redirect URI yang longgar memungkinkan pencurian kode otorisasi.",
+        "what_to_look_for": [
+          "Periksa request /oauth/authorize: apakah ada parameter &state=?",
+          "Uji: kirim auth request tanpa parameter state atau dengan state statis",
+          "Uji redirect_uri: ubah redirect_uri=https://target.com/callback menjadi https://evil.com atau https://target.com.evil.com"
+        ],
+        "normal_baseline": "Server menolak request tanpa state atau dengan redirect_uri yang tidak ada dalam exact whitelist.",
+        "interesting_clues": [
+          "Parameter state tidak ada atau tidak divalidasi server saat callback",
+          "Server menerima wildcard redirect_uri (redirect_uri=https://target.com/*)"
+        ],
+        "evidence_to_capture": [
+          "URL auth request lengkap",
+          "Respons error atau respons redirect server"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-oauth-wildcard-redirect",
+        "inspection_point_id": "oauth-redirect-validation",
+        "signal_description": "IdP menerima manipulasi redirect_uri ke domain luar dan mengirimkan authorization code via 302 redirect.",
+        "output_snippet": "GET /oauth/authorize?client_id=123&redirect_uri=https://attacker.com/cb&response_type=code HTTP/1.1\n\nHTTP/1.1 302 Found\nLocation: https://attacker.com/cb?code=SPLIT_TOKEN_AUTH_9981",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Miskonfigurasi validasi whitelist redirect_uri memungkinkan pencurian kode otorisasi untuk pengambilalihan akun korban (Account Takeover).",
+        "hypothesis_id": "hyp-oauth-code-theft",
+        "evidence_to_capture": [
+          "Header respon 302 Found dengan kode otorisasi bocor"
+        ]
+      },
+      {
+        "id": "sig-oauth-redirect-uri-bypass",
+        "inspection_point_id": "oauth-state-csrf-redirect",
+        "signal_description": "Server OAuth menerima redirect_uri ke domain eksternal penyerang, membocorkan kode otorisasi.",
+        "output_snippet": "GET /oauth/authorize?client_id=123&redirect_uri=https://attacker.com/callback&response_type=code HTTP/1.1\n\nHTTP/1.1 302 Found\nLocation: https://attacker.com/callback?code=AUTH_CODE_SECRET",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Attacker dapat mencuri authorization code pengguna dan menukarnya dengan akses token untuk membajak akun korban.",
+        "hypothesis_id": "hyp-oauth-code-theft",
+        "evidence_to_capture": [
+          "Header Location yang mengarah ke attacker.com dengan auth code"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "IdP mengembalikan pesan error 'Invalid client secret' di sisi browser client"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-oauth-code-theft",
+        "name": "OAuth Account Takeover via Redirect URI Manipulation",
+        "description": "Membelokkan authorization code ke server penyerang untuk menukarkannya dengan session token korban.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-oauth-wildcard-redirect"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji apakah IdP menerima domain tester terkontrol (`https://burpcollaborator.net`).",
+            "expected_output": "IdP menolak request dengan pesan error 'Redirect URI not registered'.",
+            "interesting_output": "Collaborator menerima request HTTP memuat parameter code.",
+            "unexpected_output": "Server crash.",
+            "interpretation": "Mengonfirmasi kerentanan pencurian token otorisasi OAuth.",
+            "evidence_to_record": [
+              "Collaborator HTTP access log"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "IdP menerapkan exact matching pada whitelist redirect_uri.",
+      "Parameter state divalidasi ketat dan menolak request yang tidak memiliki token state valid."
+    ],
+    "common_mistakes": [
+      "Mengira OAuth flow selalu rentan hanya karena tidak menggunakan PKCE."
+    ],
+    "ctf_notes": "Di CTF, OAuth challenge sering kali menggabungkan Open Redirect pada halaman internal dengan OAuth redirect_uri.",
+    "pentest_notes": "OAuth Redirect URI Bypass adalah temuan High/Critical.",
+    "unknown_guide": {
+      "what_is_this": "Protokol standar industri untuk otorisasi yang memungkinkan pengguna login menggunakan akun pihak ketiga.",
+      "why_does_it_exist": "Menghilangkan kebutuhan pengguna membuat dan mengingat password baru di setiap situs web.",
+      "what_parts_matter": "Parameter client_id, redirect_uri, response_type, dan state.",
+      "what_normal_looks_like": "Redirect URI dikunci ketat ke domain resmi dan parameter state acak digunakan.",
+      "what_to_record_immediately": [
+        "URL otorisasi lengkap beserta seluruh parameternya"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Alur OAuth menerapkan validasi redirect URI yang ketat dan state token yang aman.",
+      "why_not_secure": "Aplikasi mungkin masih rentan pada endpoint callback internal saat menukar code dengan sesi lokal.",
+      "next_pivot_observations": [
+        "obs-web-session-cookie",
+        "obs-web-jwt"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "34",
+        "slug": "oauth-sso",
+        "title": "34. OAuth & SSO Workflow",
+        "section_title": "1.1 OAuth Flow Reconnaissance",
+        "anchor": "11-oauth-flow-reconnaissance",
+        "rationale": "Pelajari taksonomi OAuth 2.0 grant types, kelemahan redirect_uri, dan token interception."
+      }
+    ],
+    "related_observations": [
+      "obs-web-login-page",
+      "obs-web-jwt"
+    ],
+    "provenance": [
+      "RFC 6749 (The OAuth 2.0 Authorization Framework)",
+      "OWASP WSTG-ATHN-05"
+    ]
+  },
+  {
+    "id": "obs-web-cors-headers",
+    "title": "Header CORS Terdeteksi (Cross-Origin Resource Sharing Headers)",
+    "domain": "Client-Side Security",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Header respons HTTP: Access-Control-Allow-Origin: * atau origin yang disuplai client",
+      "Header respons HTTP: Access-Control-Allow-Credentials: true",
+      "Header request HTTP: Origin: https://evil.com"
+    ],
+    "context": "Ditemukan pada endpoint API, portal data pengguna, atau backend microservices yang melayani frontend terpisah.",
+    "why_it_matters": "Cross-Origin Resource Sharing (CORS) adalah mekanisme browser untuk melonggarkan aturan Same-Origin Policy (SOP). Miskonfigurasi kritis terjadi jika server merefleksikan header Origin dari client secara dinamis DAN menyetel `Access-Control-Allow-Credentials: true`. Ini memungkinkan situs jahat milik penyerang mengeksekusi request silang dan membaca data pribadi korban secara penuh.",
+    "questions_to_ask": [
+      "Bagaimana server merespons jika dikirim header 'Origin: https://attacker.com'?",
+      "Apakah server merefleksikan domain tersebut di 'Access-Control-Allow-Origin'?",
+      "Apakah header 'Access-Control-Allow-Credentials: true' aktif?",
+      "Apakah nilai 'null' origin diterima (Origin: null)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "cors-origin-reflection",
+        "name": "1. Uji Refleksi Header Origin & Credentials",
+        "why_check": "Mendeteksi apakah SOP browser dilumpuhkan untuk domain pihak ketiga.",
+        "what_to_look_for": [
+          "Kirim request dengan header `Origin: https://evil.com`",
+          "Periksa apakah respon memuat `Access-Control-Allow-Origin: https://evil.com` dan `Access-Control-Allow-Credentials: true`"
+        ],
+        "normal_baseline": "Server menolak origin tidak dikenal atau tidak menyertakan header CORS sama sekali.",
+        "interesting_clues": [
+          "Server merefleksikan sembarang Origin domain yang dikirim client",
+          "Server menerima 'Origin: null' (eksploitasi via iframe sandbox)"
+        ],
+        "evidence_to_capture": [
+          "Header request dengan Origin manipulasi",
+          "Header respons Access-Control-Allow-Origin dan Access-Control-Allow-Credentials"
+        ]
+      },
+      {
+        "id": "cors-origin-reflection-creds",
+        "name": "2. Origin Reflection & Access-Control-Allow-Credentials",
+        "why_check": "Kombinasi Origin reflection sembarang dengan Allow-Credentials: true memungkinkan situs jahat membaca data privat pengguna via AJAX.",
+        "what_to_look_for": [
+          "Kirim request dengan header: Origin: https://evil.com",
+          "Cek apakah respons memuat: Access-Control-Allow-Origin: https://evil.com",
+          "Cek apakah ada: Access-Control-Allow-Credentials: true",
+          "Uji variasi: Origin: null, Origin: https://target.com.evil.com"
+        ],
+        "normal_baseline": "Origin eksternal tidak dipantulkan atau dibatasi hanya pada domain terpercaya (Strict CORS Whitelist).",
+        "interesting_clues": [
+          "Allow-Origin memantulkan persis domain attacker dan Allow-Credentials bernilai true",
+          "Origin: null diterima dan diizinkan membawa credentials"
+        ],
+        "evidence_to_capture": [
+          "Request dan response headers CORS",
+          "PoC script JavaScript exploit"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-cors-vulnerable-reflection",
+        "inspection_point_id": "cors-origin-reflection",
+        "signal_description": "Server merefleksikan sembarang Origin domain bersamaan dengan flag Allow-Credentials: true.",
+        "output_snippet": "GET /api/account/details HTTP/1.1\nOrigin: https://evil.com\nCookie: session=xyz9812\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Origin: https://evil.com\nAccess-Control-Allow-Credentials: true\n\n{\"email\": \"victim@corp.com\", \"balance\": 50000}",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Miskonfigurasi CORS memungkinkan skrip JavaScript di website luar membaca data rahasia akun pengguna saat pengguna mengunjungi website tersebut.",
+        "hypothesis_id": "hyp-cors-data-theft",
+        "evidence_to_capture": [
+          "Request curl dengan Origin luar dan respons CORS lengkap"
+        ]
+      },
+      {
+        "id": "sig-cors-arbitrary-origin-credentials",
+        "inspection_point_id": "cors-origin-reflection-creds",
+        "signal_description": "Server memantulkan sembarang Origin penyerang dan mengaktifkan Allow-Credentials: true.",
+        "output_snippet": "GET /api/user/profile HTTP/1.1\nOrigin: https://attacker.com\nCookie: session=xyz\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Origin: https://attacker.com\nAccess-Control-Allow-Credentials: true",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Konfigurasi CORS rentan total — attacker dapat mencuri data PII, email, dan API token pengguna saat pengguna mengunjungi website attacker.",
+        "hypothesis_id": "hyp-cors-data-theft",
+        "evidence_to_capture": [
+          "Headers CORS lengkap",
+          "Bukti response body memuat data privat"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan error 403 Forbidden saat header Origin tidak cocok"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-cors-data-theft",
+        "name": "Cross-Origin Data Exfiltration via Misconfigured CORS",
+        "description": "Penyerang dapat membuat halaman web jebakan yang membaca data profil korban di background dan mengirimkannya ke server penyerang.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-cors-vulnerable-reflection"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Buat file HTML PoC lokal yang melakukan fetch() ke endpoint target dengan `credentials: 'include'` dan periksa apakah data JSON terbaca di console.",
+            "expected_output": "Browser memblokir pembacaan data jika CORS aman.",
+            "interesting_output": "Data JSON berhasil dicetak di console browser lokal.",
+            "unexpected_output": "Network error.",
+            "interpretation": "Mengonfirmasi eksfiltrasi data lintas asal berhasil.",
+            "evidence_to_record": [
+              "Tangkapan layar console log data hasil fetch CORS PoC"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server menolak origin sembarang dan hanya mengizinkan whitelist domain terpercaya yang ketat.",
+      "Access-Control-Allow-Credentials tidak pernah diset true bersamaan dengan origin dinamis."
+    ],
+    "common_mistakes": [
+      "Mengira `Access-Control-Allow-Origin: *` pada data publik (seperti font atau gambar) adalah kerentanan (ini normal dan aman jika tanpa credentials)."
+    ],
+    "ctf_notes": "Di CTF Web, CORS sering kali dikombinasikan dengan simulated admin bot untuk mencuri token API atau flag dari profil bot.",
+    "pentest_notes": "CORS misconfiguration yang mengekspos data pribadi (PII) diklasifikasikan sebagai High Severity.",
+    "unknown_guide": {
+      "what_is_this": "Header HTTP yang memberi tahu browser apakah halaman web dari situs lain diizinkan membaca data dari server ini.",
+      "why_does_it_exist": "Memungkinkan integrasi API yang sah antar domain yang berbeda milik perusahaan yang sama.",
+      "what_parts_matter": "Access-Control-Allow-Origin dan Access-Control-Allow-Credentials.",
+      "what_normal_looks_like": "Hanya mengizinkan domain asal yang sama atau subdomain terpercaya.",
+      "what_to_record_immediately": [
+        "Header Access-Control-* lengkap",
+        "Origin uji coba yang digunakan"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Konfigurasi CORS menolak domain luar yang tidak sah.",
+      "why_not_secure": "Aplikasi tetap dapat rentan terhadap CSRF jika mutasi data menggunakan form standar tanpa anti-CSRF token.",
+      "next_pivot_observations": [
+        "obs-web-form-input",
+        "obs-web-api-endpoint"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "33",
+        "slug": "cors",
+        "title": "33. CORS Misconfiguration Workflow",
+        "section_title": "1.1 CORS Header Inspection",
+        "anchor": "11-cors-header-inspection",
+        "rationale": "Pelajari eksploitasi Origin reflection, null origin trust, dan pembuatan script PoC eksfiltrasi."
+      }
+    ],
+    "related_observations": [
+      "obs-web-api-endpoint",
+      "obs-web-session-cookie"
+    ],
+    "provenance": [
+      "W3C CORS Specification",
+      "OWASP WSTG-CONF-07"
+    ]
+  },
+  {
+    "id": "obs-web-technology-fingerprint",
+    "title": "Sidik Jari Teknologi & Header Server Terdeteksi (Technology Fingerprint & Version Banner)",
+    "domain": "Web Reconnaissance",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Header HTTP: Server: nginx/1.18.0, X-Powered-By: PHP/7.4.3, X-AspNet-Version: 4.0.30319",
+      "Karakteristik path CMS: /wp-content/, /templates/rhuk_milkyway, /sites/default/files",
+      "Output Wappalyzer / WhatWeb: WordPress 5.8, jQuery 3.5.1, Bootstrap 4"
+    ],
+    "context": "Fase awal pengintaian aplikasi web (Reconnaissance) pada setiap request HTTP.",
+    "why_it_matters": "Mengenali arsitektur teknologi (PHP, ASP.NET, Java Spring, NodeJS, Python Flask) dan CMS yang digunakan mempersempit ribuan payload generic menjadi pengujian yang tepat sasaran. Contoh: jika target adalah ASP.NET IIS, tester fokus pada deserialization .NET dan bypass IIS, bukan LFI wrapper PHP. Mengidentifikasi teknologi BUKAN kerentanan; ini adalah kompas strategi.",
+    "questions_to_ask": [
+      "Web server apa yang melayani request (Nginx, Apache, IIS, Caddy)?",
+      "Bahasa pemrograman backend apa yang digunakan (PHP, Python, Ruby, C#)?",
+      "Apakah ada CMS pihak ketiga (WordPress, Drupal, Joomla, Ghost) yang terpasang?",
+      "Apakah ada Web Application Firewall (WAF) seperti Cloudflare, AWS WAF, atau ModSecurity di depan target?"
+    ],
+    "inspection_points": [
+      {
+        "id": "fingerprint-headers",
+        "name": "1. Ekstraksi Header Identifikasi Server & Runtime",
+        "why_check": "Mendapatkan deklarasi teknologi langsung dari respon server.",
+        "what_to_look_for": [
+          "curl -I http://target.com",
+          "Server, X-Powered-By, X-Generator, X-Drupal-Cache"
+        ],
+        "normal_baseline": "Header server generik tanpa rincian versi (misal: Server: webserver).",
+        "interesting_clues": [
+          "Header membocorkan versi lama (misal: X-Powered-By: PHP/5.3.3)",
+          "Header WAF terdeteksi (CF-RAY, X-Sucuri-ID)"
+        ],
+        "evidence_to_capture": [
+          "Output curl -I mentah lengkap"
+        ]
+      },
+      {
+        "id": "tech-wappalyzer-whatweb-audit",
+        "name": "2. Fingerprinting Framework, CMS & Server Headers",
+        "why_check": "Mengetahui exact stack (PHP 7.4 vs Node.js vs ASP.NET, Apache vs Nginx) memfokuskan pencarian exploit spesifik.",
+        "what_to_look_for": [
+          "Header HTTP respons: Server, X-Powered-By, X-AspNet-Version, X-Generator",
+          "Struktur cookie: PHPSESSID (PHP), JSESSIONID (Java), connect.sid (Node.js), ASP.NET_SessionId",
+          "Path aset khas: /wp-content/ (WordPress), /sites/default/ (Drupal), /_next/ (Next.js)",
+          "whatweb -v http://TARGET atau whatweb -a 3 http://TARGET"
+        ],
+        "normal_baseline": "Header versi di-strip (Server: generic) dan aset diminifikasi tanpa komentar framework.",
+        "interesting_clues": [
+          "Header membocorkan versi detail: X-Powered-By: PHP/5.4.16 (versi usang rentan)",
+          "Path halaman login khas CMS yang belum di-hardening (/wp-login.php, /administrator/)"
+        ],
+        "evidence_to_capture": [
+          "Output whatweb lengkap",
+          "Daftar header teknologi"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-fingerprint-legacy-php",
+        "inspection_point_id": "fingerprint-headers",
+        "signal_description": "Header X-Powered-By membocorkan versi PHP yang sudah End-Of-Life (PHP 5.4.16).",
+        "output_snippet": "HTTP/1.1 200 OK\nServer: Apache/2.4.6 (CentOS)\nX-Powered-By: PHP/5.4.16",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Sistem menjalankan lingkungan legacy yang berpotensi rentan terhadap null-byte injection pada manipulasi file (%00 LFI) atau PHP wrapper lawas.",
+        "hypothesis_id": "hyp-fingerprint-legacy-vector",
+        "evidence_to_capture": [
+          "Header respons HTTP",
+          "Status EOL versi software"
+        ]
+      },
+      {
+        "id": "sig-tech-obsolete-framework-leak",
+        "inspection_point_id": "tech-wappalyzer-whatweb-audit",
+        "signal_description": "Header dan favicon mengonfirmasi CMS WordPress versi usang dengan plugin rentan.",
+        "output_snippet": "$ whatweb -v http://192.168.1.60\n[ WordPress ] 5.0.1, [ PHP ] 7.2.10, [ Apache ] 2.4.29\nUncommonHeaders: x-redirect-by: WordPress",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "WordPress 5.0.1 memiliki kerentanan Remote Code Execution (CVE-2019-8942 / Crop-image RCE), siap dieksploitasi jika ada akses author.",
+        "hypothesis_id": "hyp-tech-cms-cve-audit",
+        "evidence_to_capture": [
+          "Output whatweb lengkap",
+          "Daftar plugin via wpscan"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server mengembalikan status 403 Forbidden saat User-Agent curl digunakan (indikasi proteksi WAF aktif)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-fingerprint-legacy-vector",
+        "name": "Targeted Attack Vector Selection Based on Tech Stack",
+        "description": "Menyesuaikan payload pengujian dengan kelemahan spesifik arsitektur PHP/Apache CentOS lawas.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-fingerprint-legacy-php"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan scanner non-destruktif spesifik CMS (misal: `wpscan` jika WordPress atau `nikto` jika Apache) untuk mencari modul usang.",
+            "expected_output": "Mendapatkan daftar plugin atau modul yang aktif.",
+            "interesting_output": "Menemukan plugin dengan CVE unauthenticated RCE.",
+            "unexpected_output": "IP di-throttle oleh firewall.",
+            "interpretation": "Memetakan permukaan serangan software pihak ketiga.",
+            "evidence_to_record": [
+              "Output ringkasan wpscan"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-tech-cms-cve-audit",
+        "name": "CMS Exploitation Based on Technology Fingerprint",
+        "description": "Versi CMS dan plugin yang diidentifikasi dicocokkan dengan CVE database untuk eksploitasi terarah.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-tech-obsolete-framework-leak"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan scanner khusus teknologi (contoh: wpscan --url http://TARGET -e vp,vt --api-token TOKEN).",
+            "expected_output": "0 vulnerabilities found atau versi terupdate.",
+            "interesting_output": "Ditemukan plugin dengan CVE RCE atau arbitrary file upload publik.",
+            "unexpected_output": "WAF memblokir scan.",
+            "interpretation": "CVE terkonfirmasi → lanjut ke workflow spesifik CMS.",
+            "evidence_to_record": [
+              "Output wpscan report summary"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Teknologi telah diidentifikasi dan tester siap memilih modul pengujian spesifik.",
+      "Seluruh header telah disamarkan dan target merespons secara seragam."
+    ],
+    "common_mistakes": [
+      "Mencoba payload PHP pada aplikasi yang jelas-jelas menggunakan backend NodeJS atau Python.",
+      "Mengasumsikan versi yang tertera di header selalu akurat."
+    ],
+    "ctf_notes": "Di CTF, melihat bahasa backend langsung menentukan jenis deserialization, template injection (SSTI), atau command injection payload yang relevan.",
+    "pentest_notes": "Version Disclosure pada banner server dicatat sebagai Low / Informational pada laporan resmi.",
+    "unknown_guide": {
+      "what_is_this": "Proses mengenali sistem operasi, web server, database, dan bahasa pemrograman yang digunakan aplikasi web.",
+      "why_does_it_exist": "Setiap software meninggalkan karakteristik unik dalam cara mengirim header dan merender HTML.",
+      "what_parts_matter": "Header Server, X-Powered-By, struktur direktori CMS, dan cookie session bawaan.",
+      "what_normal_looks_like": "Server menyembunyikan nomor versi spesifik untuk memperlambat pengintaian penyerang.",
+      "what_to_record_immediately": [
+        "Seluruh header HTTP awal",
+        "Nama software dan framework yang terdeteksi"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Server menyembunyikan banner dan tidak membocorkan versi teknologi.",
+      "why_not_secure": "Penyembunyian banner (Security through Obscurity) tidak memperbaiki kerentanan di logika kode aplikasi.",
+      "next_pivot_observations": [
+        "obs-web-login-page",
+        "obs-web-url-query-param",
+        "obs-web-file-upload"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "15",
+        "slug": "web-recon",
+        "title": "15. Web Reconnaissance Workflow",
+        "section_title": "1.2 Technology Fingerprinting",
+        "anchor": "12-technology-fingerprinting",
+        "rationale": "Pelajari tool WhatWeb, Wappalyzer, cURL banner grabbing, dan WAF detection."
+      }
+    ],
+    "related_observations": [
+      "obs-net-service-banner",
+      "obs-web-login-page"
+    ],
+    "provenance": [
+      "OWASP WSTG-INFO-02 (Fingerprint Web Server)",
+      "OWASP WSTG-INFO-08 (Fingerprint Web Application Framework)"
+    ]
+  }
+]

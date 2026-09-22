@@ -5,7 +5,7 @@ category: "1. Fondasi"
 categoryId: "fondasi"
 filename: "04_service_identification_decision_tree.md"
 refs_out: ["03","05","06","07","08","09","10","11","12","13","14a","14b","14c","14d","15","16","23","25","26","30","32","35","42","44","45","59","63"]
-refs_in: ["03","05","06","09","10"]
+refs_in: ["03","06","09","10"]
 ---
 
 # 04. Service Identification & Master Decision Tree — Pentest GPS Navigator

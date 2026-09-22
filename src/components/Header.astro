@@ -61,6 +61,19 @@ const { currentPath = '' } = Astro.props;
           Dashboard
         </a>
         <a 
+          href="/navigator" 
+          class={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+            currentPath === '/navigator' 
+              ? 'bg-[#21262d] text-[#00b4d8] border border-[#30363d] font-semibold' 
+              : 'text-[#8b949e] hover:text-[#f0f6fc] hover:bg-[#161b22]'
+          }`}
+        >
+          <svg class="w-3.5 h-3.5 text-[#00b4d8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          <span>Navigator</span>
+        </a>
+        <a 
           href="/docs/mindset-dan-metodologi" 
           class={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
             currentPath.startsWith('/docs') 

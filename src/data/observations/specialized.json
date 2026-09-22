@@ -1,0 +1,685 @@
+[
+  {
+    "id": "obs-cloud-s3-bucket",
+    "title": "Cloud Object Storage / S3 Bucket Terdeteksi (Open Cloud Storage / S3 Bucket)",
+    "domain": "Cloud Security",
+    "category": "Cloud & Mobile",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "URL pola cloud storage: http://bucket-name.s3.amazonaws.com atau https://storage.googleapis.com/bucket-name",
+      "Respons XML S3: <ListBucketResult xmlns='http://s3.amazonaws.com/doc/2006-03-01/'>",
+      "Tag HTML memuat resource dari cloud bucket: <img src='https://company-assets.s3.amazonaws.com/logo.png'>"
+    ],
+    "context": "Ditemukan saat web crawling, inspeksi source code HTML, atau enumerasi subdomain cloud.",
+    "why_it_matters": "Amazon S3, Google Cloud Storage, dan Azure Blob Storage sering kali mengalami miskonfigurasi perizinan akses (Access Control List / ACL). Kesalahan umum adalah mengizinkan 'AllUsers' atau 'AuthenticatedUsers' (siapapun yang memiliki akun AWS) untuk membaca daftar file (ListObjects), mengunduh file sensitif, atau bahkan mengunggah file baru (PutObject) yang membuka celah defacement atau hosting malware.",
+    "questions_to_ask": [
+      "Apakah bucket mengizinkan pembacaan publik tanpa otentikasi (Public Read)?",
+      "Apakah bucket mengizinkan listing isi seluruh objek (ListObjects)?",
+      "Apakah pengguna terotentikasi AWS sembarang dapat menulis atau mengunggah file ke bucket (Public Write)?",
+      "Apakah file di dalam bucket memuat backup database atau data pelanggan (PII)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "s3-acl-permissions",
+        "name": "1. Audit Izin Akses Bucket (Read, List, Write)",
+        "why_check": "Mengetahui sejauh mana miskonfigurasi ACL diterapkan pada bucket target.",
+        "what_to_look_for": [
+          "aws s3 ls s3://bucket-name --no-sign-request",
+          "curl -s https://bucket-name.s3.amazonaws.com"
+        ],
+        "normal_baseline": "Server mengembalikan XML error AccessDenied (HTTP 403 Forbidden).",
+        "interesting_clues": [
+          "Server mengembalikan daftar XML <Contents><Key>backup.sql</Key></Contents>",
+          "Perintah aws s3 cp test.txt s3://bucket-name/ berhasil mengunggah file"
+        ],
+        "evidence_to_capture": [
+          "Header respons dan body XML ListBucketResult",
+          "Nama bucket dan penyedia cloud"
+        ]
+      },
+      {
+        "id": "s3-write-permission",
+        "name": "2. Izin Write & Delete",
+        "why_check": "Bucket dengan write permission memungkinkan data injection, hosting malicious content, atau data destruction.",
+        "what_to_look_for": [
+          "aws s3 cp test.txt s3://BUCKET-NAME/test.txt --no-sign-request",
+          "aws s3 rm s3://BUCKET-NAME/test.txt --no-sign-request (hapus setelah test)",
+          "curl -X PUT \"https://BUCKET.s3.amazonaws.com/test.txt\" -d \"test\"",
+          "Cek apakah bucket digunakan untuk static website hosting (potensi XSS via upload HTML)"
+        ],
+        "normal_baseline": "Upload ditolak dengan: Access Denied / 403 Forbidden untuk anonymous request.",
+        "interesting_clues": [
+          "File berhasil di-upload tanpa autentikasi â†’ write access confirmed",
+          "Bucket digunakan sebagai CDN atau static hosting â†’ upload HTML/JS = stored XSS",
+          "File yang di-upload dapat diakses publik dari URL CloudFront"
+        ],
+        "evidence_to_capture": [
+          "Bukti upload berhasil: aws s3 ls s3://BUCKET setelah upload menampilkan file",
+          "URL publik file yang berhasil di-upload",
+          "Bukti hapus file test setelah verifikasi (cleanup)"
+        ]
+      },
+      {
+        "id": "s3-sensitive-content",
+        "name": "3. Konten Sensitif dalam Bucket",
+        "why_check": "Bucket publik sering mengandung data sensitif yang tidak seharusnya: backup database, config dengan credential, PII.",
+        "what_to_look_for": [
+          "aws s3 ls s3://BUCKET --no-sign-request --recursive",
+          "Cari file: *.sql, *.env, *.conf, *.json, *.bak, *.tar.gz, *.zip",
+          "Periksa path: /backup/, /config/, /logs/, /exports/, /data/",
+          "Download dan periksa isi file yang mencurigakan"
+        ],
+        "normal_baseline": "Bucket hanya berisi static assets publik (CSS, JS, gambar) tanpa file konfigurasi atau data user.",
+        "interesting_clues": [
+          "File .env atau config.json dengan API keys atau database credentials",
+          "SQL dump atau CSV dengan data PII (email, nama, nomor telepon)",
+          "Private key atau sertifikat SSL dalam bucket publik"
+        ],
+        "evidence_to_capture": [
+          "List file sensitif yang ditemukan (path dan nama)",
+          "Konten redacted dari file sensitif (jangan simpan data pribadi user)",
+          "Klasifikasi data: PII, credential, kode sumber"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-s3-public-list",
+        "inspection_point_id": "s3-acl-permissions",
+        "signal_description": "Bucket S3 mengizinkan listing publik tanpa otentikasi (HTTP 200 OK dengan ListBucketResult).",
+        "output_snippet": "<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n  <Name>company-data-prod</Name>\n  <Contents>\n    <Key>database_backup_2023.sql.gz</Key>\n    <Size>45210982</Size>\n  </Contents>\n</ListBucketResult>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Miskonfigurasi ACL bucket S3 membuka akses daftar file sensitif ke seluruh dunia.",
+        "hypothesis_id": "hyp-s3-data-leak",
+        "evidence_to_capture": [
+          "Output XML mentah ListBucketResult",
+          "Nama file sensitif yang tertera"
+        ]
+      },
+      {
+        "id": "sig-s3-write-success",
+        "inspection_point_id": "s3-write-permission",
+        "signal_description": "File berhasil di-upload ke bucket S3 tanpa autentikasi.",
+        "output_snippet": "$ aws s3 cp test.txt s3://target-bucket/test.txt --no-sign-request\nupload: ./test.txt to s3://target-bucket/test.txt\n\n$ aws s3 ls s3://target-bucket/ --no-sign-request\n2024-01-15 10:23:45   4 test.txt",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Write access anonymous â†’ data injection, phishing hosting, atau supply chain attack jika bucket digunakan sebagai CDN.",
+        "hypothesis_id": "hyp-s3-write-abuse",
+        "evidence_to_capture": [
+          "Bukti upload berhasil",
+          "URL publik file test",
+          "Hapus file test setelah dokumentasi"
+        ]
+      },
+      {
+        "id": "sig-s3-sensitive-file",
+        "inspection_point_id": "s3-sensitive-content",
+        "signal_description": "File berisi credential, PII, atau data sensitif ditemukan dalam bucket publik.",
+        "output_snippet": "$ aws s3 ls s3://target-bucket/ --recursive --no-sign-request\n... backup/database_2024.sql\n... config/prod.env\n\n$ head prod.env\nDB_PASSWORD=SuperSecret123!\nAWS_SECRET_KEY=AKIA_EXAMPLE_KEY_REDACTED",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Credential exposure langsung â€” database password atau cloud access key dapat digunakan untuk akses lebih dalam.",
+        "hypothesis_id": "hyp-s3-credential-leak",
+        "evidence_to_capture": [
+          "Nama file sensitif (redacted)",
+          "Jenis data yang ditemukan",
+          "Impact assessment"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Bucket mengembalikan status HTTP 404 NoSuchBucket (nama bucket tersedia untuk diambil alih / Subdomain Takeover)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-s3-data-leak",
+        "name": "Massive Data Exposure via Publicly Listable S3 Bucket",
+        "description": "Pengguna anonim dapat mengunduh seluruh arsip data perusahaan yang disimpan di cloud storage.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-s3-public-list"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Unduh salah satu file teks publik non-sensitif (misal: robots.txt atau icon) menggunakan `curl` atau AWS CLI tanpa kredensial.",
+            "expected_output": "Mendapatkan konfirmasi bahwa file memang dapat diunduh langsung.",
+            "interesting_output": "File terunduh sempurna.",
+            "unexpected_output": "AccessDenied pada tingkat objek individu.",
+            "interpretation": "Mengonfirmasi aksesibilitas objek pada bucket publik.",
+            "evidence_to_record": [
+              "Curl output dan hash file terunduh"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-s3-write-abuse",
+        "name": "Bucket Write Abuse untuk Hosting Malicious Content / Supply Chain",
+        "description": "Write access ke bucket yang digunakan sebagai CDN memungkinkan injeksi script berbahaya ke aplikasi web pengguna bucket.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-s3-write-success"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi: apakah bucket digunakan sebagai CDN atau static hosting? Cek CORS policy dan CloudFront distribution.",
+            "expected_output": "Bucket adalah private storage tanpa public website hosting.",
+            "interesting_output": "Bucket menghosting aset JS/CSS yang dimuat aplikasi produksi.",
+            "unexpected_output": "Bucket diblokir setelah test write pertama (anomali detection).",
+            "interpretation": "Jika file JS di bucket dimuat aplikasi â†’ write = supply chain attack vector.",
+            "evidence_to_record": [
+              "URL CloudFront / CDN yang menggunakan bucket",
+              "Contoh skrip yang dimuat dari bucket"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-s3-credential-leak",
+        "name": "Credential dan Data PII Exposed di S3 Bucket Publik",
+        "description": "File konfigurasi dengan credential atau data PII user dapat diunduh siapa saja yang tahu nama bucket.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-s3-sensitive-file"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Download file sensitif. Verifikasi apakah credential masih aktif: aws sts get-caller-identity --access-key-id AKID --secret-access-key SECRET",
+            "expected_output": "InvalidClientTokenId â€” credential tidak valid atau sudah expired.",
+            "interesting_output": "Response berisi ARN dan account ID â€” credential masih aktif.",
+            "unexpected_output": "ThrottlingException â€” terlalu banyak request.",
+            "interpretation": "Credential aktif â†’ AWS account compromise, severity Critical. Laporkan segera ke pemilik.",
+            "evidence_to_record": [
+              "Jenis file sensitif yang ditemukan",
+              "Apakah credential aktif (yes/no)",
+              "Account AWS yang terdampak"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Server mengembalikan AccessDenied (HTTP 403) pada seluruh pengujian baca dan tulis.",
+      "Bucket diamankan menggunakan AWS IAM Policy ketat dan fitur Block Public Access aktif."
+    ],
+    "common_mistakes": [
+      "Mengunduh file berukuran ratusan gigabyte yang dapat menguras bandwidth dan melanggar aturan engagement pentest.",
+      "Mengunggah file berbahaya permanen ke bucket client (selalu hapus file uji coba segera)."
+    ],
+    "ctf_notes": "Di CTF, bucket S3 terbuka sering kali berisi source code aplikasi yang memuat flag atau kredensial AWS IAM (AKIA...) untuk akses AWS CLI.",
+    "pentest_notes": "Public S3 bucket yang memuat data PII pelanggan merupakan temuan Critical yang tunduk pada regulasi GDPR / PDP.",
+    "unknown_guide": {
+      "what_is_this": "Layanan penyimpanan file berbasis objek di infrastruktur cloud publik (seperti Amazon Web Services).",
+      "why_does_it_exist": "Menyimpan file statis gambar, video, dan backup data dengan skalabilitas tinggi.",
+      "what_parts_matter": "Nama bucket, izin akses publik (ACL), dan sensitivitas file yang disimpan di dalamnya.",
+      "what_normal_looks_like": "Hanya mengizinkan akses ke file gambar publik, sedangkan file data lainnya berstatus AccessDenied.",
+      "what_to_record_immediately": [
+        "URL bucket lengkap",
+        "Output XML respon awal",
+        "Apakah perintah aws s3 ls berhasil"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Bucket S3 terproteksi penuh dengan AccessDenied pada seluruh operasi.",
+      "why_not_secure": "Aplikasi mungkin masih membocorkan kredensial AWS IAM di endpoint web lain yang memiliki izin akses ke bucket tersebut.",
+      "next_pivot_observations": [
+        "obs-web-backup-config-file",
+        "obs-priv-credential-history"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "59",
+        "slug": "cloud-enum",
+        "title": "59. Cloud Enumeration Workflow",
+        "section_title": "2.1 S3 Bucket Enumeration",
+        "anchor": "21-s3-bucket-enumeration",
+        "rationale": "Pelajari teknik fuzzing nama bucket, penggunaan aws-cli --no-sign-request, dan eksploitasi perizinan."
+      }
+    ],
+    "related_observations": [
+      "obs-web-backup-config-file",
+      "obs-web-api-endpoint"
+    ],
+    "provenance": [
+      "AWS S3 Security Best Practices",
+      "MITRE ATT&CK T1530 (Data from Cloud Storage Object)"
+    ]
+  },
+  {
+    "id": "obs-mobile-apk-debuggable",
+    "title": "Aplikasi Android Debuggable & Ekspor Komponen (Android APK Debuggable)",
+    "domain": "Mobile Security",
+    "category": "Cloud & Mobile",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "File manifest Android: AndroidManifest.xml memuat atribut `android:debuggable='true'`",
+      "Komponen Activity, Service, atau Content Provider memuat `android:exported='true'` tanpa permission guard",
+      "File APK aplikasi mobile hasil dekompilasi menggunakan jadx / apktool"
+    ],
+    "context": "Fase pengujian keamanan aplikasi mobile Android (SAST / DAST).",
+    "why_it_matters": "Jika aplikasi Android di-compile dengan flag `android:debuggable='true'`, penyerang atau malware lokal pada perangkat dapat menggunakan Android Debug Bridge (ADB) dan tool jdb (Java Debug Wire Protocol / JDWP) untuk melampirkan debugger, mengeksekusi instruksi arbitrer di dalam konteks sandbox aplikasi, dan membaca seluruh private storage tanpa memerlukan root.",
+    "questions_to_ask": [
+      "Apakah flag android:debuggable aktif pada file AndroidManifest.xml?",
+      "Komponen exported apa saja yang dapat dipicu oleh aplikasi lain via Intent (am start)?",
+      "Apakah ada kunci API, hardcoded secret, atau private key di folder res/values/strings.xml?",
+      "Apakah aplikasi memvalidasi SSL Pinning saat berkomunikasi dengan server backend?"
+    ],
+    "inspection_points": [
+      {
+        "id": "apk-manifest-audit",
+        "name": "1. Audit Manifest & Flag Debuggable",
+        "why_check": "Memeriksa postur kompilasi aplikasi untuk rilis produksi.",
+        "what_to_look_for": [
+          "jadx -d out app.apk",
+          "grep -i 'android:debuggable' out/resources/AndroidManifest.xml"
+        ],
+        "normal_baseline": "Flag android:debuggable disetel false atau dihilangkan seluruhnya pada APK produksi.",
+        "interesting_clues": [
+          "android:debuggable='true' aktif di APK rilis",
+          "Content Provider diekspor (android:exported=true) dan memungkinkan pembacaan database SQLite lokal"
+        ],
+        "evidence_to_capture": [
+          "Cuplikan tag <application android:debuggable='true'> dari AndroidManifest.xml",
+          "Package name aplikasi"
+        ]
+      },
+      {
+        "id": "apk-exported-components",
+        "name": "2. Analisis Exported Activities & Broadcast Receivers",
+        "why_check": "Komponen yang di-export tanpa permission filter dapat dipanggil oleh aplikasi jahat lain pada perangkat.",
+        "what_to_look_for": [
+          "Decompile APK menggunakan jadx-gui atau apktool",
+          "Periksa AndroidManifest.xml: cari android:exported=\"true\"",
+          "Coba panggil Activity via ADB: adb shell am start -n com.app/.SecretActivity",
+          "Periksa Intent filter data schemes untuk Deep Link vulnerabilities"
+        ],
+        "normal_baseline": "Hanya MainActivity yang di-export; semua activity internal memiliki android:exported=\"false\".",
+        "interesting_clues": [
+          "Activity administratif atau panel debug memiliki exported=\"true\" tanpa permission khusus",
+          "Aplikasi mengekspos ContentProvider dengan query tanpa filter SQL"
+        ],
+        "evidence_to_capture": [
+          "Potongan AndroidManifest.xml yang memuat android:exported=\"true\"",
+          "Perintah adb am start yang berhasil menampilkan layar tersembunyi"
+        ]
+      },
+      {
+        "id": "apk-hardcoded-secrets",
+        "name": "3. Hardcoded Secrets & API Keys dalam Bytecode",
+        "why_check": "Developer sering menyimpan endpoint rahasia, secret key OAuth, atau API token di dalam kode aplikasi mobile.",
+        "what_to_look_for": [
+          "strings classes.dex | grep -iE \"api_key|secret|firebase|token\"",
+          "Gunakan apkleaks atau trufflehog pada folder decompiled jadx",
+          "Cari file res/values/strings.xml untuk token Firebase atau Google Maps API"
+        ],
+        "normal_baseline": "Tidak ada private API secret yang disimpan di client-side APK; autentikasi menggunakan backend session token.",
+        "interesting_clues": [
+          "Ditemukan Firebase database URL dengan akses read/write tanpa auth (.json)",
+          "Ditemukan AWS Access Key atau private encryption key AES hardcoded"
+        ],
+        "evidence_to_capture": [
+          "String secret yang ditemukan beserta path class file tempatnya berada",
+          "Bukti verifikasi akses API key (read-only verification)"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-apk-jdwp-attach",
+        "inspection_point_id": "apk-manifest-audit",
+        "signal_description": "Proses aplikasi terdaftar di ADB jdwp dan debugger dapat dilampirkan.",
+        "output_snippet": "$ adb jdwp\n14292\n$ jdb -attach localhost:14292\nInitializing jdb ...\n> ",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi dapat di-debug langsung via JDWP, memungkinkan manipulasi memori dan pembajakan eksekusi kode.",
+        "hypothesis_id": "hyp-apk-debug-rce",
+        "evidence_to_capture": [
+          "Output jdb attach sukses",
+          "Proses PID dari adb jdwp"
+        ]
+      },
+      {
+        "id": "sig-apk-exported-admin-activity",
+        "inspection_point_id": "apk-exported-components",
+        "signal_description": "Activity manajemen akun internal berhasil dibuka langsung tanpa login via adb intent.",
+        "output_snippet": "$ adb shell am start -n com.target.bank/.ui.debug.AdminConsoleActivity\nStarting: Intent { cmp=com.target.bank/.ui.debug.AdminConsoleActivity }\nStatus: Activity terbuka di layar emulator tanpa prompt login.",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Exported activity tanpa perlindungan memungkinkan bypass autentikasi total pada aplikasi mobile.",
+        "hypothesis_id": "hyp-apk-auth-bypass",
+        "evidence_to_capture": [
+          "Screenshot emulator menampilkan layar admin",
+          "Perintah adb yang digunakan"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Aplikasi crash saat diluncurkan karena mendeteksi emulator (fitur anti-root aktif)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-apk-debug-rce",
+        "name": "Local Sandbox Hijack & Code Execution via JDWP Debugger",
+        "description": "Menyambungkan debugger Java ke aplikasi debuggable untuk mengeksekusi kode di sandbox target.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-apk-jdwp-attach"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan perintah inspection aman di jdb: `threads` atau `print java.lang.System.getProperty(\"user.dir\")`.",
+            "expected_output": "Debugger menampilkan informasi lingkungan runtime aplikasi.",
+            "interesting_output": "Berhasil membaca objek data dari memori aktif.",
+            "unexpected_output": "Koneksi terputus.",
+            "interpretation": "Membuktikan kendali debug penuh pada runtime Android.",
+            "evidence_to_record": [
+              "Log sesi interaksi jdb"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-apk-auth-bypass",
+        "name": "Authentication Bypass via Unprotected Exported Component",
+        "description": "Memanggil activity sensitif secara langsung melewati alur verifikasi login aplikasi.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-apk-exported-admin-activity"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim intent via ADB pada perangkat uji/emulator, amati apakah data profil pengguna dapat diakses.",
+            "expected_output": "SecurityException: Permission Denial.",
+            "interesting_output": "Tampilan profil terbuka dengan fungsionalitas edit aktif.",
+            "unexpected_output": "Aplikasi force close (NullPointerException karena session kosong).",
+            "interpretation": "Jika terbuka stabil â†’ exported component vulnerability terkonfirmasi.",
+            "evidence_to_record": [
+              "Logcat error/output saat intent dieksekusi"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Aplikasi di-compile dengan android:debuggable='false' dan menolak koneksi debugger.",
+      "Seluruh komponen sensitif dilindungi oleh custom permissions dan signature check."
+    ],
+    "common_mistakes": [
+      "Menguji APK versi debug build internal alih-alih APK resmi yang dirilis ke publik/Play Store.",
+      "Lupa memeriksa string hardcoded di dalam folder `res/values/strings.xml`."
+    ],
+    "ctf_notes": "Di CTF Mobile, challenge sering kali menyembunyikan flag di fungsi native C/C++ (.so library) atau memvalidasi flag di unexported Activity yang dapat dipanggil via `adb shell am start -n`.",
+    "pentest_notes": "Flag android:debuggable='true' pada aplikasi produksi adalah temuan High Severity pada standar OWASP Mobile Top 10 (M7: Client Code Quality).",
+    "unknown_guide": {
+      "what_is_this": "Paket instalasi aplikasi mobile Android (APK) yang memuat kode compiled bytecode dan file manifest konfigurasi.",
+      "why_does_it_exist": "Format distribusi standar untuk menjalankan aplikasi pada platform sistem operasi Android.",
+      "what_parts_matter": "File AndroidManifest.xml, perizinan komponen, serta kode logika otentikasi di file Java/Kotlin.",
+      "what_normal_looks_like": "Flag debugging dinonaktifkan dan komunikasi data menggunakan sertifikat TLS yang tervalidasi.",
+      "what_to_record_immediately": [
+        "Package name aplikasi",
+        "Status flag debuggable",
+        "Daftar komponen exported"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "APK di-compile secara aman tanpa flag debuggable.",
+      "why_not_secure": "Aplikasi mungkin masih rentan terhadap kebocoran data di local storage (SharedPreferences / SQLite) atau API backend yang rentan.",
+      "next_pivot_observations": [
+        "obs-web-api-endpoint",
+        "obs-crypto-unknown-hash"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "61",
+        "slug": "android-apk",
+        "title": "61. Android APK Workflow",
+        "section_title": "1.2 Manifest Analysis & Debuggable",
+        "anchor": "12-manifest-analysis-debuggable",
+        "rationale": "Pelajari metodologi dekompilasi APK (JADX), analisis AndroidManifest, bypass SSL Pinning (Frida), dan inspeksi Intent."
+      }
+    ],
+    "related_observations": [
+      "obs-web-api-endpoint",
+      "obs-priv-credential-history"
+    ],
+    "provenance": [
+      "OWASP Mobile Top 10 (M7: Client Code Quality)",
+      "OWASP MASTG (Mobile Application Security Testing Guide)"
+    ]
+  },
+  {
+    "id": "obs-crypto-unknown-hash",
+    "title": "Hash Kriptografis / String Terenkode Terdeteksi (Cryptographic Hash Identification)",
+    "domain": "Cryptography",
+    "category": "Cryptography & Forensics",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "String heksadesimal 32-karakter: 5d41402abc4b2a76b9719d911017c592",
+      "String heksadesimal 40-karakter (SHA1) atau 64-karakter (SHA256)",
+      "String hash ber-prefix: $6$... (SHA512 Unix), $2a$... / $2b$... (bcrypt), $1$... (MD5-crypt)",
+      "NTLM hash (32-karakter hex tanpa salt di file SAM atau NTDS.dit)"
+    ],
+    "context": "Ditemukan saat mengekstrak database user, membaca file /etc/shadow, meretas file konfigurasi, atau pada CTF crypto challenge.",
+    "why_it_matters": "Hash adalah fungsi satu arah (one-way function) yang mengonversi data panjang arbitrer menjadi representasi fixed-length. Menemukan string hash bukan berarti data sudah berhasil dibaca. Tester wajib mengidentifikasi algoritma hash yang tepat sebelum memilih mode cracking di Hashcat atau John the Ripper.",
+    "questions_to_ask": [
+      "Berapa panjang karakter string hash tersebut?",
+      "Apakah ada prefix khusus ($6$, $2y$, $krb5tgs$) yang menentukan formatnya?",
+      "Apakah hash tersebut menggunakan salt (garam pengacak) atau merupakan unsalted hash murni?",
+      "Apakah hash ini terdaftar di database lookup online (seperti crackstation.net)?"
+    ],
+    "inspection_points": [
+      {
+        "id": "hash-length-prefix",
+        "name": "1. Analisis Panjang Karakter & Karakteristik Prefix",
+        "why_check": "Mempersempit kandidat algoritma kriptografi.",
+        "what_to_look_for": [
+          "Panjang 32 karakter hex -> MD5 atau NTLM",
+          "Panjang 40 karakter hex -> SHA-1",
+          "Panjang 60 karakter dengan prefix $2y$ -> bcrypt (Blowfish)",
+          "Tool identifikasi: `hashid <hash>` atau `nth <hash>`"
+        ],
+        "normal_baseline": "Aplikasi modern menggunakan algoritma lambat ber-salt kuat (Argon2id, bcrypt, PBKDF2).",
+        "interesting_clues": [
+          "Hash menggunakan algoritma kuno dan cepat (MD5, SHA1, NTLM) tanpa salt",
+          "Hash cocok dengan kata sandi umum pada database online"
+        ],
+        "evidence_to_capture": [
+          "String hash mentah",
+          "Output tool hashid / Name-that-hash"
+        ]
+      },
+      {
+        "id": "hash-entropy-salt-format",
+        "name": "2. Identifikasi Salt, Prefix Magic & Modul Hashcat",
+        "why_check": "Prefix ($6$, $2b$, $1$) dan separator (titik dua, dollar) menentukan algoritma hashing eksak dan opsi hashcat.",
+        "what_to_look_for": [
+          "hashid \"STRING_HASH\" atau nth \"STRING_HASH\"",
+          "$1$ = MD5-Crypt (Hashcat -m 500)",
+          "$5$ = SHA256-Crypt (Hashcat -m 7400)",
+          "$6$ = SHA512-Crypt (Hashcat -m 1800)",
+          "$2a$ / $2b$ / $2y$ = Bcrypt (Hashcat -m 3200)",
+          "Panjang 32 hex = MD5 / NTLM, panjang 40 hex = SHA1"
+        ],
+        "normal_baseline": "Sistem modern menggunakan hash adaptif dengan work factor tinggi seperti Argon2id atau Bcrypt.",
+        "interesting_clues": [
+          "Hash tidak memiliki salt dan panjang 32 karakter hex (kemungkinan besar MD5 murni atau NTLM)",
+          "Ditemukan salt terpisah yang disimpan dalam kolom database berdampingan"
+        ],
+        "evidence_to_capture": [
+          "Format string hash lengkap",
+          "Rekomendasi mode hashcat (-m number)",
+          "Hasil identifikasi dari hashid/nth"
+        ]
+      },
+      {
+        "id": "hash-rainbow-online-lookup",
+        "name": "3. Lookup Rainbow Table & Dictionary Testing",
+        "why_check": "Hash tanpa salt dari algoritma cepat (MD5/SHA1/NTLM) sering kali sudah terindeks di database rainbow table online.",
+        "what_to_look_for": [
+          "Pencarian hash pada database online (CrackStation, DeHashed) untuk hash non-sensitif publik",
+          "hashcat -m [MODE] hash.txt rockyou.txt",
+          "Evaluasi apakah hash dapat di-crack < 5 detik dengan dictionary dasar"
+        ],
+        "normal_baseline": "Hash tidak ditemukan di rainbow table dan membutuhkan waktu komputasi besar.",
+        "interesting_clues": [
+          "Hash langsung ditemukan di CrackStation dalam hitungan milidetik",
+          "Plaintext adalah password default seperti \"admin\" atau \"123456\""
+        ],
+        "evidence_to_capture": [
+          "Plaintext password hasil lookup/cracking",
+          "Nama sumber database rainbow table / Hashcat status"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-hash-md5-unsalted",
+        "inspection_point_id": "hash-length-prefix",
+        "signal_description": "String 32-karakter hex teridentifikasi sebagai unsalted MD5 dan langsung terpecahkan di rainbow table.",
+        "output_snippet": "$ hashid 5d41402abc4b2a76b9719d911017c592\nAnalyzing '5d41402abc4b2a76b9719d911017c592'\n[+] MD5\n[+] NTLM",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Aplikasi menyimpan password menggunakan fungsi hash usang tanpa salt (Weak Cryptographic Hash).",
+        "hypothesis_id": "hyp-hash-cracked",
+        "evidence_to_capture": [
+          "Nilai hash mentah",
+          "Hasil pencarian kamus: 'hello'"
+        ]
+      },
+      {
+        "id": "sig-hash-ntlm-cracked-instantly",
+        "inspection_point_id": "hash-entropy-salt-format",
+        "signal_description": "Hash 32 karakter hex teridentifikasi sebagai NTLM dan langsung ter-crack via dictionary.",
+        "output_snippet": "$ hashid -m 31d6cfe0d16ae931b73c59d7e0c089c0\n[+] NTLM [Hashcat Mode: 1000]\n\n$ hashcat -m 1000 31d6cfe0d16ae931b73c59d7e0c089c0 rockyou.txt\n31d6cfe0d16ae931b73c59d7e0c089c0:Password2026\nStatus: Cracked",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Hash NTLM tidak menggunakan salt sehingga sangat rentan terhadap dictionary attack dan Pass-the-Hash langsung tanpa cracking.",
+        "hypothesis_id": "hyp-hash-pth-or-login",
+        "evidence_to_capture": [
+          "Plaintext credential",
+          "Status cracked hashcat"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Hash memuat karakter non-hex seperti '/' atau '+' (indikasi Base64 encoding sebelum hashing)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-hash-cracked",
+        "name": "Credential Recovery via Weak Cryptographic Hash Cracking",
+        "description": "Memecahkan hash password offline menggunakan wordlist untuk memulihkan password plaintext.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-hash-md5-unsalted"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan hashcat offline pada mesin lokal: `hashcat -m 0 hash.txt rockyou.txt`.",
+            "expected_output": "Mengetahui apakah password merupakan kata kamus umum.",
+            "interesting_output": "Hash berhasil di-crack menjadi teks plaintext.",
+            "unexpected_output": "Hash tidak ditemukan.",
+            "interpretation": "Mendapatkan kredensial plaintext yang sah.",
+            "evidence_to_record": [
+              "Output status Hashcat Cracked"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "hyp-hash-pth-or-login",
+        "name": "Authentication via Cracked Hash or Pass-the-Hash Technique",
+        "description": "Menggunakan plaintext hasil crack atau menggunakan hash NTLM secara langsung melalui teknik Pass-the-Hash.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-hash-ntlm-cracked-instantly"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Verifikasi login dengan plaintext yang berhasil di-crack pada layanan terkait (SSH, Web, SMB).",
+            "expected_output": "Login gagal.",
+            "interesting_output": "Login berhasil.",
+            "unexpected_output": "Account disabled.",
+            "interpretation": "Jika berhasil â†’ credential access tervalidasi.",
+            "evidence_to_record": [
+              "Screenshot keberhasilan otentikasi"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Hash menggunakan algoritma Argon2id atau bcrypt work-factor tinggi (>12) dengan password acak panjang.",
+      "Kamus hashcat dan aturan mutasi (rules) habis tanpa hasil."
+    ],
+    "common_mistakes": [
+      "Mencoba menebak jenis hash tanpa menggunakan tool `hashid` atau `nth`.",
+      "Salah memilih mode hashcat (misal: menggunakan mode 1000 untuk MD5 padahal 1000 adalah NTLM)."
+    ],
+    "ctf_notes": "Di CTF Forensics dan Crypto, hash sering kali hanyalah encoding bertingkat (misal: Hex -> Base64 -> Rot13). Selalu periksa tool CyberChef 'Magic' recipe terlebih dahulu.",
+    "pentest_notes": "Penggunaan unsalted MD5/SHA1 untuk penyimpanan password nasabah adalah temuan High Severity pada audit PCI-DSS dan ISO 27001.",
+    "unknown_guide": {
+      "what_is_this": "Sidik jari matematis berukuran tetap dari data rahasia.",
+      "why_does_it_exist": "Memungkinkan verifikasi password tanpa harus menyimpan password asli di database.",
+      "what_parts_matter": "Panjang karakter string, ada tidaknya prefix dolar ($), dan nama algoritma pembuatnya.",
+      "what_normal_looks_like": "String panjang ber-prefix $2y$ (bcrypt) atau $argon2$ dengan salt terintegrasi.",
+      "what_to_record_immediately": [
+        "String hash lengkap",
+        "Panjang karakternya",
+        "Sumber di mana hash ditemukan"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Hash tidak dapat dipecahkan menggunakan kamus standar.",
+      "why_not_secure": "Kredensial pengguna lain di database yang sama mungkin menggunakan password yang lebih lemah.",
+      "next_pivot_observations": [
+        "obs-priv-credential-history",
+        "obs-net-database"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "53",
+        "slug": "crypto-identification",
+        "title": "53. Crypto Identification Workflow",
+        "section_title": "1.1 Hash Format Identification",
+        "anchor": "11-hash-format-identification",
+        "rationale": "Pelajari tabel panjang hash, identifikasi prefix Linux/Unix, dan tool Name-That-Hash."
+      },
+      {
+        "workflow_id": "54",
+        "slug": "hash-cracking",
+        "title": "54. Hash Cracking Workflow",
+        "section_title": "1.1 Hashcat Cheat Sheet",
+        "anchor": "11-hashcat-cheat-sheet",
+        "rationale": "Tabel mode Hashcat (-m), rule kamus, dan optimasi performa GPU."
+      }
+    ],
+    "related_observations": [
+      "obs-priv-credential-history",
+      "obs-ad-asrep-roastable"
+    ],
+    "provenance": [
+      "NIST SP 800-131A (Cryptographic Key Management)",
+      "OWASP Cryptographic Storage Cheat Sheet"
+    ]
+  }
+]

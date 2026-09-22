@@ -1,0 +1,1056 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import observations from '../data/observations.json';
+
+// Grouping and statistics for UI
+const totalObservations = observations.length;
+const categories = [...new Set(observations.map(o => o.category))];
+const domains = [...new Set(observations.map(o => o.domain))];
+
+// Initial selected observation (first one)
+const defaultObservation = observations[0];
+
+// Safe JSON serialization preventing any </script> or < in payloads from closing HTML script tags
+const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c');
+---
+
+<BaseLayout 
+  title="Observation & Decision Navigator — Cyber Security Wiki"
+  description="Pusat navigasi keputusan dan observasi pentesting: panduan interpretasi sinyal, titik inspeksi hierarkis, verifikasi hipotesis, dan rute workflow terarah."
+  currentPath="/navigator"
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Hero Header Section -->
+    <div class="relative rounded-2xl border border-[#30363d] bg-gradient-to-br from-[#161b22] via-[#0d1117] to-[#161b22] p-6 sm:p-8 overflow-hidden shadow-2xl">
+      <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-[#00b4d8]/10 blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-16 -bottom-16 w-72 h-72 rounded-full bg-[#e84a5f]/10 blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 space-y-4">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00b4d8]/15 border border-[#00b4d8]/30 text-[#00b4d8] text-xs font-mono font-semibold">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            OBSERVATION & DECISION NAVIGATOR
+          </span>
+          <span class="px-2.5 py-0.5 rounded-full bg-[#e84a5f]/15 border border-[#e84a5f]/30 text-[#e84a5f] text-[11px] font-mono">
+            Phase 1 Seed Dataset: {totalObservations} Nodes
+          </span>
+          <span class="px-2.5 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[11px] font-mono">
+            24 Master Domains
+          </span>
+        </div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-[#f0f6fc] tracking-tight font-sans">
+              Apa yang Anda Lihat di Target?
+            </h1>
+            <p class="text-sm sm:text-base text-[#8b949e] mt-1 max-w-2xl">
+              Jembatan metodologis dari temuan mentah nmap, response HTTP, token, atau konfigurasi menuju titik inspeksi, pembuktian sinyal, mitigasi rabbit hole, dan rute workflow.
+            </p>
+          </div>
+
+          <!-- Mindset / Methodology Toggle Button -->
+          <button 
+            type="button"
+            id="toggle-mindset-btn"
+            class="self-start md:self-auto flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-xs font-mono text-[#f0f6fc] transition-all group"
+          >
+            <span class="w-2 h-2 rounded-full bg-[#f59e0b] group-hover:animate-ping"></span>
+            <span>Prinsip Investigasi & Mindset</span>
+            <svg class="w-4 h-4 text-[#8b949e] group-hover:text-[#f0f6fc] transition-transform" id="mindset-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Collapsible Mental Model & Core Axioms Panel -->
+        <div id="mindset-panel" class="hidden pt-4 border-t border-[#30363d]/60">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 space-y-1">
+              <div class="font-mono font-bold text-[#e84a5f] flex items-center gap-1.5">
+                <span>⛔ CLUE ≠ FINDING ≠ VALIDATED</span>
+              </div>
+              <p class="text-[#8b949e] leading-relaxed">
+                Petunjuk mentah atau indikasi visual bukan temuan akhir. Suatu temuan baru sah jika dampak dan keterulangannya telah tervalidasi secara teknis.
+              </p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 space-y-1">
+              <div class="font-mono font-bold text-[#f59e0b] flex items-center gap-1.5">
+                <span>⚠️ VERSION ≠ VULNERABLE</span>
+              </div>
+              <p class="text-[#8b949e] leading-relaxed">
+                Banner versi lama bukan bukti exploit otomatis jalan. Fitur rentan bisa dinonaktifkan, di-backport patch, atau diblokir WAF.
+              </p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 space-y-1">
+              <div class="font-mono font-bold text-[#00b4d8] flex items-center gap-1.5">
+                <span>🔑 CREDENTIAL ≠ VALIDATED</span>
+              </div>
+              <p class="text-[#8b949e] leading-relaxed">
+                String yang menyerupai API key atau password pada file backup/JS bukan temuan valid sampai Anda memverifikasi kredensial tersebut aktif.
+              </p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 space-y-1">
+              <div class="font-mono font-bold text-[#a855f7] flex items-center gap-1.5">
+                <span>🚪 LOGIN SUCCESS ≠ AUTH BYPASS</span>
+              </div>
+              <p class="text-[#8b949e] leading-relaxed">
+                Menerima respons HTTP 200 setelah manipulasi payload seringkali hanya redirect ke halaman login atau generic error, bukan bypass autentikasi.
+              </p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 space-y-1">
+              <div class="font-mono font-bold text-[#10b981] flex items-center gap-1.5">
+                <span>🔄 THE REASONING CHAIN</span>
+              </div>
+              <p class="text-[#8b949e] leading-relaxed font-mono text-[11px]">
+                Observe ➔ Context ➔ Question ➔ Expected ➔ Test ➔ Output ➔ Interpret ➔ Hypothesize ➔ Validate ➔ Route
+              </p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 space-y-1">
+              <div class="font-mono font-bold text-[#38bdf8] flex items-center gap-1.5">
+                <span>🛡️ ABSENCE OF SIGNAL ≠ SECURE</span>
+              </div>
+              <p class="text-[#8b949e] leading-relaxed">
+                Hasil negatif pada satu teknik tidak berarti aplikasi bebas celah. Evaluasi vektor alternatif sebelum menyimpulkan target aman.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="space-y-4 p-4 sm:p-5 rounded-2xl bg-[#161b22] border border-[#30363d] shadow-lg">
+      <div class="flex flex-col md:flex-row gap-3">
+        <!-- Live Search Input -->
+        <div class="relative flex-1">
+          <svg class="w-5 h-5 text-[#00b4d8] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input 
+            type="text" 
+            id="obs-search-input"
+            class="w-full pl-11 pr-10 py-2.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-sm text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none transition-colors"
+            placeholder="Cari observasi: 'login', 'token', '445 smb', 'suid', 's3 bucket', 'idor', 'jwt', 'sudo'..."
+            autocomplete="off"
+          />
+          <button 
+            id="clear-obs-search" 
+            type="button" 
+            class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#8b949e] hover:text-[#f0f6fc] p-1 rounded"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Confidence Filter Dropdown -->
+        <div class="flex items-center gap-2">
+          <label for="confidence-filter" class="text-xs font-mono text-[#8b949e] whitespace-nowrap">Status Keyakinan:</label>
+          <select 
+            id="confidence-filter"
+            class="px-3 py-2 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-xs font-mono text-[#f0f6fc] focus:outline-none"
+          >
+            <option value="ALL">Semua Tingkat Keyakinan</option>
+            <option value="CONFIRMED_OBSERVATION">Confirmed Observation</option>
+            <option value="PROBABLE_OBSERVATION">Probable Observation</option>
+            <option value="UNCONFIRMED_AMBIGUOUS">Unconfirmed / Ambiguous</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-[#30363d]/60">
+        <span class="text-xs font-mono text-[#8b949e] mr-1">Kategori:</span>
+        <button type="button" class="category-pill active px-3 py-1 rounded-lg text-xs font-mono transition-colors" data-category="ALL">
+          Semua ({totalObservations})
+        </button>
+        <button type="button" class="category-pill px-3 py-1 rounded-lg text-xs font-mono transition-colors" data-category="Web">
+          🌐 Web Application
+        </button>
+        <button type="button" class="category-pill px-3 py-1 rounded-lg text-xs font-mono transition-colors" data-category="Network">
+          🔌 Network Services
+        </button>
+        <button type="button" class="category-pill px-3 py-1 rounded-lg text-xs font-mono transition-colors" data-category="Active Directory">
+          🏢 Active Directory
+        </button>
+        <button type="button" class="category-pill px-3 py-1 rounded-lg text-xs font-mono transition-colors" data-category="Privilege Escalation">
+          ⚡ Privilege Escalation
+        </button>
+        <button type="button" class="category-pill px-3 py-1 rounded-lg text-xs font-mono transition-colors" data-category="Cloud & Mobile">
+          ☁️ Cloud & Mobile
+        </button>
+        <button type="button" class="category-pill px-3 py-1 rounded-lg text-xs font-mono transition-colors" data-category="Cryptography & Forensics">
+          🔐 Cryptography
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Master-Detail Work Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- LEFT PANE: Observation Cards List (4 Cols on lg) -->
+      <div class="lg:col-span-4 space-y-3">
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs font-mono uppercase tracking-wider text-[#8b949e]">
+            Katalog Observasi (<span id="visible-count">{totalObservations}</span>)
+          </span>
+          <span class="text-[11px] text-[#8b949e]">Pilih untuk deep-dive</span>
+        </div>
+
+        <div id="observation-list" class="space-y-2.5 max-h-[750px] overflow-y-auto pr-1">
+          <!-- Populated dynamically via client script for search/filter speed -->
+        </div>
+      </div>
+
+      <!-- RIGHT PANE: Deep-Dive Observation Console (8 Cols on lg) -->
+      <div class="lg:col-span-8">
+        <div id="observation-detail-console" class="rounded-2xl bg-[#161b22] border border-[#30363d] p-5 sm:p-7 shadow-2xl space-y-6">
+          <!-- Dynamically updated by client script -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer Information Bar -->
+    <div class="p-4 rounded-xl bg-[#161b22]/60 border border-[#30363d] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#8b949e]">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#10b981]"></span>
+        <span>Metodologi terintegrasi dengan 73 modul ofensif Wiki Cyber Security Hanz.</span>
+      </div>
+      <div class="flex items-center gap-3 font-mono">
+        <a href="/docs/mindset-dan-metodologi" class="text-[#00b4d8] hover:underline">Metodologi Utama →</a>
+        <span>•</span>
+        <a href="/graph" class="text-[#00b4d8] hover:underline">Peta Graf Workflow →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Raw observations JSON injected into client script -->
+  <script id="raw-observations-data" type="application/json" set:html={safeObservationsJson}></script>
+
+  <style>
+    .category-pill {
+      background-color: #0d1117;
+      color: #8b949e;
+      border: 1px solid #30363d;
+    }
+    .category-pill:hover {
+      color: #f0f6fc;
+      border-color: #00b4d8;
+    }
+    .category-pill.active {
+      background-color: #21262d;
+      color: #00b4d8;
+      border-color: #00b4d8;
+      font-weight: 600;
+    }
+
+    .obs-card {
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+    .obs-card:hover {
+      border-color: #00b4d8;
+      transform: translateY(-1px);
+    }
+    .obs-card.active {
+      border-color: #00b4d8;
+      background-color: rgba(0, 180, 216, 0.08);
+      box-shadow: 0 0 15px rgba(0, 180, 216, 0.15);
+    }
+
+    /* Custom Scrollbar */
+    #observation-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    #observation-list::-webkit-scrollbar-track {
+      background: #0d1117;
+      border-radius: 4px;
+    }
+    #observation-list::-webkit-scrollbar-thumb {
+      background: #30363d;
+      border-radius: 4px;
+    }
+    #observation-list::-webkit-scrollbar-thumb:hover {
+      background: #00b4d8;
+    }
+  </style>
+
+  <script>
+    // Client-side controller for Navigator
+    const rawDataEl = document.getElementById('raw-observations-data');
+    const allObservations = rawDataEl ? JSON.parse(rawDataEl.textContent || '[]') : [];
+
+    let currentSelectedId = allObservations[0]?.id || '';
+    let currentCategory = 'ALL';
+    let currentConfidence = 'ALL';
+    let searchQuery = '';
+    let activeDetailTab = 'summary'; // 'summary' | 'inspections' | 'signals' | 'hypotheses' | 'ctf_pentest' | 'routes'
+
+    const obsListEl = document.getElementById('observation-list');
+    const detailConsoleEl = document.getElementById('observation-detail-console');
+    const visibleCountEl = document.getElementById('visible-count');
+    const searchInput = document.getElementById('obs-search-input');
+    const clearSearchBtn = document.getElementById('clear-obs-search');
+    const confidenceSelect = document.getElementById('confidence-filter');
+    const categoryPills = document.querySelectorAll('.category-pill');
+    const toggleMindsetBtn = document.getElementById('toggle-mindset-btn');
+    const mindsetPanel = document.getElementById('mindset-panel');
+    const mindsetArrow = document.getElementById('mindset-arrow');
+
+    // Mindset toggle
+    toggleMindsetBtn?.addEventListener('click', () => {
+      const isHidden = mindsetPanel?.classList.contains('hidden');
+      if (isHidden) {
+        mindsetPanel?.classList.remove('hidden');
+        mindsetArrow?.classList.add('rotate-180');
+      } else {
+        mindsetPanel?.classList.add('hidden');
+        mindsetArrow?.classList.remove('rotate-180');
+      }
+    });
+
+    // Category filter click
+    categoryPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        categoryPills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        currentCategory = pill.getAttribute('data-category') || 'ALL';
+        renderFilteredList();
+      });
+    });
+
+    // Confidence filter change
+    confidenceSelect?.addEventListener('change', (e) => {
+      currentConfidence = e.target.value;
+      renderFilteredList();
+    });
+
+    // Search input
+    searchInput?.addEventListener('input', (e) => {
+      searchQuery = e.target.value.toLowerCase().trim();
+      if (searchQuery.length > 0) {
+        clearSearchBtn?.classList.remove('hidden');
+      } else {
+        clearSearchBtn?.classList.add('hidden');
+      }
+      renderFilteredList();
+    });
+
+    clearSearchBtn?.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      searchQuery = '';
+      clearSearchBtn.classList.add('hidden');
+      renderFilteredList();
+    });
+
+    // Filter logic
+    function getFilteredObservations() {
+      return allObservations.filter(obs => {
+        // Category match
+        if (currentCategory !== 'ALL' && obs.category !== currentCategory) {
+          return false;
+        }
+
+        // Confidence match
+        if (currentConfidence !== 'ALL') {
+          const hasConfidenceMatch = (obs.interesting_signals || []).some(s => s.observation_confidence === currentConfidence);
+          if (!hasConfidenceMatch) return false;
+        }
+
+        // Search query match
+        if (searchQuery) {
+          const haystack = [
+            obs.id,
+            obs.title,
+            obs.domain,
+            obs.category,
+            obs.what_do_you_see,
+            obs.why_it_matters,
+            obs.context,
+            ...(obs.common_mistakes || []),
+            ...(obs.provenance || []),
+            ...(obs.inspection_points || []).map(p => `${p.title} ${p.description}`)
+          ].join(' ').toLowerCase();
+
+          return haystack.includes(searchQuery);
+        }
+
+        return true;
+      });
+    }
+
+    // Render observation cards on the left pane
+    function renderFilteredList() {
+      const filtered = getFilteredObservations();
+      if (visibleCountEl) visibleCountEl.textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        obsListEl.innerHTML = `
+          <div class="p-6 text-center rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2">
+            <div class="text-2xl">🔍</div>
+            <div class="text-sm font-semibold text-[#f0f6fc]">Tidak ada observasi yang cocok</div>
+            <p class="text-xs text-[#8b949e]">Coba kata kunci lain atau setel ulang filter kategori.</p>
+          </div>
+        `;
+        detailConsoleEl.innerHTML = `
+          <div class="p-12 text-center text-[#8b949e] space-y-2">
+            <p class="text-base font-semibold text-[#f0f6fc]">Pilih observasi dari daftar di sebelah kiri</p>
+            <p class="text-xs">Ubah kata pencarian untuk melihat hasil lainnya.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // If current selected is not in filtered, select the first available
+      if (!filtered.some(o => o.id === currentSelectedId)) {
+        currentSelectedId = filtered[0].id;
+      }
+
+      obsListEl.innerHTML = filtered.map(obs => {
+        const isActive = obs.id === currentSelectedId;
+        const activeClass = isActive ? 'active' : '';
+        
+        let categoryColor = 'text-[#00b4d8] bg-[#00b4d8]/10 border-[#00b4d8]/30';
+        if (obs.category === 'Active Directory') categoryColor = 'text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/30';
+        if (obs.category === 'Privilege Escalation') categoryColor = 'text-[#e84a5f] bg-[#e84a5f]/10 border-[#e84a5f]/30';
+        if (obs.category === 'Cloud & Mobile') categoryColor = 'text-[#38bdf8] bg-[#38bdf8]/10 border-[#38bdf8]/30';
+        if (obs.category === 'Cryptography & Forensics') categoryColor = 'text-[#a855f7] bg-[#a855f7]/10 border-[#a855f7]/30';
+
+        return `
+          <div 
+            class="obs-card p-3.5 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2 ${activeClass}"
+            data-id="${obs.id}"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-md border ${categoryColor}">
+                ${obs.domain}
+              </span>
+              <span class="text-[10px] font-mono text-[#8b949e]">
+                ${obs.relevant_workflows?.length || 0} WFs
+              </span>
+            </div>
+
+            <h3 class="text-xs font-semibold text-[#f0f6fc] leading-snug">
+              ${obs.title}
+            </h3>
+
+            <p class="text-[11px] text-[#8b949e] line-clamp-2 leading-relaxed font-mono">
+              ${Array.isArray(obs.what_do_you_see) ? obs.what_do_you_see.join(' • ') : obs.what_do_you_see}
+            </p>
+          </div>
+        `;
+      }).join('');
+
+      // Add click listeners to cards
+      document.querySelectorAll('.obs-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.getAttribute('data-id');
+          if (id) {
+            selectObservation(id);
+          }
+        });
+      });
+
+      renderDetailConsole();
+    }
+
+    // Select observation by ID
+    function selectObservation(id) {
+      currentSelectedId = id;
+      window.location.hash = id;
+      document.querySelectorAll('.obs-card').forEach(card => {
+        if (card.getAttribute('data-id') === id) {
+          card.classList.add('active');
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          card.classList.remove('active');
+        }
+      });
+      renderDetailConsole();
+    }
+
+    // Render Right Detail Console
+    function renderDetailConsole() {
+      const node = allObservations.find(o => o.id === currentSelectedId);
+      if (!node) return;
+
+      // Extract confidence badge from first interesting signal or fallback
+      const primaryConfidence = node.interesting_signals?.[0]?.observation_confidence || 'CONFIRMED_OBSERVATION';
+      let confBadgeClass = 'bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30';
+      if (primaryConfidence === 'PROBABLE_OBSERVATION') confBadgeClass = 'bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30';
+      if (primaryConfidence === 'UNCONFIRMED_AMBIGUOUS') confBadgeClass = 'bg-[#e84a5f]/15 text-[#e84a5f] border-[#e84a5f]/30';
+
+      detailConsoleEl.innerHTML = `
+        <!-- Console Header -->
+        <div class="space-y-3 pb-5 border-b border-[#30363d]">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-md bg-[#00b4d8]/15 border border-[#00b4d8]/30 text-[#00b4d8] text-xs font-mono font-medium">
+                ${node.domain}
+              </span>
+              <span class="px-2 py-0.5 rounded-md bg-[#21262d] border border-[#30363d] text-[#8b949e] text-xs font-mono">
+                ${node.category}
+              </span>
+              <span class="px-2 py-0.5 rounded-md border text-[11px] font-mono ${confBadgeClass}">
+                Keyakinan: ${primaryConfidence}
+              </span>
+            </div>
+
+            <span class="text-xs font-mono text-[#8b949e]">ID: ${node.id}</span>
+          </div>
+
+          <h2 class="text-xl sm:text-2xl font-bold text-[#f0f6fc] font-sans">
+            ${node.title}
+          </h2>
+
+          <!-- Tri-partite Confidence Matrix Mini-Card -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 text-xs">
+            <div>
+              <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Observation Confidence</span>
+              <span class="font-mono font-semibold text-[#00b4d8]">${primaryConfidence}</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Hypothesis Status</span>
+              <span class="font-mono font-semibold text-[#f59e0b]">ACTIVE_INVESTIGATION</span>
+            </div>
+            <div>
+              <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Validation Status</span>
+              <span class="font-mono font-semibold text-[#10b981]">HYPOTHESIS_ONLY (Need Proof)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Educational Assistant Drawer / "Saya Belum Paham Maksud Observasi Ini" -->
+        <div class="rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/5 overflow-hidden">
+          <button 
+            type="button" 
+            id="toggle-unknown-btn"
+            class="w-full px-4 py-3 flex items-center justify-between text-left text-xs font-mono font-semibold text-[#f59e0b] hover:bg-[#f59e0b]/10 transition-colors"
+          >
+            <div class="flex items-center gap-2">
+              <span>💡</span>
+              <span>Saya belum paham apa maksud observasi ini? (Klik untuk penjelasan edukatif)</span>
+            </div>
+            <svg class="w-4 h-4 transition-transform" id="unknown-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          <div id="unknown-body" class="hidden px-4 pb-4 pt-1 border-t border-[#f59e0b]/20 space-y-3 text-xs text-[#c9d1d9] leading-relaxed">
+            <div class="space-y-1">
+              <span class="font-mono font-bold text-[#f0f6fc] block">📌 Apa sebenarnya ini?</span>
+              <p>${node.unknown_guide?.what_is_this || '-'}</p>
+            </div>
+            <div class="space-y-1">
+              <span class="font-mono font-bold text-[#f0f6fc] block">⚙️ Mengapa ini ada di sistem target?</span>
+              <p>${node.unknown_guide?.why_does_it_exist || '-'}</p>
+            </div>
+            <div class="space-y-1">
+              <span class="font-mono font-bold text-[#f0f6fc] block">🎯 Bagian mana yang penting untuk diperhatikan?</span>
+              <p>${node.unknown_guide?.what_parts_matter || '-'}</p>
+            </div>
+            <div class="space-y-1">
+              <span class="font-mono font-bold text-[#f0f6fc] block">⚖️ Tampilan Normal vs Mencurigakan:</span>
+              <p>${node.unknown_guide?.what_normal_looks_like || '-'}</p>
+            </div>
+            ${node.unknown_guide?.what_to_record_immediately?.length ? `
+            <div class="space-y-1 p-2.5 rounded-lg bg-[#161b22] border border-[#f59e0b]/30">
+              <span class="font-mono font-bold text-[#f59e0b] block text-[10px] uppercase tracking-wider">📸 Catat Segera (Before Anything Else):</span>
+              <ul class="space-y-0.5 pl-1">
+                ${node.unknown_guide.what_to_record_immediately.map(r => `<li class="flex items-start gap-1.5"><span class="text-[#f59e0b]">→</span><span>${r}</span></li>`).join('')}
+              </ul>
+            </div>` : ''}
+          </div>
+        </div>
+
+        <!-- Detail Tabs Header -->
+        <div class="flex flex-wrap items-center gap-1 border-b border-[#30363d] pb-2">
+          <button type="button" class="console-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${activeDetailTab === 'summary' ? 'bg-[#21262d] text-[#00b4d8] font-bold border border-[#30363d]' : 'text-[#8b949e] hover:text-[#f0f6fc]'}" data-tab="summary">
+            📋 Ringkasan & Konteks
+          </button>
+          <button type="button" class="console-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${activeDetailTab === 'inspections' ? 'bg-[#21262d] text-[#00b4d8] font-bold border border-[#30363d]' : 'text-[#8b949e] hover:text-[#f0f6fc]'}" data-tab="inspections">
+            🔬 Titik Inspeksi (${node.inspection_points?.length || 0})
+          </button>
+          <button type="button" class="console-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${activeDetailTab === 'signals' ? 'bg-[#21262d] text-[#00b4d8] font-bold border border-[#30363d]' : 'text-[#8b949e] hover:text-[#f0f6fc]'}" data-tab="signals">
+            ⚡ Signal Tester
+          </button>
+          <button type="button" class="console-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${activeDetailTab === 'hypotheses' ? 'bg-[#21262d] text-[#00b4d8] font-bold border border-[#30363d]' : 'text-[#8b949e] hover:text-[#f0f6fc]'}" data-tab="hypotheses">
+            🎯 Hipotesis & Stop (${node.hypotheses?.length || 0})
+          </button>
+          <button type="button" class="console-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${activeDetailTab === 'ctf_pentest' ? 'bg-[#21262d] text-[#00b4d8] font-bold border border-[#30363d]' : 'text-[#8b949e] hover:text-[#f0f6fc]'}" data-tab="ctf_pentest">
+            ⚖️ CTF vs Pentest
+          </button>
+          <button type="button" class="console-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${activeDetailTab === 'routes' ? 'bg-[#21262d] text-[#00b4d8] font-bold border border-[#30363d]' : 'text-[#8b949e] hover:text-[#f0f6fc]'}" data-tab="routes">
+            🚀 Rute Workflow (${node.relevant_workflows?.length || 0})
+          </button>
+        </div>
+
+        <!-- Tab Content Area -->
+        <div id="tab-content" class="space-y-5">
+          ${renderTabContent(node, activeDetailTab)}
+        </div>
+
+        <!-- Bottom Provenance & Coverage Tag -->
+        <div class="pt-4 border-t border-[#30363d]/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#8b949e]">
+          <div>
+            <span>Standar: </span>
+            <span class="text-[#c9d1d9]">${(node.provenance || []).join(' • ')}</span>
+          </div>
+          <div>
+            <span>Coverage Observasi: </span>
+            <span class="text-[#10b981]">${node.coverage?.observation_coverage || 'SEED_INCLUDED'}</span>
+          </div>
+        </div>
+      `;
+
+      // Attach drawer listeners
+      const toggleUnknownBtn = document.getElementById('toggle-unknown-btn');
+      const unknownBody = document.getElementById('unknown-body');
+      const unknownArrow = document.getElementById('unknown-arrow');
+
+      toggleUnknownBtn?.addEventListener('click', () => {
+        const isClosed = unknownBody?.classList.contains('hidden');
+        if (isClosed) {
+          unknownBody?.classList.remove('hidden');
+          unknownArrow?.classList.add('rotate-180');
+        } else {
+          unknownBody?.classList.add('hidden');
+          unknownArrow?.classList.remove('rotate-180');
+        }
+      });
+
+      // Attach tab change listeners
+      document.querySelectorAll('.console-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeDetailTab = btn.getAttribute('data-tab') || 'summary';
+          renderDetailConsole();
+        });
+      });
+
+      // Attach related observations click handlers
+      document.querySelectorAll('.related-obs-tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+          const targetId = tag.getAttribute('data-target-id');
+          if (targetId) {
+            selectObservation(targetId);
+          }
+        });
+      });
+    }
+
+    // Helper: render active tab content
+    function renderTabContent(node, tab) {
+      if (tab === 'summary') {
+        return `
+          <div class="space-y-4 text-xs">
+            <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-1.5">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-[#00b4d8] font-bold">Apa yang Anda Lihat di Target? (Raw Observation)</span>
+              <div class="text-sm font-mono text-[#f0f6fc] leading-relaxed bg-[#161b22] p-3 rounded-lg border border-[#30363d] space-y-1.5">
+                ${Array.isArray(node.what_do_you_see) ? `
+                  <ul class="space-y-1.5 pl-1">
+                    ${node.what_do_you_see.map(item => `
+                      <li class="flex items-start gap-2 text-[#f0f6fc] font-mono text-xs">
+                        <span class="text-[#00b4d8] font-bold">›</span>
+                        <span>${item}</span>
+                      </li>
+                    `).join('')}
+                  </ul>
+                ` : `<p>${node.what_do_you_see}</p>`}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-1.5">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-[#f59e0b] font-bold">Konteks Target</span>
+                <p class="text-[#c9d1d9] leading-relaxed">${node.context}</p>
+              </div>
+
+              <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-1.5">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-[#e84a5f] font-bold">Mengapa Observasi Ini Penting?</span>
+                <p class="text-[#c9d1d9] leading-relaxed">${node.why_it_matters}</p>
+              </div>
+            </div>
+
+            <!-- Questions to Ask -->
+            <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-[#10b981] font-bold block">
+                ❓ Pertanyaan Kunci yang Harus Dijawab Sebelum Bertindak
+              </span>
+              <ul class="space-y-1.5 pl-1">
+                ${(node.questions_to_ask || []).map(q => `
+                  <li class="flex items-start gap-2 text-[#c9d1d9]">
+                    <span class="text-[#10b981] mt-0.5 font-bold">•</span>
+                    <span>${q}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+
+      if (tab === 'inspections') {
+        return `
+          <div class="space-y-4">
+            <div class="text-xs text-[#8b949e]">
+              Evaluasi setiap titik inspeksi hierarkis di bawah ini. Pastikan Anda mengumpulkan bukti yang disyaratkan sebelum melanjutkan.
+            </div>
+
+            <div class="space-y-3">
+              ${(node.inspection_points || []).map((pt, idx) => `
+                <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2.5">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="font-mono font-bold text-xs text-[#f0f6fc] flex items-center gap-2">
+                      <span class="w-5 h-5 rounded-md bg-[#00b4d8]/20 text-[#00b4d8] flex items-center justify-center text-[11px] font-mono">
+                        ${idx + 1}
+                      </span>
+                      ${pt.name}
+                    </span>
+                    <span class="text-[10px] font-mono text-[#8b949e] px-2 py-0.5 rounded bg-[#161b22] border border-[#30363d]">
+                      ID: ${pt.id}
+                    </span>
+                  </div>
+
+                  <p class="text-xs text-[#c9d1d9] leading-relaxed"><strong class="text-[#8b949e]">Mengapa diperiksa:</strong> ${pt.why_check}</p>
+
+                  <!-- What to Look For (commands / actions) -->
+                  <div class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] text-xs font-mono text-[#00b4d8] overflow-x-auto space-y-1">
+                    <span class="text-[10px] text-[#8b949e] uppercase font-mono block">Cara Memeriksa:</span>
+                    ${(pt.what_to_look_for || []).map(cmd => `<code class="block">${cmd}</code>`).join('')}
+                  </div>
+
+                  <!-- Normal Baseline -->
+                  <div class="p-2.5 rounded-lg bg-[#10b981]/5 border border-[#10b981]/30 text-xs text-[#c9d1d9]">
+                    <span class="text-[10px] font-mono text-[#10b981] uppercase font-bold block mb-1">🟢 Baseline Normal:</span>
+                    ${pt.normal_baseline}
+                  </div>
+
+                  <!-- Interesting Clues -->
+                  ${(pt.interesting_clues || []).length > 0 ? `
+                  <div class="p-2.5 rounded-lg bg-[#f59e0b]/5 border border-[#f59e0b]/30 space-y-1 text-xs">
+                    <span class="text-[10px] font-mono text-[#f59e0b] uppercase font-bold block">⚡ Indikator Menarik:</span>
+                    <ul class="space-y-0.5 pl-1">
+                      ${(pt.interesting_clues || []).map(clue => `<li class="flex items-start gap-1.5 text-[#c9d1d9]"><span class="text-[#f59e0b]">→</span><span>${clue}</span></li>`).join('')}
+                    </ul>
+                  </div>` : ''}
+
+                  <!-- Evidence to Capture Box -->
+                  <div class="p-3 rounded-lg bg-[#161b22]/80 border border-[#f59e0b]/40 space-y-1">
+                    <span class="text-[10px] font-mono uppercase tracking-wider text-[#f59e0b] font-bold flex items-center gap-1.5">
+                      <span>📸 Bukti yang Wajib Di-Capture</span>
+                    </span>
+                    <ul class="space-y-1 pl-1">
+                      ${(pt.evidence_to_capture || []).map(ev => `
+                        <li class="text-[11px] text-[#c9d1d9] flex items-start gap-1.5">
+                          <span class="text-[#f59e0b] font-mono font-bold">✓</span>
+                          <span>${ev}</span>
+                        </li>
+                      `).join('')}
+                    </ul>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      if (tab === 'signals') {
+        return `
+          <div class="space-y-5 text-xs">
+            <!-- Interesting Signals -->
+            <div class="space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
+                <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider">
+                  Sinyal Menarik & Indikator Eksploitasi (${node.interesting_signals?.length || 0})
+                </span>
+              </div>
+
+              <div class="space-y-3">
+                ${(node.interesting_signals || []).map(sig => `
+                  <div class="p-4 rounded-xl bg-[#0d1117] border border-[#f59e0b]/40 space-y-2.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="font-mono font-bold text-xs text-[#f59e0b]">${sig.signal_description}</span>
+                      <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#f59e0b]/15 text-[#f59e0b] border border-[#f59e0b]/30">
+                        ${sig.observation_confidence}
+                      </span>
+                    </div>
+
+                    <p class="text-[#c9d1d9] leading-relaxed">${sig.interpretation}</p>
+
+                    ${sig.output_snippet ? `
+                    <div class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] font-mono text-[#00b4d8] text-[11px] overflow-x-auto">
+                      <span class="text-[#8b949e] block text-[10px] uppercase font-mono mb-1">Contoh Output Nyata:</span>
+                      <pre class="whitespace-pre-wrap text-[11px]">${sig.output_snippet}</pre>
+                    </div>` : ''}
+
+                    <div class="p-2.5 rounded-lg bg-[#161b22]/70 border border-[#30363d] space-y-1">
+                      <span class="text-[10px] font-mono uppercase tracking-wider text-[#10b981] font-bold">📸 Bukti yang Harus Diarsip:</span>
+                      <p class="text-[#8b949e] text-[11px] font-mono">${(sig.evidence_to_capture || []).join(' • ')}</p>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Unexpected Signals -->
+            <div class="space-y-3 pt-2">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#e84a5f]"></span>
+                <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider">
+                  Anomali Tak Terduga & Cara Penanganan (${node.unexpected_signals?.length || 0})
+                </span>
+              </div>
+
+              <div class="space-y-2">
+                ${(node.unexpected_signals || []).map(usig => `
+                  <div class="p-3 rounded-xl bg-[#0d1117] border border-[#e84a5f]/40 flex items-start gap-3">
+                    <span class="text-[#e84a5f] font-bold mt-0.5">!</span>
+                    <span class="text-xs text-[#c9d1d9] leading-relaxed">${typeof usig === 'string' ? usig : (usig.signal || JSON.stringify(usig))}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Negative Result Guide -->
+            <div class="p-4 rounded-xl bg-[#0d1117] border border-[#10b981]/40 space-y-3">
+              <span class="font-mono font-bold text-xs text-[#10b981] flex items-center gap-1.5">
+                <span>🟢 Baseline Normal & Panduan Hasil Negatif</span>
+              </span>
+              <p class="text-[#c9d1d9] leading-relaxed text-xs">
+                ${node.negative_result_guide?.summary || 'Tidak ada temuan pada observasi ini — hasil negatif tidak secara otomatis berarti target aman.'}
+              </p>
+              <div class="p-2.5 rounded bg-[#161b22] border border-[#30363d] text-xs text-[#c9d1d9] space-y-1">
+                <span class="text-[#f59e0b] font-bold font-mono text-[10px] uppercase block">Mengapa Ini Tidak Berarti Aman:</span>
+                <p>${node.negative_result_guide?.why_not_secure || 'Target mungkin masih rentan melalui vektor lain.'}</p>
+              </div>
+              ${(node.negative_result_guide?.next_pivot_observations || []).length > 0 ? `
+              <div class="space-y-1.5">
+                <span class="text-[10px] font-mono text-[#00b4d8] uppercase font-bold block">Pivot Ke Observasi Berikutnya:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  ${(node.negative_result_guide.next_pivot_observations || []).map(pid => `
+                    <button type="button" class="related-obs-tag px-2.5 py-1 rounded-lg bg-[#161b22] hover:bg-[#21262d] border border-[#00b4d8]/30 hover:border-[#00b4d8] text-xs font-mono text-[#00b4d8] transition-colors" data-target-id="${pid}">
+                      ${pid} ➔
+                    </button>
+                  `).join('')}
+                </div>
+              </div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      if (tab === 'hypotheses') {
+        return `
+          <div class="space-y-5 text-xs">
+            <!-- Hypotheses List -->
+            <div class="space-y-3">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider block">
+                Daftar Hipotesis Serangan yang Relevan (${node.hypotheses?.length || 0})
+              </span>
+
+              <div class="space-y-3">
+                ${(node.hypotheses || []).map(hyp => {
+                  let statusColor = 'text-[#f59e0b] bg-[#f59e0b]/15 border-[#f59e0b]/30';
+                  if (hyp.status === 'ACTIVE_INVESTIGATION') statusColor = 'text-[#e84a5f] bg-[#e84a5f]/15 border-[#e84a5f]/30';
+                  if (hyp.status === 'SUSPENDED') statusColor = 'text-[#8b949e] bg-[#21262d] border-[#30363d]';
+                  if (hyp.status === 'REJECTED') statusColor = 'text-[#6e7681] bg-[#161b22] border-[#30363d] line-through';
+
+                  return `
+                    <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-3">
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <span class="font-mono font-bold text-xs text-[#00b4d8] block">${hyp.name}</span>
+                          <span class="text-[10px] font-mono text-[#8b949e]">ID: ${hyp.id}</span>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${statusColor}">
+                          ${hyp.status}
+                        </span>
+                      </div>
+                      <p class="text-[#c9d1d9] leading-relaxed text-xs">${hyp.description}</p>
+
+                      ${(hyp.safe_validation_steps || []).length > 0 ? `
+                      <div class="space-y-2">
+                        <span class="text-[10px] font-mono text-[#10b981] uppercase font-bold block">🔒 Langkah Validasi Aman:</span>
+                        ${(hyp.safe_validation_steps || []).map(step => `
+                          <div class="p-3 rounded-lg bg-[#161b22] border border-[#30363d] space-y-2 text-[11px]">
+                            <div class="flex items-center gap-2">
+                              <span class="w-5 h-5 rounded-full bg-[#10b981]/20 text-[#10b981] flex items-center justify-center text-[10px] font-bold font-mono flex-shrink-0">${step.step_number}</span>
+                              <span class="font-mono text-[#f0f6fc]">${step.action}</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-7">
+                              <div>
+                                <span class="text-[10px] text-[#8b949e] font-mono block">Output Normal:</span>
+                                <span class="text-[#c9d1d9]">${step.expected_output}</span>
+                              </div>
+                              <div>
+                                <span class="text-[10px] text-[#f59e0b] font-mono block">Output Menarik:</span>
+                                <span class="text-[#f59e0b]">${step.interesting_output}</span>
+                              </div>
+                            </div>
+                            <div class="pl-7 pt-1">
+                              <span class="text-[10px] text-[#10b981] font-mono block">Interpretasi:</span>
+                              <span class="text-[#c9d1d9]">${step.interpretation}</span>
+                            </div>
+                          </div>
+                        `).join('')}
+                      </div>` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Stop Conditions & Rabbit Hole Warnings -->
+            <div class="p-4 rounded-xl bg-[#0d1117] border border-[#e84a5f]/50 space-y-2">
+              <span class="font-mono font-bold text-xs text-[#e84a5f] flex items-center gap-1.5 uppercase tracking-wider">
+                <span>🛑 Stop Conditions: Kapan Harus Berhenti & Pivot</span>
+              </span>
+              <ul class="space-y-1.5 pl-1">
+                ${(node.stop_conditions || []).map(sc => `
+                  <li class="flex items-start gap-2 text-[#c9d1d9]">
+                    <span class="text-[#e84a5f] font-mono font-bold">✕</span>
+                    <span>${sc}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+
+            <!-- Common Mistakes -->
+            <div class="p-4 rounded-xl bg-[#0d1117] border border-[#f59e0b]/50 space-y-2">
+              <span class="font-mono font-bold text-xs text-[#f59e0b] flex items-center gap-1.5 uppercase tracking-wider">
+                <span>⚠️ Kesalahan Umum & Bias Konfirmasi</span>
+              </span>
+              <ul class="space-y-1.5 pl-1">
+                ${(node.common_mistakes || []).map(cm => `
+                  <li class="flex items-start gap-2 text-[#c9d1d9]">
+                    <span class="text-[#f59e0b] font-mono font-bold">!</span>
+                    <span>${cm}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+      }
+
+      if (tab === 'ctf_pentest') {
+        return `
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <!-- CTF Notes -->
+            <div class="p-5 rounded-xl bg-[#0d1117] border border-[#e84a5f]/40 space-y-3">
+              <div class="flex items-center gap-2 font-mono font-bold text-[#e84a5f] text-sm">
+                <span>🚩</span>
+                <span>Perspektif CTF / Lab Challenge</span>
+              </div>
+              <p class="text-[#c9d1d9] leading-relaxed">${node.ctf_notes}</p>
+              <div class="p-3 rounded-lg bg-[#161b22] border border-[#30363d] text-[11px] text-[#8b949e] space-y-1">
+                <span class="font-mono font-bold text-[#f0f6fc] block">Karakteristik CTF:</span>
+                <span>Fokus pada time-to-flag, celah sengaja diimplan, asumsi dependensi rentan tidak di-patch.</span>
+              </div>
+            </div>
+
+            <!-- Pentest Notes -->
+            <div class="p-5 rounded-xl bg-[#0d1117] border border-[#00b4d8]/40 space-y-3">
+              <div class="flex items-center gap-2 font-mono font-bold text-[#00b4d8] text-sm">
+                <span>🏢</span>
+                <span>Perspektif Pentest Enterprise & RoE</span>
+              </div>
+              <p class="text-[#c9d1d9] leading-relaxed">${node.pentest_notes}</p>
+              <div class="p-3 rounded-lg bg-[#161b22] border border-[#30363d] text-[11px] text-[#8b949e] space-y-1">
+                <span class="font-mono font-bold text-[#f0f6fc] block">Karakteristik Real Pentest:</span>
+                <span>Wajib pembuktian dampak bisnis (business impact), verifikasi akun uji legal, hindari DoS atau lock out admin.</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (tab === 'routes') {
+        return `
+          <div class="space-y-5 text-xs">
+            <!-- Relevant Workflows -->
+            <div class="space-y-3">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider block">
+                Rute Langsung ke Modul Workflow Pentesting (${node.relevant_workflows?.length || 0})
+              </span>
+
+              <div class="grid grid-cols-1 gap-3">
+                ${(node.relevant_workflows || []).map(rw => `
+                  <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] transition-colors space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span class="text-[10px] font-mono text-[#8b949e] block">Workflow Dokumen:</span>
+                        <h4 class="font-mono font-bold text-sm text-[#00b4d8]">${rw.title}</h4>
+                      </div>
+                      <a 
+                        href="/docs/${rw.slug}#${rw.anchor || ''}" 
+                        target="_blank"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00b4d8]/15 hover:bg-[#00b4d8]/25 border border-[#00b4d8]/30 text-[#00b4d8] font-mono text-xs font-semibold transition-colors self-start sm:self-auto"
+                      >
+                        <span>Buka Workflow</span>
+                        <span>→</span>
+                      </a>
+                    </div>
+
+                    <div class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] space-y-1">
+                      <span class="text-[10px] font-mono text-[#8b949e] uppercase block">Bagian Target:</span>
+                      <span class="font-mono text-[#f0f6fc]">${rw.section_title}</span>
+                    </div>
+
+                    <p class="text-[#c9d1d9] leading-relaxed">
+                      <strong class="text-[#8b949e]">Rationale: </strong> ${rw.rationale}
+                    </p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Related Lateral Pivot Observations -->
+            <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-3">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider block">
+                🔄 Observasi Terkait untuk Pivot Lateral
+              </span>
+              <p class="text-[#8b949e] text-xs">
+                Klik observasi di bawah untuk langsung beralih ke node investigasi lateral dalam Navigator:
+              </p>
+              <div class="flex flex-wrap gap-2 pt-1">
+                ${(node.related_observations || []).map(relId => `
+                  <button 
+                    type="button" 
+                    class="related-obs-tag px-3 py-1.5 rounded-lg bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] hover:border-[#00b4d8] text-xs font-mono text-[#00b4d8] transition-colors"
+                    data-target-id="${relId}"
+                  >
+                    ${relId} ➔
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      return '';
+    }
+
+    // Initialize state from URL hash if available
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash && allObservations.some(o => o.id === initialHash)) {
+      currentSelectedId = initialHash;
+    }
+
+    // First render
+    renderFilteredList();
+  </script>
+</BaseLayout>
