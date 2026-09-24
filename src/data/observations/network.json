@@ -1796,5 +1796,160 @@
       "MITRE ATT&CK T1078.001",
       "OWASP Top 10 A05:2021 Security Misconfiguration"
     ]
+  },
+  {
+    "id": "obs-net-nmap-all-ports-filtered",
+    "title": "Nmap Menyatakan Semua Port Filtered / Host Down (All Ports Filtered / Missing -Pn)",
+    "domain": "Network Discovery",
+    "category": "Network",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Output Nmap: 'Note: Host seems down. If it is really up, but blocking our ping probes, try -Pn'",
+      "Output Nmap: 'All 1000 scanned ports on <IP> are in ignored states (1000 filtered)'",
+      "Target bisa di-ping (ICMP Echo Reply diterima) namun Nmap scan standar tidak menemukan port terbuka",
+      "Scan Nmap berjalan luar biasa lambat (0.05% per menit) karena firewall men-drop paket tanpa membalas RST"
+    ],
+    "context": "Fase paling awal scanning jaringan saat pemula mengetik 'nmap <IP>' terhadap mesin Windows, cloud VPS, atau lab HackTheBox / TryHackMe.",
+    "why_it_matters": "Ini adalah jebakan nomor 1 yang membuat pemula frustrasi berjam-jam mengira target mati atau VPN rusak. Nmap secara default menguji apakah host hidup sebelum memindai port. Firewall modern (termasuk Windows Defender Firewall) sengaja membuang (DROP) probe ping tersebut. Menambahkan flag -Pn memerintahkan Nmap untuk langsung memindai port tanpa membuang waktu melakukan ping probe!",
+    "questions_to_ask": [
+      "Apakah saya sudah menyertakan flag -Pn pada perintah Nmap?",
+      "Apakah koneksi VPN lab saya (tun0) aktif dan memiliki rute ke subnet target?",
+      "Apakah firewall men-drop paket SYN (-sS)? Bagaimana jika dicoba TCP Connect Scan (-sT)?",
+      "Berapa port yang sedang saya scan? Apakah scan macet karena memindai 65535 port sekaligus?"
+    ],
+    "inspection_points": [
+      {
+        "id": "ip-nmap-pn-probe",
+        "name": "1. Bypass Host Discovery Ping Probe (-Pn Flag)",
+        "why_check": "Memastikan Nmap tidak membatalkan pemindaian port hanya karena firewall memblokir paket ping ICMP.",
+        "what_to_look_for": [
+          "nmap -Pn -F <IP> (Fast scan 100 port teratas dengan skip ping)",
+          "nmap -Pn -p 21,22,80,443,445,3389 <IP> --reason",
+          "Perhatikan kolom REASON di output: 'syn-ack' menandakan port buka, 'no-response' menandakan drop firewall"
+        ],
+        "normal_baseline": "Nmap langsung menemukan port-port utama (80, 22, 445) berstatus open dalam waktu di bawah 10 detik.",
+        "interesting_clues": [
+          "Port berubah dari host down menjadi 'open syn-ack' seketika setelah flag -Pn ditambahkan",
+          "Port tertentu berstatus 'closed conn-refused' (artinya host HIDUP dan firewall melewatkan paket)"
+        ],
+        "evidence_to_capture": [
+          "Output Nmap fast scan dengan flag -Pn dan --reason",
+          "Perbandingan waktu scan sebelum dan sesudah -Pn"
+        ]
+      },
+      {
+        "id": "ip-nmap-scan-technique",
+        "name": "2. Pergantian Teknik Scan (SYN Stealth vs TCP Connect vs Rate Limit)",
+        "why_check": "Stateful firewall sering memblokir SYN scan (-sS) dari pengguna non-root atau rate-limiting paket scanning agresif.",
+        "what_to_look_for": [
+          "sudo nmap -Pn -sT -p 80,443,445 <IP> (TCP 3-Way Handshake penuh)",
+          "nmap -Pn --top-ports 1000 --min-rate 300 <IP> (Cegah scan macet berjam-jam)",
+          "Uji koneksi manual netcat: nc -nv -w 2 <IP> 80"
+        ],
+        "normal_baseline": "TCP Connect Scan (-sT) menyelesaikan 3-way handshake dan mengonfirmasi socket terbuka.",
+        "interesting_clues": [
+          "Netcat langsung tersambung (open) ke port 80/445 padahal SYN scan menyatakan filtered",
+          "Scan dengan --min-rate 300 selesai dalam 15 detik alih-alih 40 menit"
+        ],
+        "evidence_to_capture": [
+          "Output nmap -Pn -sT",
+          "Output nc -nv <IP> <PORT> yang membuktikan port terbuka"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-nmap-pn-reveals-ports",
+        "inspection_point_id": "ip-nmap-pn-probe",
+        "signal_description": "Menambahkan flag -Pn langsung membongkar port terbuka yang sebelumnya dilaporkan Host Down.",
+        "output_snippet": "$ nmap -Pn -p 80,445,3389 10.10.10.100 --reason\nHost is up, received user-set (0.045s latency).\nPORT     STATE SERVICE       REASON\n80/tcp   open  http          syn-ack\n445/tcp  open  microsoft-ds  syn-ack\n3389/tcp open  ms-wbt-server syn-ack",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Host target aktif dan Windows Firewall hanya memblokir paket ping ICMP. Target memiliki web server dan SMB yang siap dieksploitasi!",
+        "hypothesis_id": "hyp-nmap-firewall-icmp-drop",
+        "evidence_to_capture": [
+          "Output nmap -Pn dengan kolom REASON syn-ack"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Scan tetap 1000 ports filtered bahkan setelah menggunakan flag -Pn dan -sT (Periksa apakah IP target benar atau koneksi VPN putus)",
+      "Setiap port dari 1 sampai 65535 semuanya berstatus open (Target menggunakan firewall tarpit / fake port responder seperti Portspoof)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-nmap-firewall-icmp-drop",
+        "name": "Firewall Host-Based Menjatuhkan Paket Ping (Gunakan Flag -Pn)",
+        "description": "Windows Defender Firewall atau AWS Security Group menolak ICMP probe awal Nmap, membuat scanner salah menduga host mati.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-nmap-pn-reveals-ports"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Jalankan nmap fast probe: nmap -Pn --top-ports 100 -sV <IP>",
+            "expected_output": "Nmap melewati host discovery dan langsung mengembalikan daftar layanan terbuka.",
+            "interesting_output": "Ditemukan port 80/HTTP, 445/SMB, atau 22/SSH terbuka dengan versi layanan jelas.",
+            "unexpected_output": "Semua port tetap filtered -> Uji koneksi VPN dengan ping gateway lab.",
+            "interpretation": "Layanan terbuka ditemukan -> Segera lanjutkan ke fase enumerasi layanan spesifik.",
+            "evidence_to_record": [
+              "Daftar port terbuka beserta versi layanannya"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Jika nmap -Pn -p 21,22,80,443,445,3389 <IP> tidak mengembalikan 1 pun port terbuka dan ping ke gateway lab juga time-out, BERHENTI scanning! Masalah ada pada konfigurasi VPN/IP Anda, bukan pada target.",
+      "Jangan jalankan nmap -p- -A agresif di awal jika nmap standar belum selesai; ini akan memicu firewall rate limit yang memperlambat Anda berjam-jam."
+    ],
+    "common_mistakes": [
+      "Menyerah dan mengira lab rusak hanya karena Nmap mengatakan 'Host seems down'.",
+      "Lupa mengecek interface VPN (tun0) sebelum memulai scanning.",
+      "Tidak menggunakan flag --min-rate di jaringan yang menerapkan rate-limiting."
+    ],
+    "ctf_notes": "Di HackTheBox dan TryHackMe, hampir semua mesin Windows memblokir ping secara default. Selalu jadikan flag '-Pn' sebagai kebiasaan wajib dalam command Nmap Anda!",
+    "pentest_notes": "Di penetration testing enterprise, scanning tanpa -Pn akan menghilangkan 30-50% workstation Windows dari peta temuan Anda. Dokumentasikan bahwa target menerapkan ICMP dropping.",
+    "unknown_guide": {
+      "what_is_this": "Pesan dari Nmap yang memberitahu bahwa target tidak membalas paket ping pemindaian awal, sehingga Nmap ragu apakah target hidup.",
+      "why_does_it_exist": "Fitur keselamatan Nmap agar tidak membuang waktu memindai IP kosong. Namun pada target yang memiliki firewall, fitur ini menjadi bumerang.",
+      "what_parts_matter": "Flag -Pn (Perintahkan Nmap: 'Anggap host ini hidup, langsung scan port-nya!').",
+      "what_normal_looks_like": "Output Nmap menampilkan tabel port terbuka dan tertutup dalam hitungan detik.",
+      "what_to_record_immediately": [
+        "Perintah Nmap yang berhasil membongkar port",
+        "Daftar port terbuka dan waktu respons latency"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Jika semua port tetap filtered setelah -Pn, target mungkin berada di subnet berbeda atau firewall memblokir IP tester Anda.",
+      "why_not_secure": "Tidak relevan; ini adalah masalah visibilitas jaringan awal.",
+      "next_pivot_observations": [
+        "obs-net-open-port-unknown",
+        "obs-web-empty-html-page"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "03",
+        "slug": "nmap-master",
+        "title": "03. Nmap Master Workflow & Network Scanning",
+        "section_title": "Bagian 1: Filosofi Scanning (The Staged Scanning Philosophy)",
+        "anchor": "bag-1-filosofi-scanning",
+        "rationale": "Pelajari metodologi staged scanning standar profesional, flag bypass firewall, dan optimasi timing."
+      }
+    ],
+    "related_observations": [
+      "obs-net-open-port-unknown",
+      "obs-net-service-banner"
+    ],
+    "provenance": [
+      "Nmap Network Scanning by Gordon Fyodor Lyon",
+      "MITRE ATT&CK T1046 (Network Service Discovery)"
+    ]
   }
 ]

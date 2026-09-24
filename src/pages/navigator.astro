@@ -1,4 +1,4 @@
----
+﻿---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import observations from '../data/observations.json';
 
@@ -40,6 +40,10 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
           <span class="px-2.5 py-0.5 rounded-full bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] text-[11px] font-mono">
             24 Master Domains
           </span>
+          <span class="px-2.5 py-0.5 rounded-full bg-[#f59e0b]/15 border border-[#f59e0b]/30 text-[#f59e0b] text-[11px] font-mono font-semibold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-ping"></span>
+            Mode Pemula & Interaktif Aktif
+          </span>
         </div>
 
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -48,22 +52,37 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
               Apa yang Anda Lihat di Target?
             </h1>
             <p class="text-sm sm:text-base text-[#8b949e] mt-1 max-w-2xl">
-              Jembatan metodologis dari temuan mentah nmap, response HTTP, token, atau konfigurasi menuju titik inspeksi, pembuktian sinyal, mitigasi rabbit hole, dan rute workflow.
+              Jembatan metodologis dari temuan mentah Nmap, response HTTP, token, atau konfigurasi menuju titik inspeksi, pembuktian sinyal, mitigasi rabbit hole, dan rute workflow.
             </p>
           </div>
 
-          <!-- Mindset / Methodology Toggle Button -->
-          <button 
-            type="button"
-            id="toggle-mindset-btn"
-            class="self-start md:self-auto flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-xs font-mono text-[#f0f6fc] transition-all group"
-          >
-            <span class="w-2 h-2 rounded-full bg-[#f59e0b] group-hover:animate-ping"></span>
-            <span>Prinsip Investigasi & Mindset</span>
-            <svg class="w-4 h-4 text-[#8b949e] group-hover:text-[#f0f6fc] transition-transform" id="mindset-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+          <div class="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            <!-- Diagnostic Wizard Toggle Button -->
+            <button 
+              type="button"
+              id="toggle-wizard-btn"
+              class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#00b4d8]/15 hover:bg-[#00b4d8]/25 border border-[#00b4d8]/40 text-xs font-mono text-[#00b4d8] transition-all group font-bold shadow-lg shadow-[#00b4d8]/10"
+            >
+              <span class="w-2 h-2 rounded-full bg-[#00b4d8] group-hover:scale-125 transition-transform animate-pulse"></span>
+              <span>🎯 Asisten Port & Nmap Scan</span>
+              <svg class="w-4 h-4 text-[#00b4d8] group-hover:translate-x-0.5 transition-transform" id="wizard-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            <!-- Mindset / Methodology Toggle Button -->
+            <button 
+              type="button"
+              id="toggle-mindset-btn"
+              class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-xs font-mono text-[#f0f6fc] transition-all group"
+            >
+              <span class="w-2 h-2 rounded-full bg-[#f59e0b] group-hover:animate-ping"></span>
+              <span>Prinsip Investigasi</span>
+              <svg class="w-4 h-4 text-[#8b949e] group-hover:text-[#f0f6fc] transition-transform" id="mindset-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Collapsible Mental Model & Core Axioms Panel -->
@@ -127,7 +146,256 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       </div>
     </div>
 
-    <!-- Search & Filter Controls -->
+﻿    <!-- Guided Diagnostic Wizard & Smart Matcher Panel -->
+    <div id="wizard-panel" class="rounded-2xl border border-[#00b4d8]/40 bg-gradient-to-br from-[#161b22] via-[#0d1117] to-[#161b22] p-5 sm:p-6 shadow-2xl space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#30363d]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#00b4d8]/20 text-[#00b4d8] flex items-center justify-center font-bold text-base border border-[#00b4d8]/30">
+            🎯
+          </div>
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-[#f0f6fc] font-sans flex items-center gap-2">
+              Guided Diagnostic Wizard & Smart Matcher
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30">Pemula Friendly</span>
+            </h2>
+            <p class="text-xs text-[#8b949e]">
+              Bingung mulai dari mana? Pilih port terbuka di target atau paste output Nmap untuk rekomendasi jalur observasi otomatis.
+            </p>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          id="close-wizard-btn"
+          class="self-end sm:self-auto text-xs font-mono text-[#8b949e] hover:text-[#f0f6fc] px-2.5 py-1 rounded-lg bg-[#21262d] border border-[#30363d] transition-colors"
+        >
+          ✕ Tutup Asisten
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Jalur 1: Checklist 16 Port Populer (7 cols on lg) -->
+        <div class="lg:col-span-7 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-[#00b4d8] uppercase tracking-wider flex items-center gap-1.5">
+              <span>🔌</span> Jalur 1: Checklist Port Terbuka di Nmap
+            </span>
+            <button 
+              type="button" 
+              id="btn-reset-ports" 
+              class="text-[11px] font-mono text-[#8b949e] hover:text-[#f0f6fc] underline transition-colors"
+            >
+              Reset Pilihan
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="port-selector-grid">
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="21" data-service="FTP">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">21</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">FTP</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="22" data-service="SSH">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">22</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">SSH</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="23" data-service="Telnet">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">23</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">Telnet</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="25" data-service="SMTP">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">25</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">SMTP</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="53" data-service="DNS">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">53</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">DNS</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="80" data-service="HTTP">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">80</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">HTTP Web</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="88" data-service="Kerberos">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">88</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">Kerberos (AD)</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="110" data-service="POP3">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">110</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">POP3</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="139" data-service="NetBIOS">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">139</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">NetBIOS</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="445" data-service="SMB">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">445</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">SMB File</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="389" data-service="LDAP">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">389</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">LDAP (AD)</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="443" data-service="HTTPS">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">443</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">HTTPS Web</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="1433" data-service="MSSQL">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">1433</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">MSSQL DB</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="3306" data-service="MySQL">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">3306</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">MySQL DB</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="3389" data-service="RDP">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">3389</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">RDP Remote</span>
+            </button>
+            <button type="button" class="port-chip p-2 rounded-xl bg-[#0d1117] border border-[#30363d] hover:border-[#00b4d8] text-left transition-all group" data-port="8080" data-service="HTTP-Alt">
+              <span class="font-mono font-bold text-xs text-[#f0f6fc] group-hover:text-[#00b4d8]">8080</span>
+              <span class="text-[10px] font-mono text-[#8b949e] block">HTTP Alt</span>
+            </button>
+          </div>
+
+          <!-- Special Quick Button: Filtered / Host Down -->
+          <div class="pt-1">
+            <button 
+              type="button" 
+              id="btn-trigger-filtered" 
+              class="w-full py-2 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] border border-[#e84a5f]/40 hover:border-[#e84a5f] text-xs font-mono text-[#e84a5f] transition-all flex items-center justify-center gap-2"
+            >
+              <span>🛡️</span>
+              <span>Nmap Melaporkan Semua Port Filtered / Host Seems Down? Klik di Sini!</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Scenario Detection Alert Box -->
+          <div id="scenario-alert-box" class="p-3.5 rounded-xl bg-[#0d1117] border border-[#30363d] text-xs space-y-2">
+            <div class="flex items-center gap-2 text-[#8b949e] font-mono text-[11px]">
+              <span>💡</span>
+              <span>Pilih satu atau beberapa port di atas untuk melihat analisis skenario target dan observasi yang direkomendasikan.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jalur 2: Paste Raw Scan Output (5 cols on lg) -->
+        <div class="lg:col-span-5 space-y-3 flex flex-col">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-mono font-bold text-[#10b981] uppercase tracking-wider flex items-center gap-1.5">
+              <span>📋</span> Jalur 2: Paste Output Nmap / Terminal
+            </span>
+          </div>
+
+          <div class="relative flex-1">
+            <textarea 
+              id="nmap-paste-input" 
+              rows="6" 
+              class="w-full p-3 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#10b981] text-xs font-mono text-[#f0f6fc] placeholder-[#8b949e]/60 focus:outline-none transition-colors resize-none"
+              placeholder="Paste hasil scan Nmap di sini...&#10;Contoh:&#10;Nmap scan report for 10.10.11.20&#10;22/tcp  open  ssh     OpenSSH 8.9p1&#10;80/tcp  open  http    Apache httpd 2.4.52&#10;445/tcp open  netbios-ssn Samba 4.6"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center gap-2 pt-1">
+            <button 
+              type="button" 
+              id="btn-parse-nmap" 
+              class="flex-1 py-2 px-3 rounded-xl bg-[#10b981]/20 hover:bg-[#10b981]/30 border border-[#10b981]/40 text-xs font-mono text-[#10b981] font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-[#10b981]/10"
+            >
+              <span>⚡</span>
+              <span>Analisis Scan Otomatis</span>
+            </button>
+            <button 
+              type="button" 
+              id="btn-clear-nmap" 
+              class="py-2 px-3 rounded-xl bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-xs font-mono text-[#8b949e] hover:text-[#f0f6fc] transition-colors"
+            >
+              Bersihkan
+            </button>
+          </div>
+
+          <div id="nmap-parse-status" class="hidden text-[11px] font-mono p-2.5 rounded-lg border"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Target Variable Substitution Bar -->
+    <div id="target-vars-bar" class="p-4 sm:p-5 rounded-2xl bg-[#161b22] border border-[#30363d] shadow-xl space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#10b981] animate-pulse"></span>
+          <span class="text-xs font-mono font-bold text-[#f0f6fc] uppercase tracking-wider">
+            Variabel Target Real-Time (Otomatis Menggantikan Nilai pada Perintah)
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-mono text-[#8b949e]">
+            Ketik IP target Anda untuk memperbarui semua perintah
+          </span>
+          <button 
+            type="button" 
+            id="btn-reset-vars" 
+            class="text-[11px] font-mono text-[#00b4d8] hover:underline"
+          >
+            ↺ Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+        <div class="space-y-1">
+          <label for="var-target-ip" class="text-[11px] text-[#8b949e] block font-semibold">
+            Target IP (<span class="text-[#00b4d8]">&lt;IP&gt;</span>):
+          </label>
+          <input 
+            type="text" 
+            id="var-target-ip" 
+            value="10.10.11.20" 
+            class="w-full px-3 py-1.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-[#f0f6fc] text-xs font-mono focus:outline-none transition-colors"
+            placeholder="10.10.11.20"
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label for="var-target-domain" class="text-[11px] text-[#8b949e] block font-semibold">
+            Target Domain (<span class="text-[#00b4d8]">&lt;DOMAIN&gt;</span>):
+          </label>
+          <input 
+            type="text" 
+            id="var-target-domain" 
+            value="target.htb" 
+            class="w-full px-3 py-1.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-[#f0f6fc] text-xs font-mono focus:outline-none transition-colors"
+            placeholder="target.htb"
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label for="var-target-port" class="text-[11px] text-[#8b949e] block font-semibold">
+            Port (<span class="text-[#00b4d8]">&lt;PORT&gt;</span>):
+          </label>
+          <input 
+            type="text" 
+            id="var-target-port" 
+            value="80" 
+            class="w-full px-3 py-1.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-[#f0f6fc] text-xs font-mono focus:outline-none transition-colors"
+            placeholder="80"
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label for="var-target-user" class="text-[11px] text-[#8b949e] block font-semibold">
+            Username (<span class="text-[#00b4d8]">&lt;USER&gt;</span>):
+          </label>
+          <input 
+            type="text" 
+            id="var-target-user" 
+            value="admin" 
+            class="w-full px-3 py-1.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-[#f0f6fc] text-xs font-mono focus:outline-none transition-colors"
+            placeholder="admin"
+          />
+        </div>
+      </div>
+    </div>
+
+﻿    <!-- Search & Filter Controls -->
     <div class="space-y-4 p-4 sm:p-5 rounded-2xl bg-[#161b22] border border-[#30363d] shadow-lg">
       <div class="flex flex-col md:flex-row gap-3">
         <!-- Live Search Input -->
@@ -137,9 +405,9 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
           </svg>
           <input 
             type="text" 
-            id="obs-search-input"
-            class="w-full pl-11 pr-10 py-2.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-sm text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none transition-colors"
-            placeholder="Cari observasi: 'login', 'token', '445 smb', 'suid', 's3 bucket', 'idor', 'jwt', 'sudo'..."
+            id="obs-search-input" 
+            class="w-full pl-11 pr-10 py-2.5 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-sm text-[#f0f6fc] placeholder-[#8b949e] focus:outline-none transition-colors font-mono"
+            placeholder="Cari observasi: 'login', 'token', '445 smb', 'suid', 's3 bucket', 'idor', 'jwt', 'filtered'..."
             autocomplete="off"
           />
           <button 
@@ -155,7 +423,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
         <div class="flex items-center gap-2">
           <label for="confidence-filter" class="text-xs font-mono text-[#8b949e] whitespace-nowrap">Status Keyakinan:</label>
           <select 
-            id="confidence-filter"
+            id="confidence-filter" 
             class="px-3 py-2 rounded-xl bg-[#0d1117] border border-[#30363d] focus:border-[#00b4d8] text-xs font-mono text-[#f0f6fc] focus:outline-none"
           >
             <option value="ALL">Semua Tingkat Keyakinan</option>
@@ -205,15 +473,15 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
           <span class="text-[11px] text-[#8b949e]">Pilih untuk deep-dive</span>
         </div>
 
-        <div id="observation-list" class="space-y-2.5 max-h-[750px] overflow-y-auto pr-1">
-          <!-- Populated dynamically via client script for search/filter speed -->
+        <div id="observation-list" class="space-y-2.5 max-h-[780px] overflow-y-auto pr-1">
+          <!-- Populated dynamically via client script -->
         </div>
       </div>
 
       <!-- RIGHT PANE: Deep-Dive Observation Console (8 Cols on lg) -->
       <div class="lg:col-span-8">
         <div id="observation-detail-console" class="rounded-2xl bg-[#161b22] border border-[#30363d] p-5 sm:p-7 shadow-2xl space-y-6">
-          <!-- Dynamically updated by client script -->
+          <!-- Dynamically updated by client script (Beginner Mode or Expert Mode) -->
         </div>
       </div>
 
@@ -237,7 +505,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
   <!-- Raw observations JSON injected into client script -->
   <script id="raw-observations-data" type="application/json" set:html={safeObservationsJson}></script>
 
-  <style>
+﻿  <style>
     .category-pill {
       background-color: #0d1117;
       color: #8b949e;
@@ -268,6 +536,17 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       box-shadow: 0 0 15px rgba(0, 180, 216, 0.15);
     }
 
+    .port-chip {
+      transition: all 0.15s ease-in-out;
+    }
+    .port-chip.active {
+      background-color: rgba(0, 180, 216, 0.18);
+      border-color: #00b4d8;
+    }
+    .port-chip.active span:first-child {
+      color: #00b4d8;
+    }
+
     /* Custom Scrollbar */
     #observation-list::-webkit-scrollbar {
       width: 6px;
@@ -285,17 +564,21 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
     }
   </style>
 
-  <script>
-    // Client-side controller for Navigator
+﻿  <script>
+    // Client-side Controller for Observation & Decision Navigator
     const rawDataEl = document.getElementById('raw-observations-data');
     const allObservations = rawDataEl ? JSON.parse(rawDataEl.textContent || '[]') : [];
 
+    // State Variables
     let currentSelectedId = allObservations[0]?.id || '';
     let currentCategory = 'ALL';
     let currentConfidence = 'ALL';
     let searchQuery = '';
-    let activeDetailTab = 'summary'; // 'summary' | 'inspections' | 'signals' | 'hypotheses' | 'ctf_pentest' | 'routes'
+    let userMode = localStorage.getItem('navigator_user_mode') || 'beginner'; // 'beginner' | 'expert'
+    let activeDetailTab = 'summary'; // For expert mode
+    let selectedPorts = new Set();
 
+    // DOM Elements
     const obsListEl = document.getElementById('observation-list');
     const detailConsoleEl = document.getElementById('observation-detail-console');
     const visibleCountEl = document.getElementById('visible-count');
@@ -303,11 +586,157 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
     const clearSearchBtn = document.getElementById('clear-obs-search');
     const confidenceSelect = document.getElementById('confidence-filter');
     const categoryPills = document.querySelectorAll('.category-pill');
+
     const toggleMindsetBtn = document.getElementById('toggle-mindset-btn');
     const mindsetPanel = document.getElementById('mindset-panel');
     const mindsetArrow = document.getElementById('mindset-arrow');
 
-    // Mindset toggle
+    const toggleWizardBtn = document.getElementById('toggle-wizard-btn');
+    const wizardPanel = document.getElementById('wizard-panel');
+    const wizardArrow = document.getElementById('wizard-arrow');
+    const closeWizardBtn = document.getElementById('close-wizard-btn');
+
+    const portChips = document.querySelectorAll('.port-chip');
+    const btnResetPorts = document.getElementById('btn-reset-ports');
+    const btnTriggerFiltered = document.getElementById('btn-trigger-filtered');
+    const scenarioAlertBox = document.getElementById('scenario-alert-box');
+
+    const nmapPasteInput = document.getElementById('nmap-paste-input');
+    const btnParseNmap = document.getElementById('btn-parse-nmap');
+    const btnClearNmap = document.getElementById('btn-clear-nmap');
+    const nmapParseStatus = document.getElementById('nmap-parse-status');
+
+    const varTargetIp = document.getElementById('var-target-ip');
+    const varTargetDomain = document.getElementById('var-target-domain');
+    const varTargetPort = document.getElementById('var-target-port');
+    const varTargetUser = document.getElementById('var-target-user');
+    const btnResetVars = document.getElementById('btn-reset-vars');
+
+    // Helper: Escape HTML strings
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Dynamic Variable Substitution Engine
+    function applyTargetVars(text) {
+      if (!text) return '';
+      const ip = (varTargetIp?.value || '10.10.11.20').trim();
+      const domain = (varTargetDomain?.value || 'target.htb').trim();
+      const port = (varTargetPort?.value || '80').trim();
+      const user = (varTargetUser?.value || 'admin').trim();
+
+      let res = String(text);
+
+      res = res.replace(/<TARGET_IP>/gi, ip)
+               .replace(/<TARGET-IP>/gi, ip)
+               .replace(/<IP>/gi, ip)
+               .replace(/TARGET_IP/g, ip)
+               .replace(/<TARGET>/gi, ip)
+               .replace(/10\.10\.10\.100/g, ip)
+               .replace(/10\.10\.11\.20/g, ip)
+               .replace(/10\.10\.10\.x/gi, ip)
+               .replace(/10\.10\.11\.x/gi, ip);
+
+      res = res.replace(/<TARGET_DOMAIN>/gi, domain)
+               .replace(/<TARGET-DOMAIN>/gi, domain)
+               .replace(/<DOMAIN>/gi, domain)
+               .replace(/TARGET_DOMAIN/g, domain)
+               .replace(/target\.local/g, domain)
+               .replace(/target\.htb/g, domain)
+               .replace(/example\.com/g, domain);
+
+      res = res.replace(/<TARGET_PORT>/gi, port)
+               .replace(/<PORT>/gi, port);
+
+      res = res.replace(/<TARGET_USER>/gi, user)
+               .replace(/<USERNAME>/gi, user)
+               .replace(/<USER>/gi, user);
+
+      return res;
+    }
+
+    // Helper: Create a Copyable Command Box with 1-Click Copy
+    function createCopyableCommand(cmd, label = '') {
+      const formatted = applyTargetVars(cmd);
+      return `
+        <div class="relative group my-2 rounded-xl bg-[#0d1117] border border-[#30363d] p-3 font-mono text-xs">
+          ${label ? `<div class="text-[10px] text-[#8b949e] uppercase font-bold tracking-wider mb-1">${escapeHtml(label)}</div>` : ''}
+          <div class="flex items-center justify-between gap-3 overflow-x-auto">
+            <code class="text-[#00b4d8] whitespace-pre break-all select-all">${escapeHtml(formatted)}</code>
+            <button 
+              type="button" 
+              class="copy-cmd-btn flex-shrink-0 px-2.5 py-1 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-[#8b949e] hover:text-[#f0f6fc] text-[11px] font-mono border border-[#30363d] transition-all flex items-center gap-1.5"
+              data-copy="${escapeHtml(formatted)}"
+              title="Salin Perintah"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span class="copy-label">Salin</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Attach 1-Click Copy Listeners
+    function bindCopyButtons() {
+      document.querySelectorAll('.copy-cmd-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const textToCopy = btn.getAttribute('data-copy');
+          if (!textToCopy) return;
+
+          try {
+            await navigator.clipboard.writeText(textToCopy);
+            const labelEl = btn.querySelector('.copy-label');
+            if (labelEl) {
+              const original = labelEl.textContent;
+              labelEl.textContent = '✅ Tersalin!';
+              btn.classList.add('border-[#10b981]', 'text-[#10b981]');
+              setTimeout(() => {
+                labelEl.textContent = original;
+                btn.classList.remove('border-[#10b981]', 'text-[#10b981]');
+              }, 1600);
+            }
+          } catch (err) {
+            const ta = document.createElement('textarea');
+            ta.value = textToCopy;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            const labelEl = btn.querySelector('.copy-label');
+            if (labelEl) {
+              labelEl.textContent = '✅ Tersalin!';
+              setTimeout(() => { labelEl.textContent = 'Salin'; }, 1600);
+            }
+          }
+        });
+      });
+    }
+
+    // Bind real-time input on variable inputs
+    [varTargetIp, varTargetDomain, varTargetPort, varTargetUser].forEach(input => {
+      input?.addEventListener('input', () => {
+        renderDetailConsole();
+      });
+    });
+
+    btnResetVars?.addEventListener('click', () => {
+      if (varTargetIp) varTargetIp.value = '10.10.11.20';
+      if (varTargetDomain) varTargetDomain.value = 'target.htb';
+      if (varTargetPort) varTargetPort.value = '80';
+      if (varTargetUser) varTargetUser.value = 'admin';
+      renderDetailConsole();
+    });
+
     toggleMindsetBtn?.addEventListener('click', () => {
       const isHidden = mindsetPanel?.classList.contains('hidden');
       if (isHidden) {
@@ -319,7 +748,248 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       }
     });
 
-    // Category filter click
+    toggleWizardBtn?.addEventListener('click', () => {
+      const isHidden = wizardPanel?.classList.contains('hidden');
+      if (isHidden) {
+        wizardPanel?.classList.remove('hidden');
+        wizardArrow?.classList.add('rotate-180');
+      } else {
+        wizardPanel?.classList.add('hidden');
+        wizardArrow?.classList.remove('rotate-180');
+      }
+    });
+
+    closeWizardBtn?.addEventListener('click', () => {
+      wizardPanel?.classList.add('hidden');
+      wizardArrow?.classList.remove('rotate-180');
+    });
+
+﻿    // Port Chips Toggle
+    portChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const port = parseInt(chip.getAttribute('data-port') || '0', 10);
+        if (!port) return;
+
+        if (selectedPorts.has(port)) {
+          selectedPorts.delete(port);
+          chip.classList.remove('active');
+        } else {
+          selectedPorts.add(port);
+          chip.classList.add('active');
+        }
+
+        evaluatePortsAndScenarios();
+      });
+    });
+
+    btnResetPorts?.addEventListener('click', () => {
+      selectedPorts.clear();
+      portChips.forEach(c => c.classList.remove('active'));
+      evaluatePortsAndScenarios();
+    });
+
+    btnTriggerFiltered?.addEventListener('click', () => {
+      selectObservation('obs-net-nmap-all-ports-filtered');
+      userMode = 'beginner';
+      localStorage.setItem('navigator_user_mode', 'beginner');
+      renderDetailConsole();
+    });
+
+    // Evaluate Port Combinations & Detect Scenarios
+    function evaluatePortsAndScenarios() {
+      if (!scenarioAlertBox) return;
+
+      if (selectedPorts.size === 0) {
+        scenarioAlertBox.innerHTML = `
+          <div class="flex items-center gap-2 text-[#8b949e] font-mono text-[11px]">
+            <span>💡</span>
+            <span>Pilih satu atau beberapa port di atas untuk melihat analisis skenario target dan observasi yang direkomendasikan.</span>
+          </div>
+        `;
+        renderFilteredList();
+        return;
+      }
+
+      const ports = Array.from(selectedPorts);
+      let detectedScenario = null;
+      let recommendedNodeIds = [];
+
+      const isAd = (selectedPorts.has(88) && (selectedPorts.has(389) || selectedPorts.has(445))) || 
+                   (selectedPorts.has(389) && selectedPorts.has(445));
+
+      if (isAd) {
+        detectedScenario = {
+          badge: '🏢 SKENARIO TERDETEKSI: ACTIVE DIRECTORY DOMAIN CONTROLLER',
+          color: 'border-[#f59e0b] bg-[#f59e0b]/10 text-[#f59e0b]',
+          title: 'Target teridentifikasi kuat sebagai Windows Domain Controller',
+          description: 'Port Kerberos (88), LDAP (389), dan SMB (445) terbuka. Prioritas: Lakukan AS-REP Roasting, enumerasi user via Kerberos/RPC, dan cek anonymous SMB/LDAP.',
+          nodes: ['obs-ad-kerberos-asrep', 'obs-ad-smb-null-anonymous', 'obs-ad-ldap-anonymous', 'obs-ad-spn-kerberoasting']
+        };
+      } else if (selectedPorts.has(80) || selectedPorts.has(443) || selectedPorts.has(8080)) {
+        detectedScenario = {
+          badge: '🌐 SKENARIO TERDETEKSI: WEB APPLICATION SERVICE',
+          color: 'border-[#00b4d8] bg-[#00b4d8]/10 text-[#00b4d8]',
+          title: 'Target mengekspos aplikasi web pada port HTTP/HTTPS',
+          description: 'Layanan web aktif. Mulai dengan identifikasi teknologi, cek apakah ada Virtual Host jika halaman blank, periksa titik autentikasi, dan evaluasi 403 Forbidden bypass.',
+          nodes: ['obs-web-tech-fingerprint', 'obs-web-empty-html-page', 'obs-web-login-form', 'obs-web-login-sqli-fails', 'obs-web-forbidden-403-bypass']
+        };
+      } else if (selectedPorts.has(21)) {
+        detectedScenario = {
+          badge: '🔌 SKENARIO TERDETEKSI: FTP FILE SERVICE',
+          color: 'border-[#38bdf8] bg-[#38bdf8]/10 text-[#38bdf8]',
+          title: 'Port FTP 21 terbuka',
+          description: 'Periksa login Anonymous dan telusuri apakah ada file backup/konfigurasi yang tertinggal atau direktori writeable.',
+          nodes: ['obs-net-ftp-anonymous']
+        };
+      } else if (selectedPorts.has(445) || selectedPorts.has(139)) {
+        detectedScenario = {
+          badge: '📁 SKENARIO TERDETEKSI: SMB FILE SHARING',
+          color: 'border-[#10b981] bg-[#10b981]/10 text-[#10b981]',
+          title: 'Port SMB 445/139 terbuka',
+          description: 'Uji akses Null/Anonymous session dan enumerasi share yang memiliki izin READ/WRITE.',
+          nodes: ['obs-ad-smb-null-anonymous']
+        };
+      } else if (selectedPorts.has(1433) || selectedPorts.has(3306)) {
+        detectedScenario = {
+          badge: '🗄️ SKENARIO TERDETEKSI: DATABASE SERVICE',
+          color: 'border-[#a855f7] bg-[#a855f7]/10 text-[#a855f7]',
+          title: 'Port Database Terbuka (MSSQL / MySQL)',
+          description: 'Layanan basis data terpapar jaringan luar. Uji default credentials atau gabungkan dengan kredensial dari web.',
+          nodes: ['obs-net-mysql-auth-exposure', 'obs-net-mssql-exposure']
+        };
+      } else {
+        detectedScenario = {
+          badge: '🔍 PORTS TERPILIH: ' + ports.join(', '),
+          color: 'border-[#00b4d8]/40 bg-[#00b4d8]/5 text-[#f0f6fc]',
+          title: 'Layanan Individual Aktif',
+          description: 'Pilih salah satu observasi rekomendasi di bawah untuk panduan terminal langkah-demi-langkah.',
+          nodes: []
+        };
+      }
+
+      recommendedNodeIds = detectedScenario.nodes.filter(id => allObservations.some(o => o.id === id));
+
+      scenarioAlertBox.innerHTML = `
+        <div class="p-3 rounded-xl border ${detectedScenario.color} space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#0d1117] border border-current">
+              ${detectedScenario.badge}
+            </span>
+            <span class="text-[11px] font-mono text-[#8b949e]">Port Aktif: ${ports.join(', ')}</span>
+          </div>
+
+          <h4 class="font-sans font-bold text-sm text-[#f0f6fc]">${detectedScenario.title}</h4>
+          <p class="text-xs text-[#c9d1d9] leading-relaxed">${detectedScenario.description}</p>
+
+          ${recommendedNodeIds.length > 0 ? `
+            <div class="pt-1.5 space-y-1">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block font-bold">Rekomendasi Observasi Langsung:</span>
+              <div class="flex flex-wrap gap-1.5">
+                ${recommendedNodeIds.map(nid => {
+                  const nodeObj = allObservations.find(o => o.id === nid);
+                  const title = nodeObj ? nodeObj.title : nid;
+                  return `
+                    <button 
+                      type="button" 
+                      class="scenario-jump-btn px-2.5 py-1 rounded-lg bg-[#0d1117] hover:bg-[#21262d] border border-current text-xs font-mono transition-all flex items-center gap-1.5"
+                      data-target-id="${nid}"
+                    >
+                      <span>➔</span>
+                      <span>${escapeHtml(title)}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      scenarioAlertBox.querySelectorAll('.scenario-jump-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tid = btn.getAttribute('data-target-id');
+          if (tid) selectObservation(tid);
+        });
+      });
+
+      renderFilteredList();
+    }
+
+    // Parse Raw Nmap / Terminal Output
+    btnParseNmap?.addEventListener('click', () => {
+      const rawText = (nmapPasteInput?.value || '').trim();
+      if (!rawText) {
+        if (nmapParseStatus) {
+          nmapParseStatus.className = 'text-[11px] font-mono p-2.5 rounded-lg border border-[#e84a5f]/40 bg-[#e84a5f]/10 text-[#e84a5f] block';
+          nmapParseStatus.textContent = 'Silakan tempelkan output scan Nmap terlebih dahulu ke kotak teks.';
+        }
+        return;
+      }
+
+      const ipMatch = rawText.match(/Nmap scan report for (?:[^\s\(]+\s+\()?([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})\)?/i) ||
+                      rawText.match(/\b([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})\b/);
+      let parsedIp = '';
+      if (ipMatch && ipMatch[1]) {
+        parsedIp = ipMatch[1];
+        if (varTargetIp) varTargetIp.value = parsedIp;
+      }
+
+      const domainMatch = rawText.match(/Nmap scan report for ([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+      let parsedDomain = '';
+      if (domainMatch && domainMatch[1] && !domainMatch[1].match(/^\d+\.\d+\.\d+\.\d+$/)) {
+        parsedDomain = domainMatch[1];
+        if (varTargetDomain) varTargetDomain.value = parsedDomain;
+      }
+
+      const portRegex = /(\d{1,5})\/(?:tcp|udp)\s+open/gi;
+      let match;
+      const foundPorts = [];
+      while ((match = portRegex.exec(rawText)) !== null) {
+        foundPorts.push(parseInt(match[1], 10));
+      }
+
+      const isFiltered = /all \d+ scanned ports (?:on [^\s]+ )?are (?:in ignored states|filtered)/i.test(rawText) ||
+                         /Host seems down/i.test(rawText);
+
+      selectedPorts.clear();
+      portChips.forEach(c => c.classList.remove('active'));
+
+      foundPorts.forEach(p => {
+        selectedPorts.add(p);
+        portChips.forEach(chip => {
+          if (parseInt(chip.getAttribute('data-port') || '0', 10) === p) {
+            chip.classList.add('active');
+          }
+        });
+      });
+
+      evaluatePortsAndScenarios();
+
+      if (isFiltered) {
+        selectObservation('obs-net-nmap-all-ports-filtered');
+        if (nmapParseStatus) {
+          nmapParseStatus.className = 'text-[11px] font-mono p-2.5 rounded-lg border border-[#f59e0b]/40 bg-[#f59e0b]/10 text-[#f59e0b] block';
+          nmapParseStatus.innerHTML = `🛡️ <strong>Semua Port Filtered / Host Down Terdeteksi!</strong> Otomatis mengarahkan ke observasi <code>obs-net-nmap-all-ports-filtered</code>.`;
+        }
+        return;
+      }
+
+      if (nmapParseStatus) {
+        nmapParseStatus.className = 'text-[11px] font-mono p-2.5 rounded-lg border border-[#10b981]/40 bg-[#10b981]/10 text-[#10b981] block';
+        nmapParseStatus.innerHTML = `✅ <strong>Scan Berhasil Dianalisis!</strong> Ditemukan IP: <code>${parsedIp || 'Tidak terdeteksi'}</code>, ${foundPorts.length} port terbuka (<code>${foundPorts.join(', ') || 'None'}</code>). Variabel target telah diperbarui.`;
+      }
+
+      renderDetailConsole();
+    });
+
+    btnClearNmap?.addEventListener('click', () => {
+      if (nmapPasteInput) nmapPasteInput.value = '';
+      if (nmapParseStatus) {
+        nmapParseStatus.className = 'hidden';
+        nmapParseStatus.textContent = '';
+      }
+    });
+
     categoryPills.forEach(pill => {
       pill.addEventListener('click', () => {
         categoryPills.forEach(p => p.classList.remove('active'));
@@ -329,13 +999,11 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       });
     });
 
-    // Confidence filter change
     confidenceSelect?.addEventListener('change', (e) => {
       currentConfidence = e.target.value;
       renderFilteredList();
     });
 
-    // Search input
     searchInput?.addEventListener('input', (e) => {
       searchQuery = e.target.value.toLowerCase().trim();
       if (searchQuery.length > 0) {
@@ -353,21 +1021,26 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       renderFilteredList();
     });
 
-    // Filter logic
+﻿    // Filtering Logic
     function getFilteredObservations() {
       return allObservations.filter(obs => {
-        // Category match
         if (currentCategory !== 'ALL' && obs.category !== currentCategory) {
           return false;
         }
 
-        // Confidence match
         if (currentConfidence !== 'ALL') {
           const hasConfidenceMatch = (obs.interesting_signals || []).some(s => s.observation_confidence === currentConfidence);
           if (!hasConfidenceMatch) return false;
         }
 
-        // Search query match
+        if (selectedPorts.size > 0 && !searchQuery) {
+          if (selectedPorts.has(88) || selectedPorts.has(389)) {
+            if (obs.category !== 'Active Directory' && obs.category !== 'Network') return false;
+          } else if (selectedPorts.has(80) || selectedPorts.has(443) || selectedPorts.has(8080)) {
+            if (obs.category !== 'Web' && obs.category !== 'Network') return false;
+          }
+        }
+
         if (searchQuery) {
           const haystack = [
             obs.id,
@@ -379,7 +1052,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
             obs.context,
             ...(obs.common_mistakes || []),
             ...(obs.provenance || []),
-            ...(obs.inspection_points || []).map(p => `${p.title} ${p.description}`)
+            ...(obs.inspection_points || []).map(p => `${p.title || p.name} ${p.description || p.why_check}`)
           ].join(' ').toLowerCase();
 
           return haystack.includes(searchQuery);
@@ -389,7 +1062,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       });
     }
 
-    // Render observation cards on the left pane
+    // Render Left Pane Cards
     function renderFilteredList() {
       const filtered = getFilteredObservations();
       if (visibleCountEl) visibleCountEl.textContent = filtered.length;
@@ -399,7 +1072,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
           <div class="p-6 text-center rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2">
             <div class="text-2xl">🔍</div>
             <div class="text-sm font-semibold text-[#f0f6fc]">Tidak ada observasi yang cocok</div>
-            <p class="text-xs text-[#8b949e]">Coba kata kunci lain atau setel ulang filter kategori.</p>
+            <p class="text-xs text-[#8b949e]">Coba kata kunci lain atau setel ulang filter.</p>
           </div>
         `;
         detailConsoleEl.innerHTML = `
@@ -411,7 +1084,6 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
         return;
       }
 
-      // If current selected is not in filtered, select the first available
       if (!filtered.some(o => o.id === currentSelectedId)) {
         currentSelectedId = filtered[0].id;
       }
@@ -419,7 +1091,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       obsListEl.innerHTML = filtered.map(obs => {
         const isActive = obs.id === currentSelectedId;
         const activeClass = isActive ? 'active' : '';
-        
+
         let categoryColor = 'text-[#00b4d8] bg-[#00b4d8]/10 border-[#00b4d8]/30';
         if (obs.category === 'Active Directory') categoryColor = 'text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/30';
         if (obs.category === 'Privilege Escalation') categoryColor = 'text-[#e84a5f] bg-[#e84a5f]/10 border-[#e84a5f]/30';
@@ -441,7 +1113,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
             </div>
 
             <h3 class="text-xs font-semibold text-[#f0f6fc] leading-snug">
-              ${obs.title}
+              ${escapeHtml(obs.title)}
             </h3>
 
             <p class="text-[11px] text-[#8b949e] line-clamp-2 leading-relaxed font-mono">
@@ -451,20 +1123,16 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
         `;
       }).join('');
 
-      // Add click listeners to cards
       document.querySelectorAll('.obs-card').forEach(card => {
         card.addEventListener('click', () => {
           const id = card.getAttribute('data-id');
-          if (id) {
-            selectObservation(id);
-          }
+          if (id) selectObservation(id);
         });
       });
 
       renderDetailConsole();
     }
 
-    // Select observation by ID
     function selectObservation(id) {
       currentSelectedId = id;
       window.location.hash = id;
@@ -479,21 +1147,21 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       renderDetailConsole();
     }
 
-    // Render Right Detail Console
+﻿    // Render Main Detail Console (Switches between Beginner Mode and Expert Mode)
     function renderDetailConsole() {
       const node = allObservations.find(o => o.id === currentSelectedId);
       if (!node) return;
 
-      // Extract confidence badge from first interesting signal or fallback
       const primaryConfidence = node.interesting_signals?.[0]?.observation_confidence || 'CONFIRMED_OBSERVATION';
       let confBadgeClass = 'bg-[#10b981]/15 text-[#10b981] border-[#10b981]/30';
       if (primaryConfidence === 'PROBABLE_OBSERVATION') confBadgeClass = 'bg-[#f59e0b]/15 text-[#f59e0b] border-[#f59e0b]/30';
       if (primaryConfidence === 'UNCONFIRMED_AMBIGUOUS') confBadgeClass = 'bg-[#e84a5f]/15 text-[#e84a5f] border-[#e84a5f]/30';
 
+      const isBeginner = userMode === 'beginner';
+
       detailConsoleEl.innerHTML = `
-        <!-- Console Header -->
-        <div class="space-y-3 pb-5 border-b border-[#30363d]">
-          <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="space-y-4 pb-5 border-b border-[#30363d]">
+          <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-2">
               <span class="px-2.5 py-0.5 rounded-md bg-[#00b4d8]/15 border border-[#00b4d8]/30 text-[#00b4d8] text-xs font-mono font-medium">
                 ${node.domain}
@@ -506,31 +1174,345 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
               </span>
             </div>
 
-            <span class="text-xs font-mono text-[#8b949e]">ID: ${node.id}</span>
+            <!-- DUAL MODE SWITCHER BUTTONS -->
+            <div class="flex items-center p-1 rounded-xl bg-[#0d1117] border border-[#30363d]">
+              <button 
+                type="button" 
+                id="mode-beginner-btn" 
+                class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${isBeginner ? 'bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/40 shadow-md' : 'text-[#8b949e] hover:text-[#f0f6fc]'}"
+              >
+                <span>🔰 Mode Pemula</span>
+                <span class="text-[10px] opacity-75">(Alur Linier)</span>
+              </button>
+              <button 
+                type="button" 
+                id="mode-expert-btn" 
+                class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${!isBeginner ? 'bg-[#00b4d8]/20 text-[#00b4d8] border border-[#00b4d8]/40 shadow-md' : 'text-[#8b949e] hover:text-[#f0f6fc]'}"
+              >
+                <span>🔬 Mode Expert</span>
+                <span class="text-[10px] opacity-75">(6 Tab)</span>
+              </button>
+            </div>
           </div>
 
-          <h2 class="text-xl sm:text-2xl font-bold text-[#f0f6fc] font-sans">
-            ${node.title}
-          </h2>
-
-          <!-- Tri-partite Confidence Matrix Mini-Card -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 text-xs">
-            <div>
-              <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Observation Confidence</span>
-              <span class="font-mono font-semibold text-[#00b4d8]">${primaryConfidence}</span>
-            </div>
-            <div>
-              <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Hypothesis Status</span>
-              <span class="font-mono font-semibold text-[#f59e0b]">ACTIVE_INVESTIGATION</span>
-            </div>
-            <div>
-              <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Validation Status</span>
-              <span class="font-mono font-semibold text-[#10b981]">HYPOTHESIS_ONLY (Need Proof)</span>
-            </div>
+          <div>
+            <span class="text-xs font-mono text-[#8b949e]">ID: ${node.id}</span>
+            <h2 class="text-xl sm:text-2xl font-bold text-[#f0f6fc] font-sans mt-0.5">
+              ${escapeHtml(node.title)}
+            </h2>
           </div>
         </div>
 
-        <!-- Educational Assistant Drawer / "Saya Belum Paham Maksud Observasi Ini" -->
+        <div id="mode-content-container" class="space-y-6">
+          ${isBeginner ? renderBeginnerFlow(node) : renderExpertTabs(node)}
+        </div>
+
+        <div class="pt-4 border-t border-[#30363d]/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#8b949e]">
+          <div>
+            <span>Standar Metodologi: </span>
+            <span class="text-[#c9d1d9]">${(node.provenance || []).join(' • ')}</span>
+          </div>
+          <div>
+            <span>Coverage Observasi: </span>
+            <span class="text-[#10b981]">${node.coverage?.observation_coverage || 'SEED_INCLUDED'}</span>
+          </div>
+        </div>
+      `;
+
+      const modeBeginnerBtn = document.getElementById('mode-beginner-btn');
+      const modeExpertBtn = document.getElementById('mode-expert-btn');
+
+      modeBeginnerBtn?.addEventListener('click', () => {
+        userMode = 'beginner';
+        localStorage.setItem('navigator_user_mode', 'beginner');
+        renderDetailConsole();
+      });
+
+      modeExpertBtn?.addEventListener('click', () => {
+        userMode = 'expert';
+        localStorage.setItem('navigator_user_mode', 'expert');
+        renderDetailConsole();
+      });
+
+      bindCopyButtons();
+
+      const toggleUnknownBtn = document.getElementById('toggle-unknown-btn');
+      const unknownBody = document.getElementById('unknown-body');
+      const unknownArrow = document.getElementById('unknown-arrow');
+
+      toggleUnknownBtn?.addEventListener('click', () => {
+        const isClosed = unknownBody?.classList.contains('hidden');
+        if (isClosed) {
+          unknownBody?.classList.remove('hidden');
+          unknownArrow?.classList.add('rotate-180');
+        } else {
+          unknownBody?.classList.add('hidden');
+          unknownArrow?.classList.remove('rotate-180');
+        }
+      });
+
+      document.querySelectorAll('.console-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          activeDetailTab = btn.getAttribute('data-tab') || 'summary';
+          renderDetailConsole();
+        });
+      });
+
+      document.querySelectorAll('.related-obs-tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+          const targetId = tag.getAttribute('data-target-id');
+          if (targetId) selectObservation(targetId);
+        });
+      });
+    }
+
+    // ==========================================
+    // RENDERER: BEGINNER MODE (ALUR LINIER)
+    // ==========================================
+    function renderBeginnerFlow(node) {
+      const inspectionPoint = node.inspection_points?.[0] || {};
+      const primaryCommands = inspectionPoint.what_to_look_for || [
+        `curl -i http://<IP>:${varTargetPort?.value || '80'}/`,
+        `nmap -Pn -sV -p${varTargetPort?.value || '80'} <IP>`
+      ];
+
+      const primarySignal = node.interesting_signals?.[0] || {};
+      const greenOutput = primarySignal.output_snippet || 
+        `[+] Terkoneksi ke target <IP>:<PORT>\n[+] Indikasi Positif: ${primarySignal.signal_description || 'Respon spesifik diterima'}\n[+] ${primarySignal.interpretation || 'Celah teridentifikasi aktif'}\nHTTP/1.1 200 OK (Content-Length terverifikasi)`;
+
+      const normalBaseline = inspectionPoint.normal_baseline || node.negative_result_guide?.summary || 'Respons default diterima tanpa anomali.';
+      const redOutput = `[-] Target <IP>:<PORT> merespons normal / terproteksi.\n[-] Baseline: ${normalBaseline}\n[-] Indikator Stop: ${node.stop_conditions?.[0] || 'Tidak ada kebocoran informasi atau bypass yang valid.'}\n[-] Status: RABBIT HOLE / SAFE TARGET`;
+
+      return `
+        <div class="space-y-6 text-xs font-sans">
+          
+          <div class="p-3.5 rounded-xl bg-[#10b981]/10 border border-[#10b981]/30 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="text-base">🔰</span>
+              <div>
+                <span class="font-mono font-bold text-xs text-[#10b981] block">Panduan Alur Linier Mengalir (Mode Pemula)</span>
+                <span class="text-[11px] text-[#c9d1d9]">Ikuti 5 langkah kronologis di bawah ini secara berurutan. Semua perintah sudah otomatis disubstitusi dengan IP target Anda.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- LANGKAH 1 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-[#00b4d8]/40 space-y-3 shadow-lg">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-[#00b4d8]/20 text-[#00b4d8] font-mono font-bold text-xs flex items-center justify-center border border-[#00b4d8]/40">1</span>
+                <h3 class="font-mono font-bold text-sm text-[#00b4d8]">Langkah 1: Perintah Langsung yang Harus Diketik Sekarang</h3>
+              </div>
+              <span class="text-[10px] font-mono text-[#8b949e]">Titik Inspeksi: ${inspectionPoint.name || 'Pemeriksaan Awal'}</span>
+            </div>
+
+            <p class="text-xs text-[#c9d1d9] leading-relaxed">
+              Jalankan perintah berikut di terminal Anda untuk memeriksa observasi ini pada target:
+            </p>
+
+            <div class="space-y-2">
+              ${primaryCommands.map(cmd => createCopyableCommand(cmd, 'Perintah Verifikasi')).join('')}
+            </div>
+
+            <div class="text-[11px] text-[#8b949e] font-mono pt-1">
+              💡 <strong>Mengapa diperiksa:</strong> ${inspectionPoint.why_check || node.why_it_matters}
+            </div>
+          </div>
+
+          <!-- LANGKAH 2 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-[#30363d] space-y-4 shadow-lg">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-[#f59e0b]/20 text-[#f59e0b] font-mono font-bold text-xs flex items-center justify-center border border-[#f59e0b]/40">2</span>
+              <h3 class="font-mono font-bold text-sm text-[#f59e0b]">Langkah 2: Periksa Output Terminal Anda (Cocokkan dengan 2 Mockup Ini)</h3>
+            </div>
+
+            <p class="text-xs text-[#c9d1d9] leading-relaxed">
+              Bandingkan apa yang muncul di terminal Anda dengan dua mockup visual di bawah. Mana yang paling cocok?
+            </p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div class="rounded-xl border border-[#10b981]/50 bg-[#0d1117] overflow-hidden shadow-xl flex flex-col">
+                <div class="flex items-center justify-between px-3 py-2 bg-[#161b22] border-b border-[#30363d]">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#e84a5f]"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#10b981]"></span>
+                    <span class="ml-2 text-[10px] font-mono text-[#8b949e]">bash — user@kali:~</span>
+                  </div>
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#10b981]/20 text-[#10b981] font-bold border border-[#10b981]/30">
+                    🟢 TERMINAL HIJAU: SUKSES
+                  </span>
+                </div>
+                <div class="p-3.5 font-mono text-[11px] text-[#10b981] overflow-x-auto whitespace-pre-wrap leading-relaxed flex-1 bg-[#090d13]">
+                  ${escapeHtml(applyTargetVars(greenOutput))}
+                </div>
+                <div class="p-2.5 bg-[#10b981]/10 border-t border-[#10b981]/20 text-[11px] text-[#10b981] font-semibold">
+                  👉 <strong>Arti:</strong> Target memiliki celah/sinyal aktif! Lanjutkan ke Langkah 3.
+                </div>
+              </div>
+
+              <div class="rounded-xl border border-[#e84a5f]/50 bg-[#0d1117] overflow-hidden shadow-xl flex flex-col">
+                <div class="flex items-center justify-between px-3 py-2 bg-[#161b22] border-b border-[#30363d]">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#e84a5f]"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#10b981]"></span>
+                    <span class="ml-2 text-[10px] font-mono text-[#8b949e]">bash — user@kali:~</span>
+                  </div>
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#e84a5f]/20 text-[#e84a5f] font-bold border border-[#e84a5f]/30">
+                    🔴 TERMINAL MERAH: GAGAL / STOP
+                  </span>
+                </div>
+                <div class="p-3.5 font-mono text-[11px] text-[#e84a5f] overflow-x-auto whitespace-pre-wrap leading-relaxed flex-1 bg-[#090d13]">
+                  ${escapeHtml(applyTargetVars(redOutput))}
+                </div>
+                <div class="p-2.5 bg-[#e84a5f]/10 border-t border-[#e84a5f]/20 text-[11px] text-[#e84a5f] font-semibold">
+                  👉 <strong>Arti:</strong> Respons normal baseline atau proteksi aktif. JANGAN terjebak rabbit hole!
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LANGKAH 3 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-[#10b981]/40 space-y-3 shadow-lg">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-[#10b981]/20 text-[#10b981] font-mono font-bold text-xs flex items-center justify-center border border-[#10b981]/40">3</span>
+              <h3 class="font-mono font-bold text-sm text-[#10b981]">Langkah 3: Ke Mana Harus Melangkah Jika Mendapat Terminal Hijau</h3>
+            </div>
+
+            <div class="space-y-2 text-xs text-[#c9d1d9] leading-relaxed">
+              <p>Jika output Anda cocok dengan Terminal Hijau, lakukan validasi aman berikut secara bertahap:</p>
+              
+              <ul class="space-y-2 pl-1">
+                ${(node.hypotheses?.[0]?.safe_validation_steps || []).map(step => `
+                  <li class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] space-y-1">
+                    <div class="flex items-center gap-2 font-mono font-bold text-[#f0f6fc]">
+                      <span class="text-[#10b981]">Step ${step.step_number}:</span>
+                      <span>${escapeHtml(step.action)}</span>
+                    </div>
+                    <div class="text-[11px] text-[#8b949e]">
+                      <strong>Interpretasi:</strong> ${escapeHtml(step.interpretation)}
+                    </div>
+                  </li>
+                `).join('') || `
+                  <li class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] text-xs">
+                    Catat bukti respon positif dan lanjut ke modul workflow di Langkah 5.
+                  </li>
+                `}
+              </ul>
+            </div>
+          </div>
+
+          <!-- LANGKAH 4 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-[#e84a5f]/50 space-y-3 shadow-lg">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-[#e84a5f]/20 text-[#e84a5f] font-mono font-bold text-xs flex items-center justify-center border border-[#e84a5f]/40">4</span>
+              <h3 class="font-mono font-bold text-sm text-[#e84a5f]">Langkah 4: Kapan Harus Berhenti & Pivot (Stop Conditions)</h3>
+            </div>
+
+            <p class="text-xs text-[#c9d1d9] leading-relaxed">
+              Hentikan pengujian pada titik ini jika Anda menemui salah satu kondisi di bawah agar tidak terjebak rabbit hole:
+            </p>
+
+            <ul class="space-y-1.5 pl-1">
+              ${(node.stop_conditions || []).map(sc => `
+                <li class="flex items-start gap-2 text-xs text-[#c9d1d9]">
+                  <span class="text-[#e84a5f] font-mono font-bold text-sm leading-none">✕</span>
+                  <span>${escapeHtml(sc)}</span>
+                </li>
+              `).join('')}
+            </ul>
+
+            ${(node.common_mistakes || []).length > 0 ? `
+              <div class="mt-3 p-3 rounded-xl bg-[#e84a5f]/10 border border-[#e84a5f]/30 space-y-1 text-xs">
+                <span class="font-mono font-bold text-[#e84a5f] block text-[11px] uppercase">⚠️ Jebakan Umum Pemula:</span>
+                <ul class="space-y-1 pl-1">
+                  ${node.common_mistakes.map(cm => `
+                    <li class="flex items-start gap-1.5 text-[#c9d1d9] text-[11px]">
+                      <span class="text-[#e84a5f]">!</span>
+                      <span>${escapeHtml(cm)}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- LANGKAH 5 -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-[#0d1117] border border-[#00b4d8]/40 space-y-3 shadow-lg">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-[#00b4d8]/20 text-[#00b4d8] font-mono font-bold text-xs flex items-center justify-center border border-[#00b4d8]/40">5</span>
+              <h3 class="font-mono font-bold text-sm text-[#00b4d8]">Langkah 5: Rute Modul Lanjutan & Rujukan Dokumentasi Lengkap</h3>
+            </div>
+
+            <p class="text-xs text-[#c9d1d9]">
+              Jika Anda ingin mempelajari eksploitasi mendalam dari observasi ini, buka modul panduan di Wiki:
+            </p>
+
+            <div class="grid grid-cols-1 gap-2.5 pt-1">
+              ${(node.relevant_workflows || []).map(rw => `
+                <div class="p-3.5 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-[#00b4d8] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="space-y-0.5">
+                    <span class="text-[10px] font-mono text-[#8b949e] uppercase block">Bagian Target: ${escapeHtml(rw.section_title)}</span>
+                    <h4 class="font-mono font-bold text-sm text-[#00b4d8]">${escapeHtml(rw.title)}</h4>
+                    <p class="text-[11px] text-[#c9d1d9]">${escapeHtml(rw.rationale)}</p>
+                  </div>
+                  <a 
+                    href="/docs/${rw.slug}#${rw.anchor || ''}" 
+                    target="_blank"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#00b4d8]/20 hover:bg-[#00b4d8]/30 border border-[#00b4d8]/40 text-[#00b4d8] font-mono text-xs font-bold transition-all self-start sm:self-auto shadow-md"
+                  >
+                    <span>Buka Panduan</span>
+                    <span>→</span>
+                  </a>
+                </div>
+              `).join('')}
+            </div>
+
+            ${(node.related_observations || []).length > 0 ? `
+              <div class="pt-2">
+                <span class="text-[11px] font-mono text-[#8b949e] block mb-1.5">🔄 Atau Pivot ke Observasi Terkait:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  ${node.related_observations.map(relId => `
+                    <button 
+                      type="button" 
+                      class="related-obs-tag px-2.5 py-1 rounded-lg bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] hover:border-[#00b4d8] text-xs font-mono text-[#00b4d8] transition-colors"
+                      data-target-id="${relId}"
+                    >
+                      ${relId} ➔
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+        </div>
+      `;
+    }
+
+﻿    // ==========================================
+    // RENDERER: EXPERT MODE (6 TAB LENGKAP)
+    // ==========================================
+    function renderExpertTabs(node) {
+      const primaryConfidence = node.interesting_signals?.[0]?.observation_confidence || 'CONFIRMED_OBSERVATION';
+
+      return `
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-[#0d1117] border border-[#30363d]/80 text-xs">
+          <div>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Observation Confidence</span>
+            <span class="font-mono font-semibold text-[#00b4d8]">${primaryConfidence}</span>
+          </div>
+          <div>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Hypothesis Status</span>
+            <span class="font-mono font-semibold text-[#f59e0b]">ACTIVE_INVESTIGATION</span>
+          </div>
+          <div>
+            <span class="text-[10px] font-mono uppercase tracking-wider text-[#8b949e] block">Validation Status</span>
+            <span class="font-mono font-semibold text-[#10b981]">HYPOTHESIS_ONLY (Need Proof)</span>
+          </div>
+        </div>
+
         <div class="rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/5 overflow-hidden">
           <button 
             type="button" 
@@ -549,31 +1531,30 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
           <div id="unknown-body" class="hidden px-4 pb-4 pt-1 border-t border-[#f59e0b]/20 space-y-3 text-xs text-[#c9d1d9] leading-relaxed">
             <div class="space-y-1">
               <span class="font-mono font-bold text-[#f0f6fc] block">📌 Apa sebenarnya ini?</span>
-              <p>${node.unknown_guide?.what_is_this || '-'}</p>
+              <p>${escapeHtml(node.unknown_guide?.what_is_this || '-')}</p>
             </div>
             <div class="space-y-1">
               <span class="font-mono font-bold text-[#f0f6fc] block">⚙️ Mengapa ini ada di sistem target?</span>
-              <p>${node.unknown_guide?.why_does_it_exist || '-'}</p>
+              <p>${escapeHtml(node.unknown_guide?.why_does_it_exist || '-')}</p>
             </div>
             <div class="space-y-1">
               <span class="font-mono font-bold text-[#f0f6fc] block">🎯 Bagian mana yang penting untuk diperhatikan?</span>
-              <p>${node.unknown_guide?.what_parts_matter || '-'}</p>
+              <p>${escapeHtml(node.unknown_guide?.what_parts_matter || '-')}</p>
             </div>
             <div class="space-y-1">
               <span class="font-mono font-bold text-[#f0f6fc] block">⚖️ Tampilan Normal vs Mencurigakan:</span>
-              <p>${node.unknown_guide?.what_normal_looks_like || '-'}</p>
+              <p>${escapeHtml(node.unknown_guide?.what_normal_looks_like || '-')}</p>
             </div>
             ${node.unknown_guide?.what_to_record_immediately?.length ? `
             <div class="space-y-1 p-2.5 rounded-lg bg-[#161b22] border border-[#f59e0b]/30">
-              <span class="font-mono font-bold text-[#f59e0b] block text-[10px] uppercase tracking-wider">📸 Catat Segera (Before Anything Else):</span>
+              <span class="font-mono font-bold text-[#f59e0b] block text-[10px] uppercase tracking-wider">📸 Catat Segera:</span>
               <ul class="space-y-0.5 pl-1">
-                ${node.unknown_guide.what_to_record_immediately.map(r => `<li class="flex items-start gap-1.5"><span class="text-[#f59e0b]">→</span><span>${r}</span></li>`).join('')}
+                ${node.unknown_guide.what_to_record_immediately.map(r => `<li class="flex items-start gap-1.5"><span class="text-[#f59e0b]">→</span><span>${escapeHtml(r)}</span></li>`).join('')}
               </ul>
             </div>` : ''}
           </div>
         </div>
 
-        <!-- Detail Tabs Header -->
         <div class="flex flex-wrap items-center gap-1 border-b border-[#30363d] pb-2">
           <button type="button" class="console-tab-btn px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${activeDetailTab === 'summary' ? 'bg-[#21262d] text-[#00b4d8] font-bold border border-[#30363d]' : 'text-[#8b949e] hover:text-[#f0f6fc]'}" data-tab="summary">
             📋 Ringkasan & Konteks
@@ -595,60 +1576,13 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
           </button>
         </div>
 
-        <!-- Tab Content Area -->
         <div id="tab-content" class="space-y-5">
           ${renderTabContent(node, activeDetailTab)}
         </div>
-
-        <!-- Bottom Provenance & Coverage Tag -->
-        <div class="pt-4 border-t border-[#30363d]/60 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#8b949e]">
-          <div>
-            <span>Standar: </span>
-            <span class="text-[#c9d1d9]">${(node.provenance || []).join(' • ')}</span>
-          </div>
-          <div>
-            <span>Coverage Observasi: </span>
-            <span class="text-[#10b981]">${node.coverage?.observation_coverage || 'SEED_INCLUDED'}</span>
-          </div>
-        </div>
       `;
-
-      // Attach drawer listeners
-      const toggleUnknownBtn = document.getElementById('toggle-unknown-btn');
-      const unknownBody = document.getElementById('unknown-body');
-      const unknownArrow = document.getElementById('unknown-arrow');
-
-      toggleUnknownBtn?.addEventListener('click', () => {
-        const isClosed = unknownBody?.classList.contains('hidden');
-        if (isClosed) {
-          unknownBody?.classList.remove('hidden');
-          unknownArrow?.classList.add('rotate-180');
-        } else {
-          unknownBody?.classList.add('hidden');
-          unknownArrow?.classList.remove('rotate-180');
-        }
-      });
-
-      // Attach tab change listeners
-      document.querySelectorAll('.console-tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          activeDetailTab = btn.getAttribute('data-tab') || 'summary';
-          renderDetailConsole();
-        });
-      });
-
-      // Attach related observations click handlers
-      document.querySelectorAll('.related-obs-tag').forEach(tag => {
-        tag.addEventListener('click', () => {
-          const targetId = tag.getAttribute('data-target-id');
-          if (targetId) {
-            selectObservation(targetId);
-          }
-        });
-      });
     }
 
-    // Helper: render active tab content
+    // Expert Mode Tab Renderer
     function renderTabContent(node, tab) {
       if (tab === 'summary') {
         return `
@@ -661,36 +1595,35 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                     ${node.what_do_you_see.map(item => `
                       <li class="flex items-start gap-2 text-[#f0f6fc] font-mono text-xs">
                         <span class="text-[#00b4d8] font-bold">›</span>
-                        <span>${item}</span>
+                        <span>${escapeHtml(item)}</span>
                       </li>
                     `).join('')}
                   </ul>
-                ` : `<p>${node.what_do_you_see}</p>`}
+                ` : `<p>${escapeHtml(node.what_do_you_see)}</p>`}
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-1.5">
                 <span class="text-[10px] font-mono uppercase tracking-wider text-[#f59e0b] font-bold">Konteks Target</span>
-                <p class="text-[#c9d1d9] leading-relaxed">${node.context}</p>
+                <p class="text-[#c9d1d9] leading-relaxed">${escapeHtml(node.context)}</p>
               </div>
 
               <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-1.5">
                 <span class="text-[10px] font-mono uppercase tracking-wider text-[#e84a5f] font-bold">Mengapa Observasi Ini Penting?</span>
-                <p class="text-[#c9d1d9] leading-relaxed">${node.why_it_matters}</p>
+                <p class="text-[#c9d1d9] leading-relaxed">${escapeHtml(node.why_it_matters)}</p>
               </div>
             </div>
 
-            <!-- Questions to Ask -->
             <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2">
               <span class="text-[10px] font-mono uppercase tracking-wider text-[#10b981] font-bold block">
-                ❓ Pertanyaan Kunci yang Harus Dijawab Sebelum Bertindak
+                ❓ Pertanyaan Kunci Sebelum Bertindak
               </span>
               <ul class="space-y-1.5 pl-1">
                 ${(node.questions_to_ask || []).map(q => `
                   <li class="flex items-start gap-2 text-[#c9d1d9]">
                     <span class="text-[#10b981] mt-0.5 font-bold">•</span>
-                    <span>${q}</span>
+                    <span>${escapeHtml(q)}</span>
                   </li>
                 `).join('')}
               </ul>
@@ -703,7 +1636,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
         return `
           <div class="space-y-4">
             <div class="text-xs text-[#8b949e]">
-              Evaluasi setiap titik inspeksi hierarkis di bawah ini. Pastikan Anda mengumpulkan bukti yang disyaratkan sebelum melanjutkan.
+              Evaluasi titik inspeksi hierarkis di bawah. Semua perintah di bawah otomatis tersubstitusi dengan IP target Anda dan dapat disalin langsung.
             </div>
 
             <div class="space-y-3">
@@ -714,46 +1647,42 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                       <span class="w-5 h-5 rounded-md bg-[#00b4d8]/20 text-[#00b4d8] flex items-center justify-center text-[11px] font-mono">
                         ${idx + 1}
                       </span>
-                      ${pt.name}
+                      ${escapeHtml(pt.name)}
                     </span>
                     <span class="text-[10px] font-mono text-[#8b949e] px-2 py-0.5 rounded bg-[#161b22] border border-[#30363d]">
                       ID: ${pt.id}
                     </span>
                   </div>
 
-                  <p class="text-xs text-[#c9d1d9] leading-relaxed"><strong class="text-[#8b949e]">Mengapa diperiksa:</strong> ${pt.why_check}</p>
+                  <p class="text-xs text-[#c9d1d9] leading-relaxed"><strong class="text-[#8b949e]">Mengapa diperiksa:</strong> ${escapeHtml(pt.why_check)}</p>
 
-                  <!-- What to Look For (commands / actions) -->
-                  <div class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] text-xs font-mono text-[#00b4d8] overflow-x-auto space-y-1">
-                    <span class="text-[10px] text-[#8b949e] uppercase font-mono block">Cara Memeriksa:</span>
-                    ${(pt.what_to_look_for || []).map(cmd => `<code class="block">${cmd}</code>`).join('')}
+                  <div class="space-y-1">
+                    <span class="text-[10px] text-[#8b949e] uppercase font-mono block">Cara Memeriksa (Klik Salin untuk Menjalankan):</span>
+                    ${(pt.what_to_look_for || []).map(cmd => createCopyableCommand(cmd)).join('')}
                   </div>
 
-                  <!-- Normal Baseline -->
                   <div class="p-2.5 rounded-lg bg-[#10b981]/5 border border-[#10b981]/30 text-xs text-[#c9d1d9]">
                     <span class="text-[10px] font-mono text-[#10b981] uppercase font-bold block mb-1">🟢 Baseline Normal:</span>
-                    ${pt.normal_baseline}
+                    ${escapeHtml(pt.normal_baseline)}
                   </div>
 
-                  <!-- Interesting Clues -->
                   ${(pt.interesting_clues || []).length > 0 ? `
                   <div class="p-2.5 rounded-lg bg-[#f59e0b]/5 border border-[#f59e0b]/30 space-y-1 text-xs">
                     <span class="text-[10px] font-mono text-[#f59e0b] uppercase font-bold block">⚡ Indikator Menarik:</span>
                     <ul class="space-y-0.5 pl-1">
-                      ${(pt.interesting_clues || []).map(clue => `<li class="flex items-start gap-1.5 text-[#c9d1d9]"><span class="text-[#f59e0b]">→</span><span>${clue}</span></li>`).join('')}
+                      ${(pt.interesting_clues || []).map(clue => `<li class="flex items-start gap-1.5 text-[#c9d1d9]"><span class="text-[#f59e0b]">→</span><span>${escapeHtml(clue)}</span></li>`).join('')}
                     </ul>
                   </div>` : ''}
 
-                  <!-- Evidence to Capture Box -->
                   <div class="p-3 rounded-lg bg-[#161b22]/80 border border-[#f59e0b]/40 space-y-1">
                     <span class="text-[10px] font-mono uppercase tracking-wider text-[#f59e0b] font-bold flex items-center gap-1.5">
-                      <span>📸 Bukti yang Wajib Di-Capture</span>
+                      <span>📸 Bukti yang Wajib Diarsip:</span>
                     </span>
                     <ul class="space-y-1 pl-1">
                       ${(pt.evidence_to_capture || []).map(ev => `
                         <li class="text-[11px] text-[#c9d1d9] flex items-start gap-1.5">
                           <span class="text-[#f59e0b] font-mono font-bold">✓</span>
-                          <span>${ev}</span>
+                          <span>${escapeHtml(ev)}</span>
                         </li>
                       `).join('')}
                     </ul>
@@ -768,7 +1697,6 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       if (tab === 'signals') {
         return `
           <div class="space-y-5 text-xs">
-            <!-- Interesting Signals -->
             <div class="space-y-3">
               <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span>
@@ -781,18 +1709,20 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                 ${(node.interesting_signals || []).map(sig => `
                   <div class="p-4 rounded-xl bg-[#0d1117] border border-[#f59e0b]/40 space-y-2.5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                      <span class="font-mono font-bold text-xs text-[#f59e0b]">${sig.signal_description}</span>
+                      <span class="font-mono font-bold text-xs text-[#f59e0b]">${escapeHtml(sig.signal_description)}</span>
                       <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#f59e0b]/15 text-[#f59e0b] border border-[#f59e0b]/30">
                         ${sig.observation_confidence}
                       </span>
                     </div>
 
-                    <p class="text-[#c9d1d9] leading-relaxed">${sig.interpretation}</p>
+                    <p class="text-[#c9d1d9] leading-relaxed">${escapeHtml(sig.interpretation)}</p>
 
                     ${sig.output_snippet ? `
-                    <div class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] font-mono text-[#00b4d8] text-[11px] overflow-x-auto">
-                      <span class="text-[#8b949e] block text-[10px] uppercase font-mono mb-1">Contoh Output Nyata:</span>
-                      <pre class="whitespace-pre-wrap text-[11px]">${sig.output_snippet}</pre>
+                    <div class="space-y-1">
+                      <span class="text-[#8b949e] block text-[10px] uppercase font-mono">Contoh Output Nyata di Terminal:</span>
+                      <div class="rounded-xl border border-[#10b981]/40 bg-[#090d13] p-3 font-mono text-[11px] text-[#10b981] overflow-x-auto whitespace-pre-wrap">
+                        ${escapeHtml(applyTargetVars(sig.output_snippet))}
+                      </div>
                     </div>` : ''}
 
                     <div class="p-2.5 rounded-lg bg-[#161b22]/70 border border-[#30363d] space-y-1">
@@ -804,12 +1734,11 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
               </div>
             </div>
 
-            <!-- Unexpected Signals -->
             <div class="space-y-3 pt-2">
               <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-[#e84a5f]"></span>
                 <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider">
-                  Anomali Tak Terduga & Cara Penanganan (${node.unexpected_signals?.length || 0})
+                  Anomali Tak Terduga (${node.unexpected_signals?.length || 0})
                 </span>
               </div>
 
@@ -817,23 +1746,22 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                 ${(node.unexpected_signals || []).map(usig => `
                   <div class="p-3 rounded-xl bg-[#0d1117] border border-[#e84a5f]/40 flex items-start gap-3">
                     <span class="text-[#e84a5f] font-bold mt-0.5">!</span>
-                    <span class="text-xs text-[#c9d1d9] leading-relaxed">${typeof usig === 'string' ? usig : (usig.signal || JSON.stringify(usig))}</span>
+                    <span class="text-xs text-[#c9d1d9] leading-relaxed">${escapeHtml(typeof usig === 'string' ? usig : (usig.signal || JSON.stringify(usig)))}</span>
                   </div>
                 `).join('')}
               </div>
             </div>
 
-            <!-- Negative Result Guide -->
             <div class="p-4 rounded-xl bg-[#0d1117] border border-[#10b981]/40 space-y-3">
               <span class="font-mono font-bold text-xs text-[#10b981] flex items-center gap-1.5">
                 <span>🟢 Baseline Normal & Panduan Hasil Negatif</span>
               </span>
               <p class="text-[#c9d1d9] leading-relaxed text-xs">
-                ${node.negative_result_guide?.summary || 'Tidak ada temuan pada observasi ini — hasil negatif tidak secara otomatis berarti target aman.'}
+                ${escapeHtml(node.negative_result_guide?.summary || 'Tidak ada temuan pada observasi ini — hasil negatif tidak secara otomatis berarti target aman.')}
               </p>
               <div class="p-2.5 rounded bg-[#161b22] border border-[#30363d] text-xs text-[#c9d1d9] space-y-1">
                 <span class="text-[#f59e0b] font-bold font-mono text-[10px] uppercase block">Mengapa Ini Tidak Berarti Aman:</span>
-                <p>${node.negative_result_guide?.why_not_secure || 'Target mungkin masih rentan melalui vektor lain.'}</p>
+                <p>${escapeHtml(node.negative_result_guide?.why_not_secure || 'Target mungkin masih rentan melalui vektor lain.')}</p>
               </div>
               ${(node.negative_result_guide?.next_pivot_observations || []).length > 0 ? `
               <div class="space-y-1.5">
@@ -854,10 +1782,9 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       if (tab === 'hypotheses') {
         return `
           <div class="space-y-5 text-xs">
-            <!-- Hypotheses List -->
             <div class="space-y-3">
               <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider block">
-                Daftar Hipotesis Serangan yang Relevan (${node.hypotheses?.length || 0})
+                Daftar Hipotesis Serangan (${node.hypotheses?.length || 0})
               </span>
 
               <div class="space-y-3">
@@ -865,20 +1792,19 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                   let statusColor = 'text-[#f59e0b] bg-[#f59e0b]/15 border-[#f59e0b]/30';
                   if (hyp.status === 'ACTIVE_INVESTIGATION') statusColor = 'text-[#e84a5f] bg-[#e84a5f]/15 border-[#e84a5f]/30';
                   if (hyp.status === 'SUSPENDED') statusColor = 'text-[#8b949e] bg-[#21262d] border-[#30363d]';
-                  if (hyp.status === 'REJECTED') statusColor = 'text-[#6e7681] bg-[#161b22] border-[#30363d] line-through';
 
                   return `
                     <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-3">
                       <div class="flex flex-wrap items-start justify-between gap-2">
                         <div>
-                          <span class="font-mono font-bold text-xs text-[#00b4d8] block">${hyp.name}</span>
+                          <span class="font-mono font-bold text-xs text-[#00b4d8] block">${escapeHtml(hyp.name)}</span>
                           <span class="text-[10px] font-mono text-[#8b949e]">ID: ${hyp.id}</span>
                         </div>
                         <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${statusColor}">
                           ${hyp.status}
                         </span>
                       </div>
-                      <p class="text-[#c9d1d9] leading-relaxed text-xs">${hyp.description}</p>
+                      <p class="text-[#c9d1d9] leading-relaxed text-xs">${escapeHtml(hyp.description)}</p>
 
                       ${(hyp.safe_validation_steps || []).length > 0 ? `
                       <div class="space-y-2">
@@ -887,21 +1813,21 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                           <div class="p-3 rounded-lg bg-[#161b22] border border-[#30363d] space-y-2 text-[11px]">
                             <div class="flex items-center gap-2">
                               <span class="w-5 h-5 rounded-full bg-[#10b981]/20 text-[#10b981] flex items-center justify-center text-[10px] font-bold font-mono flex-shrink-0">${step.step_number}</span>
-                              <span class="font-mono text-[#f0f6fc]">${step.action}</span>
+                              <span class="font-mono text-[#f0f6fc]">${escapeHtml(step.action)}</span>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-7">
                               <div>
                                 <span class="text-[10px] text-[#8b949e] font-mono block">Output Normal:</span>
-                                <span class="text-[#c9d1d9]">${step.expected_output}</span>
+                                <span class="text-[#c9d1d9]">${escapeHtml(step.expected_output)}</span>
                               </div>
                               <div>
                                 <span class="text-[10px] text-[#f59e0b] font-mono block">Output Menarik:</span>
-                                <span class="text-[#f59e0b]">${step.interesting_output}</span>
+                                <span class="text-[#f59e0b]">${escapeHtml(step.interesting_output)}</span>
                               </div>
                             </div>
                             <div class="pl-7 pt-1">
                               <span class="text-[10px] text-[#10b981] font-mono block">Interpretasi:</span>
-                              <span class="text-[#c9d1d9]">${step.interpretation}</span>
+                              <span class="text-[#c9d1d9]">${escapeHtml(step.interpretation)}</span>
                             </div>
                           </div>
                         `).join('')}
@@ -912,22 +1838,20 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
               </div>
             </div>
 
-            <!-- Stop Conditions & Rabbit Hole Warnings -->
             <div class="p-4 rounded-xl bg-[#0d1117] border border-[#e84a5f]/50 space-y-2">
               <span class="font-mono font-bold text-xs text-[#e84a5f] flex items-center gap-1.5 uppercase tracking-wider">
-                <span>🛑 Stop Conditions: Kapan Harus Berhenti & Pivot</span>
+                <span>🛑 Stop Conditions: Kapan Harus Berhenti</span>
               </span>
               <ul class="space-y-1.5 pl-1">
                 ${(node.stop_conditions || []).map(sc => `
                   <li class="flex items-start gap-2 text-[#c9d1d9]">
                     <span class="text-[#e84a5f] font-mono font-bold">✕</span>
-                    <span>${sc}</span>
+                    <span>${escapeHtml(sc)}</span>
                   </li>
                 `).join('')}
               </ul>
             </div>
 
-            <!-- Common Mistakes -->
             <div class="p-4 rounded-xl bg-[#0d1117] border border-[#f59e0b]/50 space-y-2">
               <span class="font-mono font-bold text-xs text-[#f59e0b] flex items-center gap-1.5 uppercase tracking-wider">
                 <span>⚠️ Kesalahan Umum & Bias Konfirmasi</span>
@@ -936,7 +1860,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                 ${(node.common_mistakes || []).map(cm => `
                   <li class="flex items-start gap-2 text-[#c9d1d9]">
                     <span class="text-[#f59e0b] font-mono font-bold">!</span>
-                    <span>${cm}</span>
+                    <span>${escapeHtml(cm)}</span>
                   </li>
                 `).join('')}
               </ul>
@@ -948,30 +1872,20 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       if (tab === 'ctf_pentest') {
         return `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <!-- CTF Notes -->
             <div class="p-5 rounded-xl bg-[#0d1117] border border-[#e84a5f]/40 space-y-3">
               <div class="flex items-center gap-2 font-mono font-bold text-[#e84a5f] text-sm">
                 <span>🚩</span>
                 <span>Perspektif CTF / Lab Challenge</span>
               </div>
-              <p class="text-[#c9d1d9] leading-relaxed">${node.ctf_notes}</p>
-              <div class="p-3 rounded-lg bg-[#161b22] border border-[#30363d] text-[11px] text-[#8b949e] space-y-1">
-                <span class="font-mono font-bold text-[#f0f6fc] block">Karakteristik CTF:</span>
-                <span>Fokus pada time-to-flag, celah sengaja diimplan, asumsi dependensi rentan tidak di-patch.</span>
-              </div>
+              <p class="text-[#c9d1d9] leading-relaxed">${escapeHtml(node.ctf_notes)}</p>
             </div>
 
-            <!-- Pentest Notes -->
             <div class="p-5 rounded-xl bg-[#0d1117] border border-[#00b4d8]/40 space-y-3">
               <div class="flex items-center gap-2 font-mono font-bold text-[#00b4d8] text-sm">
                 <span>🏢</span>
                 <span>Perspektif Pentest Enterprise & RoE</span>
               </div>
-              <p class="text-[#c9d1d9] leading-relaxed">${node.pentest_notes}</p>
-              <div class="p-3 rounded-lg bg-[#161b22] border border-[#30363d] text-[11px] text-[#8b949e] space-y-1">
-                <span class="font-mono font-bold text-[#f0f6fc] block">Karakteristik Real Pentest:</span>
-                <span>Wajib pembuktian dampak bisnis (business impact), verifikasi akun uji legal, hindari DoS atau lock out admin.</span>
-              </div>
+              <p class="text-[#c9d1d9] leading-relaxed">${escapeHtml(node.pentest_notes)}</p>
             </div>
           </div>
         `;
@@ -980,7 +1894,6 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
       if (tab === 'routes') {
         return `
           <div class="space-y-5 text-xs">
-            <!-- Relevant Workflows -->
             <div class="space-y-3">
               <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider block">
                 Rute Langsung ke Modul Workflow Pentesting (${node.relevant_workflows?.length || 0})
@@ -992,7 +1905,7 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
                         <span class="text-[10px] font-mono text-[#8b949e] block">Workflow Dokumen:</span>
-                        <h4 class="font-mono font-bold text-sm text-[#00b4d8]">${rw.title}</h4>
+                        <h4 class="font-mono font-bold text-sm text-[#00b4d8]">${escapeHtml(rw.title)}</h4>
                       </div>
                       <a 
                         href="/docs/${rw.slug}#${rw.anchor || ''}" 
@@ -1006,25 +1919,21 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
 
                     <div class="p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] space-y-1">
                       <span class="text-[10px] font-mono text-[#8b949e] uppercase block">Bagian Target:</span>
-                      <span class="font-mono text-[#f0f6fc]">${rw.section_title}</span>
+                      <span class="font-mono text-[#f0f6fc]">${escapeHtml(rw.section_title)}</span>
                     </div>
 
                     <p class="text-[#c9d1d9] leading-relaxed">
-                      <strong class="text-[#8b949e]">Rationale: </strong> ${rw.rationale}
+                      <strong class="text-[#8b949e]">Rationale: </strong> ${escapeHtml(rw.rationale)}
                     </p>
                   </div>
                 `).join('')}
               </div>
             </div>
 
-            <!-- Related Lateral Pivot Observations -->
             <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-3">
               <span class="font-mono font-bold text-xs text-[#f0f6fc] uppercase tracking-wider block">
                 🔄 Observasi Terkait untuk Pivot Lateral
               </span>
-              <p class="text-[#8b949e] text-xs">
-                Klik observasi di bawah untuk langsung beralih ke node investigasi lateral dalam Navigator:
-              </p>
               <div class="flex flex-wrap gap-2 pt-1">
                 ${(node.related_observations || []).map(relId => `
                   <button 
@@ -1054,3 +1963,4 @@ const safeObservationsJson = JSON.stringify(observations).replace(/</g, '\\u003c
     renderFilteredList();
   </script>
 </BaseLayout>
+

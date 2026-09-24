@@ -3688,5 +3688,464 @@
       "OWASP WSTG-INFO-02 (Fingerprint Web Server)",
       "OWASP WSTG-INFO-08 (Fingerprint Web Application Framework)"
     ]
+  },
+  {
+    "id": "obs-web-empty-html-page",
+    "title": "Halaman Web Blank / Default Server Page (Virtual Host & Endpoint Discovery Needed)",
+    "domain": "Web Application",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Browser menampilkan halaman default: 'Apache2 Ubuntu Default Page: It works!', 'Welcome to nginx!', atau 'IIS Windows Server'",
+      "Halaman web hanya berisi layar putih kosong (blank 0-byte response atau minimal HTML <html><body></body></html>)",
+      "Akses via IP http://<IP> tidak memiliki link navigasi, tombol, form, atau konten aplikasi apa pun"
+    ],
+    "context": "Pemula membuka port 80 atau 443 di browser menggunakan alamat IP mentah (http://10.10.10.X) lalu bingung karena tidak ada yang bisa diklik.",
+    "why_it_matters": "Server web modern (Apache, Nginx, IIS) mendukung Name-Based Virtual Hosting (VHost). Satu server fisik dengan satu IP bisa menghosting 10 website berbeda berdasarkan nama domain yang diminta di header 'Host:'. Jika Anda hanya membuka alamat IP, server menyajikan halaman default kosong! Kuncinya adalah: 1) Tambahkan mapping domain ke /etc/hosts, 2) Lakukan Virtual Host fuzzing dengan ffuf, dan 3) Jalankan directory fuzzing untuk mencari endpoint tersembunyi.",
+    "questions_to_ask": [
+      "Apakah ada nama domain yang disebutkan di sertifikat SSL (HTTPS SAN), header server, atau deskripsi tantangan lab?",
+      "Apakah saya sudah menambahkan '<IP> target.htb' ke dalam file /etc/hosts saya?",
+      "Bagaimana respons server jika saya mengirim header Host yang berbeda (Host: dev.target.htb)?",
+      "Apakah file robots.txt, sitemap.xml, atau source code HTML mengandung petunjuk komentar rahasia?"
+    ],
+    "inspection_points": [
+      {
+        "id": "ip-vhost-header-dns",
+        "name": "1. Pemeriksaan SSL Certificate & Mapping /etc/hosts",
+        "why_check": "Sertifikat SSL sering membocorkan nama domain asli dan subdomain internal organisasi.",
+        "what_to_look_for": [
+          "curl -ik https://<IP> 2>&1 | grep -i 'subject:' (Cek Common Name dan SAN)",
+          "Tambahkan ke /etc/hosts: echo '<IP> target.htb target.local' | sudo tee -a /etc/hosts",
+          "Buka browser menggunakan nama domain: http://target.htb"
+        ],
+        "normal_baseline": "Aplikasi web yang sebenarnya langsung muncul saat dibuka menggunakan nama domain yang benar.",
+        "interesting_clues": [
+          "Sertifikat SSL mencantumkan nama seperti: mail.megacorp.htb, staging.target.local",
+          "Akses dengan nama domain menampilkan web application utuh dengan form login dan fitur aktif"
+        ],
+        "evidence_to_capture": [
+          "Output SSL Certificate Subject Alternative Names (SAN)",
+          "Isi file /etc/hosts yang dimodifikasi",
+          "Screenshot tampilan web setelah menggunakan domain"
+        ]
+      },
+      {
+        "id": "ip-vhost-fuzzing-ffuf",
+        "name": "2. Virtual Host (VHost) Fuzzing dengan FFUF",
+        "why_check": "Menemukan subdomain rahasia (seperti dev, admin, beta, api) yang diarahkan ke Virtual Host terpisah.",
+        "what_to_look_for": [
+          "ffuf -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -u http://<IP>/ -H 'Host: FUZZ.target.htb' -fs <UKURAN_HALAMAN_DEFAULT>",
+          "Filter ukuran respons default (-fs) agar output tidak dipenuhi hasil palsu"
+        ],
+        "normal_baseline": "Subdomain yang tidak ada menghasilkan ukuran respons default (misal: 10701 bytes).",
+        "interesting_clues": [
+          "Ditemukan subdomain seperti 'dev.target.htb' atau 'admin.target.htb' dengan ukuran respons berbeda",
+          "Status respons berubah dari 200 (default page) menjadi 302 (redirect ke portal internal)"
+        ],
+        "evidence_to_capture": [
+          "Output FFUF yang menemukan VHost unik",
+          "Ukuran respons (-fs filter) yang digunakan"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-vhost-discovered",
+        "inspection_point_id": "ip-vhost-fuzzing-ffuf",
+        "signal_description": "FFUF berhasil menemukan VHost internal aktif yang menyajikan aplikasi berbeda dari halaman default.",
+        "output_snippet": "$ ffuf -w subdomains.txt -u http://10.10.10.100/ -H 'Host: FUZZ.target.htb' -fs 10701\n[Status: 200, Size: 4521, Words: 341, Lines: 89, Duration: 42ms]\n* FUZZ: dev\n\n[Status: 302, Size: 240, Words: 21, Lines: 5, Duration: 39ms]\n* FUZZ: portal",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Subdomain dev.target.htb dan portal.target.htb ada dan aktif! Tambahkan keduanya ke /etc/hosts untuk menjelajahi attack surface baru.",
+        "hypothesis_id": "hyp-vhost-hidden-app",
+        "evidence_to_capture": [
+          "Output FFUF VHost discovery",
+          "Cuplikan halaman web dev.target.htb"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Semua kata dalam wordlist menghasilkan status 200 dengan ukuran yang sama persis (Server menggunakan Wildcard DNS / catch-all VHost -> Anda WAJIB menggunakan filter -fs atau -fw di FFUF!)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-vhost-hidden-app",
+        "name": "Aplikasi Utama Tersembunyi di Balik Virtual Host Berbasis Domain",
+        "description": "Server web hanya menyajikan aplikasi yang sebenarnya jika header 'Host:' mencantumkan FQDN yang tepat.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-vhost-discovered"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Tambahkan VHost yang ditemukan ke /etc/hosts: echo '<IP> dev.target.htb' | sudo tee -a /etc/hosts",
+            "expected_output": "Domain terdaftar di sistem lokal.",
+            "interesting_output": "Buka http://dev.target.htb di browser -> Tampilan berubah dari Apache default menjadi aplikasi development aktif.",
+            "unexpected_output": "Halaman tetap sama -> Coba port HTTPS 443.",
+            "interpretation": "Aplikasi aktif terbuka -> Lanjutkan investigasi ke fitur web tersebut.",
+            "evidence_to_record": [
+              "Screenshot aplikasi yang terbuka pada VHost baru"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Jika VHost fuzzing dan Directory fuzzing (/usr/share/seclists/Discovery/Web-Content/common.txt) selesai 100% tanpa menemukan satu pun VHost atau direktori baru, BERHENTI mencari web! Port web ini mungkin memang hanya default placeholder, periksa port lain (SMB, SSH, FTP)."
+    ],
+    "common_mistakes": [
+      "Menyerah setelah membuka http://<IP> di browser dan melihat Apache default page.",
+      "Lupa memfilter respons default (-fs) saat fuzzing VHost sehingga terminal dibanjiri 50.000 hasil false positive.",
+      "Lupa menambahkan domain yang ditemukan ke /etc/hosts."
+    ],
+    "ctf_notes": "Di HackTheBox dan TryHackMe, jika port 80 menampilkan Apache/Nginx default page, 90% kemungkinannya adalah tantangan VHost Fuzzing atau Anda lupa memasukkan domain mesin ke /etc/hosts!",
+    "pentest_notes": "Di dunia enterprise, ekposur default page menandakan server belum di-hardening. Periksa apakah server menyajikan manual internal (/manual) atau server-status (/server-status).",
+    "unknown_guide": {
+      "what_is_this": "Halaman bawaan paket software web server (Apache/Nginx/IIS) yang muncul otomatis saat server pertama kali diinstal.",
+      "why_does_it_exist": "Sebagai tanda bagi sysadmin bahwa service web server berjalan sukses ('It works!').",
+      "what_parts_matter": "Header 'Host:' pada HTTP request dan nama domain yang terdaftar di sertifikat SSL.",
+      "what_normal_looks_like": "Halaman web yang sudah memiliki konten, logo, menu, dan fungsionalitas bisnis.",
+      "what_to_record_immediately": [
+        "Versi web server dari footer halaman (contoh: Apache/2.4.41)",
+        "Nama domain apa pun yang tertulis di halaman atau sertifikat SSL"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Jika VHost fuzzing dan direktori kosong, web server ini hanyalah decoy atau infrastruktur instalasi baru.",
+      "why_not_secure": "Port lain mungkin menyimpan celah kritis.",
+      "next_pivot_observations": [
+        "obs-net-open-port-unknown",
+        "obs-net-smb"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "16",
+        "slug": "directory-vhost-fuzzing",
+        "title": "16. Directory & Virtual Host (VHost) Fuzzing Workflow",
+        "section_title": "1.2 Apa itu Virtual Host (VHost) Fuzzing",
+        "anchor": "12-apa-itu-virtual-host-vhost-fuzzing",
+        "rationale": "Pelajari cara kerja VHost fuzzing menggunakan FFUF, pemilihan wordlist, dan teknik filter respons (-fs)."
+      }
+    ],
+    "related_observations": [
+      "obs-web-api-endpoint",
+      "obs-web-technology-fingerprint"
+    ],
+    "provenance": [
+      "OWASP WSTG-INFO-04 (Enumerate Applications on Webserver)",
+      "RFC 7230 Section 5.4 (Host Header)"
+    ]
+  },
+  {
+    "id": "obs-web-login-sqli-fails",
+    "title": "Form Login Kebal SQL Injection (Authentication Bypass Pivot Needed)",
+    "domain": "Authentication",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Menginputkan payload klasik seperti ' OR 1=1--, ' OR '1'='1, admin' -- pada form login menghasilkan pesan 'Invalid username or password' biasa",
+      "Tidak ada pesan error database (SQL syntax error) yang muncul di layar atau respons HTTP",
+      "Respons status code tetap 200 OK dengan panjang halaman yang sama persis seperti login gagal biasa"
+    ],
+    "context": "Fase pengujian form login web di mana pemula mencoba teknik SQL injection otentikasi klasik namun aplikasi tidak terpengaruh.",
+    "why_it_matters": "Pemula sering membuang waktu 2-3 jam terus-menerus mencoba puluhan variasi payload SQLi pada form login yang sebenarnya kebal karena menggunakan Prepared Statements atau ORM (Hibernate, Prisma, SQLAlchemy). Hentikan mencoba SQLi! Beralihlah ke strategi alternatif: 1) Username Enumeration via response time / perbedaan pesan error, 2) NoSQL Injection (jika backend Node.js/MongoDB), 3) Password Reset Flow, atau 4) Default Credentials.",
+    "questions_to_ask": [
+      "Apakah pesan error untuk username yang ADA berbeda dengan username yang TIDAK ADA ('User not found' vs 'Incorrect password')?",
+      "Apakah waktu respons (response time) berbeda secara signifikan saat login dengan user valid dibanding user acak?",
+      "Apakah teknologi backend menggunakan NoSQL (MongoDB, Express) yang rentan payload JSON: {\"$gt\": \"\"}?",
+      "Apakah ada fitur registrasi atau 'Forgot Password' yang bisa membocorkan validitas username?"
+    ],
+    "inspection_points": [
+      {
+        "id": "ip-login-user-enum",
+        "name": "1. Pengujian Username Enumeration (Error Message & Timing Analysis)",
+        "why_check": "Mendapatkan daftar username yang valid sebelum melakukan password spraying terarah.",
+        "what_to_look_for": [
+          "Kirim login dengan user pasti tidak ada: non_existent_user_998877 : wrongpass",
+          "Kirim login dengan user kandidat (admin, root, administrator, test) : wrongpass",
+          "Bandingkan teks respons dan durasi waktu eksekusi (timing)"
+        ],
+        "normal_baseline": "Aplikasi yang aman menampilkan pesan generik identik: 'Invalid credentials' dengan waktu respons konstan.",
+        "interesting_clues": [
+          "Pesan error berbeda: 'Username does not exist' vs 'Wrong password for user admin'",
+          "Waktu respons untuk user 'admin' lebih lama 200-500ms (karena fungsi bcrypt/argon2 hashing dipanggil)"
+        ],
+        "evidence_to_capture": [
+          "Perbandingan respons antara user valid vs user invalid (screenshot Burp Repeater)",
+          "Tabel response time perbandingan"
+        ]
+      },
+      {
+        "id": "ip-login-nosql-json",
+        "name": "2. Pengujian NoSQL Injection (Khusus API / Content-Type: application/json)",
+        "why_check": "Aplikasi Node.js / MongoDB sering kebal SQLi namun rentan NoSQL injection jika menerima operator objek.",
+        "what_to_look_for": [
+          "Ubah Content-Type request menjadi application/json",
+          "Kirim payload operator NoSQL: {\"username\": {\"$ne\": null}, \"password\": {\"$ne\": null}}",
+          "Kirim payload form URL-encoded: username[$ne]=admin&password[$ne]=admin"
+        ],
+        "normal_baseline": "Server menolak operator objek atau memvalidasi tipe data string murni (400 Bad Request).",
+        "interesting_clues": [
+          "Login berhasil dan mengembalikan token otentikasi / session cookie admin",
+          "Pesan error mengindikasikan MongoDB: 'Cannot use $ne operator' atau sejenisnya"
+        ],
+        "evidence_to_capture": [
+          "Request JSON dengan operator $ne",
+          "Respons 200 OK dengan session login yang dihasilkan"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-login-user-enum-confirmed",
+        "inspection_point_id": "ip-login-user-enum",
+        "signal_description": "Aplikasi membocorkan bahwa username 'admin' terdaftar melalui perbedaan pesan error.",
+        "output_snippet": "# Request 1 (User tidak ada):\nPOST /login HTTP/1.1\nusername=randomuser9988&password=123\nResponse: <span class=\"error\">Account not found</span>\n\n# Request 2 (User valid):\nPOST /login HTTP/1.1\nusername=admin&password=123\nResponse: <span class=\"error\">Invalid password for this account</span>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Username Enumeration terkonfirmasi! Anda sekarang tahu akun 'admin' valid di sistem. Segera beralih ke password spraying terarah atau alur reset password.",
+        "hypothesis_id": "hyp-login-targeted-spray",
+        "evidence_to_capture": [
+          "Burp Repeater comparison tabs yang membuktikan perbedaan pesan error"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "IP tester diblokir (HTTP 429 Too Many Requests atau Captcha muncul setelah 5 kali percobaan) -> Rate limiting aktif, jangan gunakan Hydra!"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-login-targeted-spray",
+        "name": "Targeted Password Spraying / Brute Force pada Akun Tervalidasi",
+        "description": "Menjalankan password guessing terfokus hanya pada username yang sudah dipastikan valid di sistem.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-login-user-enum-confirmed"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Uji 5 password paling umum secara manual (admin, password, admin123, Target2026!, nama perusahaan) untuk menghindari account lockout.",
+            "expected_output": "Login gagal dengan error password salah.",
+            "interesting_output": "Login berhasil -> Sesi admin terbuka.",
+            "unexpected_output": "Akun dikunci -> STOP segera!",
+            "interpretation": "Jika berhasil -> Akses awal diperoleh.",
+            "evidence_to_record": [
+              "Screenshot dashboard setelah login berhasil"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Jika sudah mencoba 3 variasi SQLi standar (' OR 1=1--, admin' --, admin' #) dan semuanya ditolak tanpa pesan error DB, STOP mencoba SQLi! Database menggunakan parameterized query yang 100% kebal SQLi.",
+      "Jika muncul CAPTCHA atau akun terkunci setelah 3 kali gagal, STOP brute force manual! Jangan sampai akun admin terkunci."
+    ],
+    "common_mistakes": [
+      "Menghabiskan waktu seharian mencoba ratusan payload SQLi dari cheatsheet pada login form yang menggunakan framework modern (Laravel, Django, Spring).",
+      "Tidak memperhatikan perbedaan subtle pada respons error atau response time.",
+      "Lupa mencoba kredensial default bawaan software (admin:admin, admin:password)."
+    ],
+    "ctf_notes": "Di CTF Web modern, login bypass via SQLi klasik sudah sangat jarang. Kebanyakan beralih ke NoSQL Injection, Type Juggling (PHP), JWT token forging, atau Username Enumeration!",
+    "pentest_notes": "Username Enumeration adalah temuan bernilai Medium di laporan resmi pentest karena mempermudah serangan rekayasa sosial dan credential stuffing.",
+    "unknown_guide": {
+      "what_is_this": "Situasi di mana form login menolak payload SQL injection karena aplikasi telah menggunakan mekanisme query yang aman (Prepared Statements).",
+      "why_does_it_exist": "Developer telah menerapkan best practice keamanan database standar modern.",
+      "what_parts_matter": "Pesan error spesifik dan waktu respons yang membocorkan keberadaan username.",
+      "what_normal_looks_like": "Pesan error generik yang sama persis untuk segala bentuk kegagalan otentikasi.",
+      "what_to_record_immediately": [
+        "Perbedaan teks pesan error jika ditemukan",
+        "Teknologi backend (PHP, Python, Node.js)"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Form login diamankan dengan baik dari SQLi, NoSQLi, dan tidak membocorkan username.",
+      "why_not_secure": "Fitur registrasi atau lupa password mungkin masih memiliki celah.",
+      "next_pivot_observations": [
+        "obs-web-password-reset",
+        "obs-web-registration"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "1.3 Username Enumeration Dulu",
+        "anchor": "13-username-enumeration-dulu",
+        "rationale": "Pelajari teknik sistematis mendeteksi username valid sebelum melakukan password attack."
+      }
+    ],
+    "related_observations": [
+      "obs-web-login-page",
+      "obs-web-password-reset"
+    ],
+    "provenance": [
+      "OWASP WSTG-IDENT-04 (Testing for Account Enumeration)",
+      "CWE-204 (Observable Response Discrepancy)"
+    ]
+  },
+  {
+    "id": "obs-web-forbidden-403-bypass",
+    "title": "Akses Ditolak HTTP 403 Forbidden (403 Bypass & Path Normalization)",
+    "domain": "Authorization & Access Control",
+    "category": "Web",
+    "phase": "Phase 1 Seed",
+    "what_do_you_see": [
+      "Respons server: 'HTTP/1.1 403 Forbidden' saat mengakses direktori sensitif (/admin, /api/v1/users, /backup, /internal)",
+      "Pesan di layar browser: '403 Forbidden: You don't have permission to access this resource'",
+      "Output FFUF/Gobuster menandai status 403 pada direktori-direktori penting"
+    ],
+    "context": "Fase content discovery di mana fuzzer menemukan direktori administratif atau internal, namun akses ditolak oleh web server atau WAF.",
+    "why_it_matters": "Banyak pemula langsung menyerah begitu melihat angka 403. Padahal, status 403 ADALAH KABAR BAIK! 403 membuktikan direktori itu BENAR-BENAR ADA dan BERISI RESOURCE! Pada banyak arsitektur, blokir 403 hanya dilakukan oleh reverse proxy (Nginx/HAProxy) yang membandingkan string URL secara kaku. Jika kita memanipulasi header IP (X-Forwarded-For) atau memodifikasi karakter URL (path normalization /admin/..;/admin), proteksi proxy terlewati dan backend akan menyajikan halaman admin dengan status 200 OK!",
+    "questions_to_ask": [
+      "Apakah pemblokiran 403 dilakukan oleh reverse proxy atau langsung oleh aplikasi backend?",
+      "Bagaimana respons server jika saya menambahkan header localhost: 'X-Forwarded-For: 127.0.0.1'?",
+      "Apakah server rentan terhadap path normalization tricks (/admin/., /admin/..;/, /%2e/admin)?",
+      "Bagaimana jika HTTP method diubah dari GET menjadi POST, HEAD, atau TRACE?"
+    ],
+    "inspection_points": [
+      {
+        "id": "ip-403-header-spoofing",
+        "name": "1. Header Spoofing (X-Forwarded-For & Custom Headers)",
+        "why_check": "Reverse proxy sering dikonfigurasi untuk mengizinkan akses ke /admin jika request berasal dari IP internal (127.0.0.1).",
+        "what_to_look_for": [
+          "Tambahkan header ke request di Burp Suite: X-Forwarded-For: 127.0.0.1",
+          "Tambahkan header variasi: X-Real-IP: 127.0.0.1, X-Originating-IP: 127.0.0.1, X-Remote-IP: 127.0.0.1",
+          "Tambahkan header: X-Custom-IP-Authorization: 127.0.0.1"
+        ],
+        "normal_baseline": "Server backend mengabaikan header dan tetap mengembalikan status 403 Forbidden.",
+        "interesting_clues": [
+          "Status berubah dari 403 Forbidden menjadi 200 OK seketika header X-Forwarded-For disematkan",
+          "Panjang respons (Content-Length) berubah secara drastis"
+        ],
+        "evidence_to_capture": [
+          "Request HTTP dengan header X-Forwarded-For dan respons 200 OK",
+          "Screenshot panel admin yang terbuka"
+        ]
+      },
+      {
+        "id": "ip-403-path-normalization",
+        "name": "2. Path Normalization & URL Encoding Tricks",
+        "why_check": "Proxy dan backend sering memiliki parser path yang berbeda (desynchronization).",
+        "what_to_look_for": [
+          "Uji trailing dot: /admin/.",
+          "Uji URL encoding dot: /%2e/admin atau /admin/%20",
+          "Uji semicolon (khusus Nginx/Spring/Tomcat): /admin;/",
+          "Uji path traversal trick: /foo/../admin atau /./admin/.",
+          "Uji uppercase: /Admin atau /ADMIN"
+        ],
+        "normal_baseline": "Server menolak atau me-redirect kembali ke URL standar dengan status 403.",
+        "interesting_clues": [
+          "Akses ke /admin/..;/admin atau /admin/. berhasil menghasilkan status 200 OK dengan konten admin penuh"
+        ],
+        "evidence_to_capture": [
+          "URL manipulasi path lengkap yang berhasil lolos",
+          "Respons 200 OK"
+        ]
+      }
+    ],
+    "interesting_signals": [
+      {
+        "id": "sig-403-bypass-success",
+        "inspection_point_id": "ip-403-path-normalization",
+        "signal_description": "Mengakses path dengan trik normalization /admin/..;/admin berhasil membypass blokir 403 dan menghasilkan status 200 OK.",
+        "output_snippet": "# Request Biasa (Ditolak):\nGET /admin HTTP/1.1\nHost: target.htb\nHTTP/1.1 403 Forbidden\n\n# Request Bypass (Berhasil):\nGET /admin/..;/admin HTTP/1.1\nHost: target.htb\nHTTP/1.1 200 OK\n<title>Administrator Control Panel</title>",
+        "observation_confidence": "CONFIRMED_OBSERVATION",
+        "interpretation": "Bypass 403 terkonfirmasi! Nginx reverse proxy gagal mengenali path /admin karena ada karakter semicolon, namun aplikasi Tomcat/Spring di backend menormalkan path dan menyajikan panel kontrol admin.",
+        "hypothesis_id": "hyp-403-proxy-desync",
+        "evidence_to_capture": [
+          "Burp Suite Repeater request & response perbandingan"
+        ]
+      }
+    ],
+    "unexpected_signals": [
+      "Server merespons 404 Not Found saat path dimodifikasi (Trik normalization tidak cocok dengan software web server ini)"
+    ],
+    "hypotheses": [
+      {
+        "id": "hyp-403-proxy-desync",
+        "name": "Authorization Bypass via Proxy Path Desynchronization / Header Spoofing",
+        "description": "Aturan pemblokiran 403 hanya aktif di layer reverse proxy terluar dan dapat dilewati dengan trik encoding atau IP header spoofing.",
+        "status": "CANDIDATE",
+        "supporting_signals": [
+          "sig-403-bypass-success"
+        ],
+        "safe_validation_steps": [
+          {
+            "step_number": 1,
+            "action": "Kirim request dengan path bypass /admin/..;/admin di browser atau Burp Repeater.",
+            "expected_output": "Status tetap 403.",
+            "interesting_output": "Status 200 OK dan dashboard admin terbuka.",
+            "unexpected_output": "500 Internal Error.",
+            "interpretation": "200 OK terkonfirmasi -> 403 bypass valid dan berdampak tinggi.",
+            "evidence_to_record": [
+              "Screenshot dashboard admin yang berhasil ditembus"
+            ]
+          }
+        ]
+      }
+    ],
+    "stop_conditions": [
+      "Jika sudah mencoba 5 teknik 403 bypass utama (X-Forwarded-For, /..;/, /%2e/, /., method POST/HEAD) dan semuanya tetap 403 dengan body yang sama, BERHENTI! Pemblokiran ini diterapkan langsung di kode aplikasi backend yang membutuhkan session token valid."
+    ],
+    "common_mistakes": [
+      "Langsung menyerah begitu melihat angka 403 Forbidden pada hasil scan Gobuster.",
+      "Tidak mencoba mengganti method GET ke POST atau HEAD.",
+      "Mengira 403 sama dengan 404 (403 membuktikan file itu ada!)."
+    ],
+    "ctf_notes": "Di CTF Web, trik /admin/..;/admin (Tomcat) dan X-Forwarded-For: 127.0.0.1 adalah dua trik paling sering muncul untuk membuka endpoint tersembunyi!",
+    "pentest_notes": "403 Bypass adalah temuan berbobot High pada laporan pentest karena membuktikan arsitektur pertahanan perimeter dapat dilewati hanya dengan manipulasi header.",
+    "unknown_guide": {
+      "what_is_this": "Kode status HTTP yang berarti: 'Server memahami apa yang kamu minta, tapi kamu dilarang mengaksesnya'.",
+      "why_does_it_exist": "Mekanisme pengamanan untuk membatasi akses direktori internal hanya kepada IP tertentu atau user berwenang.",
+      "what_parts_matter": "Header IP client dan karakter pembentuk URL path.",
+      "what_normal_looks_like": "Halaman yang memang tidak diizinkan untuk publik menghasilkan 403 secara konsisten.",
+      "what_to_record_immediately": [
+        "URL yang menghasilkan 403",
+        "Software web server pengirim respons 403 (contoh: nginx/1.18.0)"
+      ]
+    },
+    "negative_result_guide": {
+      "summary": "Direktori 403 diamankan langsung oleh kontrol otorisasi berbasis sesi di backend.",
+      "why_not_secure": "Endpoint lain mungkin tidak memiliki proteksi serupa.",
+      "next_pivot_observations": [
+        "obs-web-login-page",
+        "obs-web-api-endpoint"
+      ]
+    },
+    "coverage": {
+      "observation_coverage": "COVERED",
+      "workflow_coverage": "COVERED",
+      "gap_details": null
+    },
+    "relevant_workflows": [
+      {
+        "workflow_id": "18",
+        "slug": "authentication-bypass",
+        "title": "18. Authentication Bypass Workflow",
+        "section_title": "1.1 Identifikasi Login Page & Proteksi",
+        "anchor": "11-identifikasi-login-page",
+        "rationale": "Pelajari teknik manipulasi header dan bypass otentikasi perimeter."
+      }
+    ],
+    "related_observations": [
+      "obs-web-admin-panel",
+      "obs-web-api-endpoint"
+    ],
+    "provenance": [
+      "OWASP WSTG-ATHZ-02 (Testing for Bypassing Authorization Schema)",
+      "PortSwigger Web Security Academy (Bypassing Access Controls)"
+    ]
   }
 ]
