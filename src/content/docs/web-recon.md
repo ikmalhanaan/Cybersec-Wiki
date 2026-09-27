@@ -5,7 +5,7 @@ category: "3. Web Exploitation"
 categoryId: "web"
 filename: "15_web_recon_workflow.md"
 refs_out: ["01","03","06","14d","16","17a","17b","17c","18","19","22","23","24","25","26","30"]
-refs_in: ["04","06","07","09","13","14d","16","17a","20","44","61","62","64"]
+refs_in: ["04","06","07","09","13","14d","16","17a","44","61","62","64"]
 ---
 
 # 15. Web Reconnaissance & Enumeration Workflow — Master Field Guide

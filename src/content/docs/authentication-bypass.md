@@ -5,7 +5,7 @@ category: "3. Web Exploitation"
 categoryId: "web"
 filename: "18_authentication_bypass_workflow.md"
 refs_out: ["05","06","07","14a","19"]
-refs_in: ["15","17d","19","21","31","62"]
+refs_in: ["15","17d","19","31","62"]
 ---
 
 # 🔐 18 — Authentication Bypass Workflow

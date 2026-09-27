@@ -5,7 +5,7 @@ category: "9. OSINT & Misc"
 categoryId: "osint_misc"
 filename: "64_pivoting_tunneling_workflow.md"
 refs_out: ["01","05","06","15","35","42","57","63"]
-refs_in: ["06","10","12","20","21","23","24","26","44","46","47","50"]
+refs_in: ["06","10","12","23","24","26","44","46","47","50"]
 ---
 
 > **Target Environment:** Parrot OS XFCE (Debian-based)  

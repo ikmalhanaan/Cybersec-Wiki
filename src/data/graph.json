@@ -79,9 +79,9 @@
         "categoryLabel": "2. Network Services",
         "color": "#3B8BD4",
         "slug": "ssh",
-        "refsInCount": 40,
+        "refsInCount": 39,
         "refsOutCount": 12,
-        "degree": 52
+        "degree": 51
       }
     },
     {
@@ -93,9 +93,9 @@
         "categoryLabel": "2. Network Services",
         "color": "#3B8BD4",
         "slug": "ftp",
-        "refsInCount": 18,
+        "refsInCount": 19,
         "refsOutCount": 8,
-        "degree": 26
+        "degree": 27
       }
     },
     {
@@ -191,9 +191,9 @@
         "categoryLabel": "2. Network Services",
         "color": "#3B8BD4",
         "slug": "mysql",
-        "refsInCount": 32,
+        "refsInCount": 31,
         "refsOutCount": 9,
-        "degree": 41
+        "degree": 40
       }
     },
     {
@@ -247,9 +247,9 @@
         "categoryLabel": "3. Web Exploitation",
         "color": "#F59E0B",
         "slug": "web-recon",
-        "refsInCount": 13,
+        "refsInCount": 12,
         "refsOutCount": 16,
-        "degree": 29
+        "degree": 28
       }
     },
     {
@@ -275,9 +275,9 @@
         "categoryLabel": "3. Web Exploitation",
         "color": "#F59E0B",
         "slug": "wordpress",
-        "refsInCount": 9,
+        "refsInCount": 7,
         "refsOutCount": 7,
-        "degree": 16
+        "degree": 14
       }
     },
     {
@@ -345,9 +345,9 @@
         "categoryLabel": "3. Web Exploitation",
         "color": "#F59E0B",
         "slug": "authentication-bypass",
-        "refsInCount": 6,
+        "refsInCount": 5,
         "refsOutCount": 5,
-        "degree": 11
+        "degree": 10
       }
     },
     {
@@ -360,8 +360,8 @@
         "color": "#F59E0B",
         "slug": "sql-injection",
         "refsInCount": 6,
-        "refsOutCount": 9,
-        "degree": 15
+        "refsOutCount": 7,
+        "degree": 13
       }
     },
     {
@@ -374,8 +374,8 @@
         "color": "#F59E0B",
         "slug": "xss",
         "refsInCount": 6,
-        "refsOutCount": 8,
-        "degree": 14
+        "refsOutCount": 4,
+        "degree": 10
       }
     },
     {
@@ -388,8 +388,8 @@
         "color": "#F59E0B",
         "slug": "xxe",
         "refsInCount": 3,
-        "refsOutCount": 8,
-        "degree": 11
+        "refsOutCount": 7,
+        "degree": 10
       }
     },
     {
@@ -989,9 +989,9 @@
         "categoryLabel": "9. OSINT & Misc",
         "color": "#14B8A6",
         "slug": "pivoting-tunneling",
-        "refsInCount": 12,
+        "refsInCount": 10,
         "refsOutCount": 8,
-        "degree": 20
+        "degree": 18
       }
     },
     {
@@ -2615,20 +2615,6 @@
     },
     {
       "data": {
-        "id": "19->14a",
-        "source": "19",
-        "target": "14a"
-      }
-    },
-    {
-      "data": {
-        "id": "19->17a",
-        "source": "19",
-        "target": "17a"
-      }
-    },
-    {
-      "data": {
         "id": "19->18",
         "source": "19",
         "target": "18"
@@ -2653,27 +2639,6 @@
         "id": "19->63",
         "source": "19",
         "target": "63"
-      }
-    },
-    {
-      "data": {
-        "id": "20->06",
-        "source": "20",
-        "target": "06"
-      }
-    },
-    {
-      "data": {
-        "id": "20->15",
-        "source": "20",
-        "target": "15"
-      }
-    },
-    {
-      "data": {
-        "id": "20->17a",
-        "source": "20",
-        "target": "17a"
       }
     },
     {
@@ -2706,16 +2671,16 @@
     },
     {
       "data": {
-        "id": "20->64",
-        "source": "20",
-        "target": "64"
+        "id": "21->06",
+        "source": "21",
+        "target": "06"
       }
     },
     {
       "data": {
-        "id": "21->06",
+        "id": "21->07",
         "source": "21",
-        "target": "06"
+        "target": "07"
       }
     },
     {
@@ -2730,13 +2695,6 @@
         "id": "21->14b",
         "source": "21",
         "target": "14b"
-      }
-    },
-    {
-      "data": {
-        "id": "21->18",
-        "source": "21",
-        "target": "18"
       }
     },
     {
@@ -2758,13 +2716,6 @@
         "id": "21->60",
         "source": "21",
         "target": "60"
-      }
-    },
-    {
-      "data": {
-        "id": "21->64",
-        "source": "21",
-        "target": "64"
       }
     },
     {

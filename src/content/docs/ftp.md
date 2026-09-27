@@ -5,7 +5,7 @@ category: "2. Network Services"
 categoryId: "network"
 filename: "07_ftp_workflow.md"
 refs_out: ["05","06","08","14a","14b","15","44","48"]
-refs_in: ["04","05","06","08","09","14a","14b","14c","14d","17a","17b","17c","18","19","24","25","26","35"]
+refs_in: ["04","05","06","08","09","14a","14b","14c","14d","17a","17b","17c","18","19","21","24","25","26","35"]
 ---
 
 # 07. FTP & FTPS Exploitation Workflow — Master Field Guide 

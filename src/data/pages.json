@@ -365,7 +365,6 @@
       "17c",
       "18",
       "19",
-      "20",
       "21",
       "22",
       "23",
@@ -437,6 +436,7 @@
       "17c",
       "18",
       "19",
+      "21",
       "24",
       "25",
       "26",
@@ -759,7 +759,6 @@
       "17b",
       "17c",
       "18",
-      "19",
       "21",
       "22",
       "23",
@@ -987,7 +986,6 @@
       "14d",
       "16",
       "17a",
-      "20",
       "44",
       "61",
       "62",
@@ -1082,8 +1080,6 @@
       "17",
       "17b",
       "17d",
-      "19",
-      "20",
       "24",
       "62"
     ],
@@ -1287,7 +1283,6 @@
       "15",
       "17d",
       "19",
-      "21",
       "31",
       "62"
     ],
@@ -1317,13 +1312,11 @@
     "category": "3. Web Exploitation",
     "categoryId": "web",
     "categoryColor": "#F59E0B",
-    "content": "💉 19 — SQL Injection Workflow > Scope: HackTheBox, TryHackMe, Proving Grounds, dan lab/target yang memang memberikan izin pengujian. > OS: Parrot OS XFCE / Debian-based > Level: Beginner → Intermediate > Tujuan: membangun muscle memory SQL Injection dari detection → identification → exploitation → automation. --- 📚 Daftar Isi - 💉 0. SQL Injectio...",
+    "content": "💉 19 — SQL Injection Workflow > Scope: PortSwigger Web Security Academy, HackTheBox, TryHackMe, Proving Grounds, dan lab/target yang memang memberikan izin pengujian. OS: Parrot OS XFCE / Debian-based Primary Tool: Burp Suite (Community / Pro) Level: Beginner → Intermediate Tujuan: Membangun muscle memory SQL Injection dari detection → identificat...",
     "refs_out": [
       "05",
       "06",
       "07",
-      "14a",
-      "17a",
       "18",
       "44",
       "45",
@@ -1341,15 +1334,13 @@
     "filename": "19_sql_injection_workflow.md",
     "tags": [
       "burp",
-      "crackmapexec",
       "evil-winrm",
       "hashcat",
       "john",
       "nc",
       "nxc",
       "sqlmap",
-      "ssh",
-      "tcpdump"
+      "ssh"
     ]
   },
   {
@@ -1359,16 +1350,12 @@
     "category": "3. Web Exploitation",
     "categoryId": "web",
     "categoryColor": "#F59E0B",
-    "content": "← File 19: SQL Injection 🔥 20 — XSS Workflow > Scope: HackTheBox, TryHackMe, Proving Grounds, PortSwigger Academy, dan lab/target yang memang memberikan izin pengujian. > OS: Parrot OS XFCE / Debian-based > Level: Beginner → Intermediate > Goal: membangun muscle memory XSS dari detection → context identification → payload construction → validation...",
+    "content": "← File 19: SQL Injection 🔥 20 — XSS Workflow > Scope: PortSwigger Academy, HackTheBox, TryHackMe, Proving Grounds, dan lab/target yang memang memberikan izin pengujian. OS: Parrot OS XFCE / Debian-based Primary Tool: Burp Suite (Proxy, Repeater, Intruder, Collaborator) Secondary Tool: Browser DevTools, curl (header/reflection check), python3 http....",
     "refs_out": [
-      "06",
-      "15",
-      "17a",
       "19",
       "21",
       "22",
-      "27",
-      "64"
+      "27"
     ],
     "refs_in": [
       "21",
@@ -1393,16 +1380,15 @@
     "category": "3. Web Exploitation",
     "categoryId": "web",
     "categoryColor": "#F59E0B",
-    "content": "← File 20: XSS 🧬 21 — XXE Workflow > Scope: HackTheBox, TryHackMe, PortSwigger Academy, Proving Grounds, dan lab yang memang memberikan izin pengujian. > OS: Parrot OS XFCE / Debian-based > Level: Beginner → Intermediate > Goal: membangun muscle memory XXE dari memahami struktur XML → membuktikan entity resolution → file disclosure → Blind XXE/OOB...",
+    "content": "← File 20: XSS 🧬 21 — XXE Workflow > Scope: HackTheBox, TryHackMe, PortSwigger Academy, Proving Grounds, dan lab yang memberikan izin pengujian. OS: Parrot OS XFCE / Debian-based Tool Utama: Burp Suite (Community/Pro) + Burp Collaborator / interactsh Level: Beginner → Intermediate Goal: Identifikasi attack surface → bukti entity resolution → file ...",
     "refs_out": [
       "06",
+      "07",
       "14a",
       "14b",
-      "18",
       "20",
       "22",
-      "60",
-      "64"
+      "60"
     ],
     "refs_in": [
       "20",
@@ -1413,7 +1399,6 @@
     "filename": "21_xxe_workflow.md",
     "tags": [
       "burp",
-      "nc",
       "ssh"
     ]
   },
@@ -3163,8 +3148,6 @@
       "06",
       "10",
       "12",
-      "20",
-      "21",
       "23",
       "24",
       "26",

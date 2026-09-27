@@ -5,7 +5,7 @@ category: "3. Web Exploitation"
 categoryId: "web"
 filename: "17a_wordpress_workflow.md"
 refs_out: ["06","07","14a","15","17","17b","44"]
-refs_in: ["15","16","17","17b","17d","19","20","24","62"]
+refs_in: ["15","16","17","17b","17d","24","62"]
 ---
 
 # 🛡️ 17a. WordPress Advanced Exploitation & Workflow Guide

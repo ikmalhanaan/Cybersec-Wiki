@@ -203,5 +203,51 @@ const interactiveGuideHeading = headings.find(h =>
 
     document.addEventListener('DOMContentLoaded', linkifyPlainReferences);
     linkifyPlainReferences();
+
+    function setupAnchorResolver() {
+      function findTarget(hash) {
+        if (!hash) return null;
+        let el = document.getElementById(hash);
+        if (!el) {
+          const clean = hash.replace(/️/g, '');
+          el = document.getElementById(clean) || 
+               document.getElementById('️' + clean) ||
+               document.querySelector('[id$="' + clean + '"]') ||
+               document.querySelector('[id*="' + clean + '"]');
+        }
+        return el;
+      }
+
+      function handleHash() {
+        if (!window.location.hash) return;
+        const hash = decodeURIComponent(window.location.hash.slice(1));
+        const el = findTarget(hash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+
+      document.addEventListener('click', (e) => {
+        const a = e.target.closest('a[href^="#"]');
+        if (!a) return;
+        const href = a.getAttribute('href');
+        if (!href || href === '#') return;
+        const hash = decodeURIComponent(href.slice(1));
+        const el = findTarget(hash);
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          history.pushState(null, '', '#' + hash);
+        }
+      });
+
+      window.addEventListener('hashchange', handleHash);
+      if (window.location.hash) {
+        setTimeout(handleHash, 250);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', setupAnchorResolver);
+    setupAnchorResolver();
   </script>
 </BaseLayout>
