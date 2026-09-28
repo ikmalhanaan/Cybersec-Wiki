@@ -1350,7 +1350,7 @@
     "category": "3. Web Exploitation",
     "categoryId": "web",
     "categoryColor": "#F59E0B",
-    "content": "← File 19: SQL Injection 🔥 20 — XSS Workflow > Scope: PortSwigger Academy, HackTheBox, TryHackMe, Proving Grounds, dan lab/target yang memang memberikan izin pengujian. OS: Parrot OS XFCE / Debian-based Primary Tool: Burp Suite (Proxy, Repeater, Intruder, Collaborator) Secondary Tool: Browser DevTools, curl (header/reflection check), python3 http....",
+    "content": "← File 19: SQL Injection ( 19 sql injection workflow.md ) 🔥 20 — XSS Workflow > Version: 2.0 (Revised 2026-09-28) — Technical audit applied: errors fixed, lab-specific labels added, modern topics added. See audit report for full changelog. > Scope: PortSwigger Academy, HackTheBox, TryHackMe, Proving Grounds, dan lab/target yang memang memberikan i...",
     "refs_out": [
       "19",
       "21",

