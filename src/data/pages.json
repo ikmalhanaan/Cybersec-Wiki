@@ -1445,11 +1445,11 @@
   {
     "id": "23",
     "slug": "ssti",
-    "title": "Workflow 23 â€” Server-Side Template Injection (SSTI)",
+    "title": "Workflow 23 — Server-Side Template Injection (SSTI)",
     "category": "3. Web Exploitation",
     "categoryId": "web",
     "categoryColor": "#F59E0B",
-    "content": "â† File 22: SSRF --- Workflow 23 â€” Server-Side Template Injection (SSTI) > Scope: HackTheBox, TryHackMe, PortSwigger, CTF, dan lab yang memang mengizinkan eksploitasi. > Target mindset: dari input â†’ deteksi SSTI â†’ identifikasi template engine â†’ validasi impact â†’ information disclosure â†’ RCE/sandbox escape â†’ bypass filter â†’ otomasi....",
+    "content": "→ File 22: SSRF --- Workflow 23 — Server-Side Template Injection (SSTI) > Scope: HackTheBox, TryHackMe, PortSwigger, CTF, dan lab yang memang mengizinkan eksploitasi. > Target mindset: dari input → deteksi SSTI → identifikasi template engine → validasi impact → information disclosure → RCE/sandbox escape → bypass filter → otomasi. --- Daftar Isi - ...",
     "refs_out": [
       "06",
       "14a",
@@ -1485,7 +1485,7 @@
     "category": "3. Web Exploitation",
     "categoryId": "web",
     "categoryColor": "#F59E0B",
-    "content": "← File 23: SSTI --- Workflow 24 — LFI / RFI > Scope: HackTheBox, TryHackMe, PortSwigger, CTF, dan lab yang memang mengizinkan pengujian eksploitasi. > > Tujuan: membangun muscle memory dari parameter discovery → traversal → sensitive file disclosure → wrapper abuse → log poisoning → LFI → RCE , serta memahami kapan RFI mungkin terjadi. > > Platform...",
+    "content": "← File 23: SSTI --- Workflow 24 — LFI / RFI > Scope: HackTheBox, TryHackMe, PortSwigger Labs, CTF, dan lab yang secara eksplisit mengizinkan pengujian eksploitasi — serta authorized pentest dengan scope yang jelas. > > Platform: Parrot OS XFCE, Debian-based Linux (attacker box). > > Tujuan: satu authoritative decision layer untuk parameter discover...",
     "refs_out": [
       "06",
       "07",
@@ -1511,12 +1511,8 @@
       "burp",
       "ffuf",
       "impacket",
-      "john",
       "nc",
-      "nmap",
-      "nxc",
-      "ssh",
-      "whatweb"
+      "ssh"
     ]
   },
   {

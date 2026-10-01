@@ -410,7 +410,7 @@
       "data": {
         "id": "23",
         "label": "23. ssti",
-        "title": "Workflow 23 â€” Server-Side Template Injection (SSTI)",
+        "title": "Workflow 23 — Server-Side Template Injection (SSTI)",
         "category": "web",
         "categoryLabel": "3. Web Exploitation",
         "color": "#F59E0B",
